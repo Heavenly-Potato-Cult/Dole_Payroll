@@ -59,6 +59,3 @@ Visit: http://localhost:8000
 
 
 
-php artisan thinker
-✅ Default admin created: admin@dole9.gov.ph
-✅ Password: Admin@DOLE9!
