@@ -17,6 +17,14 @@ if [ -z "$APP_KEY" ]; then
     php /var/www/artisan key:generate --ansi --force
 fi
 
+# -------------------------------
+# Install Composer dependencies if missing
+# -------------------------------
+if [ ! -d /var/www/vendor ]; then
+    echo "Installing Composer dependencies..."
+    composer install --no-interaction --optimize-autoloader --ignore-platform-reqs
+fi
+
 # ---------------------------
 # Wait for MySQL to be ready
 # ---------------------------
