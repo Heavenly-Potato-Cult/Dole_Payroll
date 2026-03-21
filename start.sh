@@ -11,8 +11,7 @@ fi
 # ---------------------------
 # Generate APP_KEY if empty
 # ---------------------------
-APP_KEY=$(grep '^APP_KEY=' /var/www/.env | cut -d '=' -f2)
-if [ -z "$APP_KEY" ]; then
+if ! grep -q '^APP_KEY=base64:' /var/www/.env; then
     echo "APP_KEY is missing. Generating..."
     php /var/www/artisan key:generate --ansi --force
 fi
@@ -36,13 +35,18 @@ done
 echo "MySQL is ready!"
 
 # ---------------------------
-# Run migrations and seed only once
+# Run migrations 
 # ---------------------------
-if [ ! -f /var/www/.laravel_initialized ]; then
-    echo "Running Laravel setup..."
-    php /var/www/artisan migrate --force
+echo "Running migrations..."
+php /var/www/artisan migrate --force
+
+# ---------------------------
+#  Seed database if users table is empty
+# ---------------------------
+USERS_COUNT=$(php /var/www/artisan tinker --execute="echo \App\Models\User::count();")
+if [ "$USERS_COUNT" -eq 0 ]; then
+    echo "Seeding database..."
     php /var/www/artisan db:seed --force
-    touch /var/www/.laravel_initialized
 fi
 
 # ---------------------------
