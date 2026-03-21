@@ -11,9 +11,9 @@ fi
 # ---------------------------
 # Generate APP_KEY if empty
 # ---------------------------
-APP_KEY=$(grep APP_KEY /var/www/.env | cut -d '=' -f2)
+APP_KEY=$(grep '^APP_KEY=' /var/www/.env | cut -d '=' -f2)
 if [ -z "$APP_KEY" ]; then
-    echo "Generating APP_KEY..."
+    echo "APP_KEY is missing. Generating..."
     php /var/www/artisan key:generate --ansi --force
 fi
 
