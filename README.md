@@ -6,8 +6,10 @@ This project runs the **Laravel Payroll System** using Docker. All dependencies 
 
 ## **1. Requirements**
 
-- Docker Desktop (Windows, macOS, Linux)
-> You **do not need PHP, Composer, or Laravel** installed locally.
+- Docker Desktop (Windows, macOS, Linux)  
+> Docker Desktop must be **downloaded and installed** on your machine. Once installed, make sure it is **running and properly set up** before starting the system.  
+
+> You **do not need PHP, Composer, or Laravel** installed locally — everything runs inside the Docker containers.
 
 ---
 

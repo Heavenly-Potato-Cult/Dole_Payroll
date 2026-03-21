@@ -1,19 +1,23 @@
 #!/bin/sh
 
-# # Wait for MySQL to be ready
-# echo "Waiting for MySQL at $DB_HOST:$DB_PORT..."
-# while ! mysql -h"$DB_HOST" -P"$DB_PORT" -u"$DB_USERNAME" -p"$DB_PASSWORD" -e "SELECT 1" >/dev/null 2>&1; do
-#     echo "MySQL not ready yet. Sleeping 2s..."
-#     sleep 2
-# done
-# echo "MySQL is ready!"
+# Create .env from .env.example if missing
+if [ ! -f /var/www/.env ]; then
+    echo "Creating .env from .env.example..."
+    cp /var/www/.env.example /var/www/.env
+fi
+
+# Generate APP_KEY if empty
+APP_KEY=$(grep APP_KEY /var/www/.env | cut -d '=' -f2)
+if [ -z "$APP_KEY" ]; then
+    echo "Generating APP_KEY..."
+    php /var/www/artisan key:generate --ansi --force
+fi
 
 # Run migrations and seed only once
 if [ ! -f /var/www/.laravel_initialized ]; then
     echo "Running Laravel setup..."
-    php artisan key:generate --force
-    php artisan migrate --force
-    php artisan db:seed --force
+    php /var/www/artisan migrate --force
+    php /var/www/artisan db:seed --force
     touch /var/www/.laravel_initialized
 fi
 
