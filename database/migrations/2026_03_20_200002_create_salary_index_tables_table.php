@@ -13,7 +13,7 @@ return new class extends Migration
             $table->unsignedTinyInteger('salary_grade');   // 1–33
             $table->unsignedTinyInteger('step');            // 1–8
             $table->unsignedSmallInteger('year');           // e.g. 2021, 2022
-            $table->decimal('monthly_salary', 12, 2);
+            $table->decimal('amount', 12, 2);
             $table->timestamps();
 
             $table->unique(['salary_grade', 'step', 'year'], 'sit_unique');

@@ -25,7 +25,8 @@ return new class extends Migration
             // Position Info
             $table->string('position_title');
             $table->unsignedTinyInteger('salary_grade');   // SG 1–33
-            $table->unsignedTinyInteger('step');            // Step 1–8
+            $table->unsignedTinyInteger('step');   
+            $table->unsignedSmallInteger('sit_year')->default(2022);         // Step 1–8
             $table->decimal('basic_salary', 12, 2);
             $table->decimal('pera', 10, 2)->default(2000.00)->comment('Personnel Economic Relief Allowance');
 

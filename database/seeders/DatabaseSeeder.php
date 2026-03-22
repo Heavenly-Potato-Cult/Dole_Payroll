@@ -13,6 +13,11 @@ class DatabaseSeeder extends Seeder
         // Run role seeder first
         $this->call(RoleSeeder::class);
 
+        $this->call(SalaryIndexTableSeeder::class);
+        $this->call(DeductionTypeSeeder::class);
+
+        
+
         // Create default payroll admin user
         $admin = User::firstOrCreate(
             ['email' => 'admin@dole9.gov.ph'],

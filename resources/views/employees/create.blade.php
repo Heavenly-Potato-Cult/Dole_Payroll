@@ -1,1 +1,313 @@
-{{-- TODO: implement views/employees/create.blade.php --}}
+@extends('layouts.app')
+
+@section('title', 'New Employee')
+@section('page-title', 'New Employee')
+
+@section('content')
+
+<div class="page-header">
+    <div class="page-header-left">
+        <h1>New Employee</h1>
+        <p>Add a regular plantilla employee to DOLE RO9</p>
+    </div>
+    <a href="{{ route('employees.index') }}" class="btn btn-outline">← Back</a>
+</div>
+
+<form method="POST" action="{{ route('employees.store') }}" id="employeeForm">
+@csrf
+
+<div style="display:grid;grid-template-columns:1fr 360px;gap:20px;align-items:start;">
+
+    {{-- ── Left column ──────────────────────────────────────── --}}
+    <div style="display:flex;flex-direction:column;gap:20px;">
+
+        {{-- Personal Information --}}
+        <div class="card">
+            <div class="card-header"><h3>Personal Information</h3></div>
+            <div class="card-body">
+
+                <div style="display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:14px;">
+                    <div class="form-group" style="margin-bottom:0;">
+                        <label for="last_name">Last Name <span style="color:var(--red)">*</span></label>
+                        <input type="text" id="last_name" name="last_name"
+                               value="{{ old('last_name') }}"
+                               class="{{ $errors->has('last_name') ? 'is-invalid' : '' }}"
+                               required maxlength="100" style="text-transform:uppercase;">
+                        @error('last_name')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                    </div>
+                    <div class="form-group" style="margin-bottom:0;">
+                        <label for="first_name">First Name <span style="color:var(--red)">*</span></label>
+                        <input type="text" id="first_name" name="first_name"
+                               value="{{ old('first_name') }}"
+                               class="{{ $errors->has('first_name') ? 'is-invalid' : '' }}"
+                               required maxlength="100">
+                        @error('first_name')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                    </div>
+                    <div class="form-group" style="margin-bottom:0;">
+                        <label for="middle_name">Middle Name</label>
+                        <input type="text" id="middle_name" name="middle_name"
+                               value="{{ old('middle_name') }}" maxlength="100">
+                    </div>
+                    <div class="form-group" style="margin-bottom:0;min-width:80px;">
+                        <label for="suffix">Suffix</label>
+                        <input type="text" id="suffix" name="suffix"
+                               value="{{ old('suffix') }}" maxlength="20"
+                               placeholder="Jr., Sr.">
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        {{-- Position & Assignment --}}
+        <div class="card">
+            <div class="card-header"><h3>Position & Assignment</h3></div>
+            <div class="card-body">
+
+                <div class="form-group">
+                    <label for="plantilla_item_no">Plantilla Item No. <span style="color:var(--red)">*</span></label>
+                    <input type="text" id="plantilla_item_no" name="plantilla_item_no"
+                           value="{{ old('plantilla_item_no') }}"
+                           class="{{ $errors->has('plantilla_item_no') ? 'is-invalid' : '' }}"
+                           required maxlength="100"
+                           placeholder="e.g. OSEC-DOLEB-LEO3-183-1998">
+                    @error('plantilla_item_no')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                </div>
+
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+                    <div class="form-group" style="margin-bottom:0;">
+                        <label for="position_title">Position Title <span style="color:var(--red)">*</span></label>
+                        <input type="text" id="position_title" name="position_title"
+                               value="{{ old('position_title') }}"
+                               class="{{ $errors->has('position_title') ? 'is-invalid' : '' }}"
+                               required maxlength="200"
+                               placeholder="e.g. Labor Employment Officer III">
+                        @error('position_title')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                    </div>
+                    <div class="form-group" style="margin-bottom:0;">
+                        <label for="division_id">Division <span style="color:var(--red)">*</span></label>
+                        <select id="division_id" name="division_id"
+                                class="{{ $errors->has('division_id') ? 'is-invalid' : '' }}" required>
+                            <option value="">— Select Division —</option>
+                            @foreach ($divisions as $div)
+                                <option value="{{ $div->id }}"
+                                    {{ old('division_id') == $div->id ? 'selected' : '' }}>
+                                    {{ $div->code }} — {{ $div->name }}
+                                </option>
+                            @endforeach
+                        </select>
+                        @error('division_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        {{-- Salary --}}
+        <div class="card">
+            <div class="card-header">
+                <h3>Salary</h3>
+                <span class="text-muted" style="font-size:0.80rem;">
+                    SG &amp; Step auto-fills Basic Salary from SIT
+                </span>
+            </div>
+            <div class="card-body">
+
+                <div style="display:grid;grid-template-columns:120px 100px 140px 1fr;gap:14px;align-items:end;">
+
+                    <div class="form-group" style="margin-bottom:0;">
+                        <label for="salary_grade">Salary Grade <span style="color:var(--red)">*</span></label>
+                        <select id="salary_grade" name="salary_grade"
+                                class="{{ $errors->has('salary_grade') ? 'is-invalid' : '' }}" required>
+                            <option value="">—</option>
+                            @for ($sg = 1; $sg <= 33; $sg++)
+                                <option value="{{ $sg }}"
+                                    {{ old('salary_grade') == $sg ? 'selected' : '' }}>
+                                    SG {{ $sg }}
+                                </option>
+                            @endfor
+                        </select>
+                        @error('salary_grade')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                    </div>
+
+                    <div class="form-group" style="margin-bottom:0;">
+                        <label for="step">Step <span style="color:var(--red)">*</span></label>
+                        <select id="step" name="step"
+                                class="{{ $errors->has('step') ? 'is-invalid' : '' }}" required>
+                            <option value="">—</option>
+                            @for ($s = 1; $s <= 8; $s++)
+                                <option value="{{ $s }}"
+                                    {{ old('step') == $s ? 'selected' : '' }}>
+                                    Step {{ $s }}
+                                </option>
+                            @endfor
+                        </select>
+                        @error('step')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                    </div>
+
+                    <div class="form-group" style="margin-bottom:0;">
+                        <label for="sit_year">SIT Year <span style="color:var(--red)">*</span></label>
+                        <select id="sit_year" name="sit_year"
+                                class="{{ $errors->has('sit_year') ? 'is-invalid' : '' }}" required>
+                            @foreach ($sitYears as $yr)
+                                <option value="{{ $yr }}"
+                                    {{ old('sit_year', $latestYear) == $yr ? 'selected' : '' }}>
+                                    CY {{ $yr }}
+                                </option>
+                            @endforeach
+                        </select>
+                        @error('sit_year')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                    </div>
+
+                    <div class="form-group" style="margin-bottom:0;">
+                        <label for="basic_salary">
+                            Basic Salary <span style="color:var(--red)">*</span>
+                            <span id="sit_status" style="font-weight:400;font-size:0.76rem;color:var(--success);margin-left:6px;"></span>
+                        </label>
+                        {{-- Hidden raw value for form submission --}}
+                        <input type="hidden" id="basic_salary_raw" name="basic_salary"
+                               value="{{ old('basic_salary') }}">
+                        {{-- Display-only formatted field --}}
+                        <input type="text" id="basic_salary"
+                               value="{{ old('basic_salary') ? number_format(old('basic_salary'), 2) : '' }}"
+                               placeholder="Auto-filled from SIT"
+                               class="{{ $errors->has('basic_salary') ? 'is-invalid' : '' }}"
+                               readonly
+                               style="background:var(--bg);font-family:monospace;">
+                        @error('basic_salary')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                    </div>
+
+                </div>
+
+                <div style="margin-top:14px;">
+                    <label for="pera">PERA (₱2,000.00 fixed for regular employees)</label>
+                    <input type="number" id="pera" name="pera"
+                           value="{{ old('pera', '2000.00') }}"
+                           min="0" step="0.01" style="max-width:180px;">
+                    @error('pera')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                </div>
+
+            </div>
+        </div>
+
+    </div>{{-- end left column --}}
+
+    {{-- ── Right column ─────────────────────────────────────── --}}
+    <div style="display:flex;flex-direction:column;gap:20px;">
+
+        {{-- Employment Details --}}
+        <div class="card">
+            <div class="card-header"><h3>Employment</h3></div>
+            <div class="card-body">
+
+                <div class="form-group">
+                    <label for="hire_date">Hire / Appointment Date</label>
+                    <input type="date" id="hire_date" name="hire_date"
+                           value="{{ old('hire_date') }}">
+                </div>
+
+                <div class="form-group">
+                    <label for="status">Status <span style="color:var(--red)">*</span></label>
+                    <select id="status" name="status" required>
+                        <option value="active"   {{ old('status', 'active') === 'active'   ? 'selected' : '' }}>Active</option>
+                        <option value="inactive" {{ old('status') === 'inactive' ? 'selected' : '' }}>Inactive</option>
+                        <option value="vacant"   {{ old('status') === 'vacant'   ? 'selected' : '' }}>Vacant</option>
+                    </select>
+                </div>
+
+            </div>
+        </div>
+
+        {{-- Government IDs --}}
+        <div class="card">
+            <div class="card-header"><h3>Government IDs</h3></div>
+            <div class="card-body">
+                <div class="form-group">
+                    <label for="tin">TIN</label>
+                    <input type="text" id="tin" name="tin"
+                           value="{{ old('tin') }}" placeholder="000-000-000-000" maxlength="50">
+                </div>
+                <div class="form-group">
+                    <label for="gsis_bp_no">GSIS Number</label>
+                    <input type="text" id="gsis_bp_no" name="gsis_bp_no"
+                           value="{{ old('gsis_bp_no') }}" maxlength="50">
+                </div>
+                <div class="form-group">
+                    <label for="pagibig_no">Pag-IBIG (HDMF) Number</label>
+                    <input type="text" id="pagibig_no" name="pagibig_no"
+                           value="{{ old('pagibig_no') }}" maxlength="50">
+                </div>
+                <div class="form-group">
+                    <label for="philhealth_no">PhilHealth Number</label>
+                    <input type="text" id="philhealth_no" name="philhealth_no"
+                           value="{{ old('philhealth_no') }}" maxlength="50">
+                </div>
+                <div class="form-group" style="margin-bottom:0;">
+                    <label for="sss_no">SSS Number</label>
+                    <input type="text" id="sss_no" name="sss_no"
+                           value="{{ old('sss_no') }}" maxlength="50">
+                </div>
+            </div>
+        </div>
+
+        {{-- Actions --}}
+        <div style="display:flex;flex-direction:column;gap:10px;">
+            <button type="submit" class="btn btn-primary btn-lg w-100">
+                ✓ Save Employee
+            </button>
+            <a href="{{ route('employees.index') }}" class="btn btn-outline w-100">
+                Cancel
+            </a>
+        </div>
+
+    </div>{{-- end right column --}}
+
+</div>
+
+</form>
+
+@endsection
+
+@section('scripts')
+<script src="{{ asset('js/sit-lookup.js') }}"></script>
+<script>
+// Wire the SIT lookup to update both the display field and the hidden raw input
+SITLookup.init({
+    sgId     : 'salary_grade',
+    stepId   : 'step',
+    yearId   : 'sit_year',
+    salaryId : 'basic_salary',   // display field (readonly)
+    statusId : 'sit_status',
+    apiUrl   : '{{ route("api.sit") }}',
+});
+
+// Keep hidden raw input in sync so the form submits the numeric value
+document.addEventListener('DOMContentLoaded', function () {
+    const display = document.getElementById('basic_salary');
+    const raw     = document.getElementById('basic_salary_raw');
+
+    // When SITLookup sets display.dataset.rawAmount, mirror it to hidden
+    const observer = new MutationObserver(function () {
+        if (display.dataset.rawAmount) {
+            raw.value = display.dataset.rawAmount;
+        }
+    });
+    observer.observe(display, { attributes: true, attributeFilter: ['data-raw-amount'] });
+
+    // Also sync on any direct change (fallback)
+    display.addEventListener('change', function () {
+        raw.value = this.dataset.rawAmount || this.value.replace(/,/g, '');
+    });
+
+    // Auto-uppercase name fields
+    ['last_name', 'first_name', 'middle_name'].forEach(function (id) {
+        const el = document.getElementById(id);
+        if (el) el.addEventListener('input', function () {
+            const p = this.selectionStart;
+            this.value = this.value.toUpperCase();
+            this.setSelectionRange(p, p);
+        });
+    });
+});
+</script>
+@endsection
