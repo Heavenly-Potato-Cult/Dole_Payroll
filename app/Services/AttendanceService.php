@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Employee;
+use App\Models\PayrollBatch;
 use App\Traits\TableIVConverter;
 
 class AttendanceService
@@ -35,9 +36,9 @@ class AttendanceService
      */
     public function compute(Employee $employee, array $attendance): array
     {
-        $basicSalary  = (float) $employee->basic_salary;
-        $pera         = (float) $employee->pera;
-        $denom        = self::WORK_DAYS_DENOMINATOR;
+        $basicSalary = (float) $employee->basic_salary;
+        $pera        = (float) $employee->pera;
+        $denom       = self::WORK_DAYS_DENOMINATOR;
 
         $lwopDays         = (float) ($attendance['lwop_days']         ?? 0);
         $lateMinutes      = (int)   ($attendance['late_minutes']      ?? 0);
@@ -82,5 +83,43 @@ class AttendanceService
         $semiEmployee->pera         = round($employee->pera / 2, 2);
 
         return $this->compute($semiEmployee, $attendance);
+    }
+
+    /**
+     * Return an attendance map keyed by employee_id for an entire payroll batch.
+     *
+     * Shape returned per employee:
+     *   [
+     *     'lwop_days'       => float,  // leave-without-pay days (credit-exhausted only)
+     *     'late_minutes'    => int,    // cumulative minutes late for the cut-off
+     *     'undertime_mins'  => int,    // cumulative undertime minutes
+     *     'ytd_gross'       => float,  // year-to-date gross before this batch (for WHT)
+     *   ]
+     *
+     * ── STUB ────────────────────────────────────────────────────────────────
+     * Currently returns an empty array, which means PayrollComputationService
+     * will use zero attendance deductions for all employees.
+     *
+     * When Maam Eden Cutara's HRIS API is ready (TSSD team), replace the stub
+     * body with real API calls via HrisApiService::fetchAttendanceForBatch().
+     *
+     * Example integration (Phase 2 / HRIS wiring):
+     *
+     *   $hris = app(HrisApiService::class);
+     *   return $hris->fetchAttendanceForBatch(
+     *       $batch->period_year,
+     *       $batch->period_month,
+     *       $batch->cutoff
+     *   );
+     * ────────────────────────────────────────────────────────────────────────
+     *
+     * @param  PayrollBatch $batch
+     * @return array  [ employee_id => [ 'lwop_days'=>, 'late_minutes'=>, ... ] ]
+     */
+    public function getAttendanceForBatch(PayrollBatch $batch): array
+    {
+        // STUB: returns empty attendance — no deductions applied.
+        // Replace with HrisApiService call when the API is available.
+        return [];
     }
 }

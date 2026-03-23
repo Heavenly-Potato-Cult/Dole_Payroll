@@ -62,10 +62,10 @@ Route::middleware(['auth'])->group(function () {
     Route::resource('divisions', DivisionController::class);
 
     // ── Payroll ──────────────────────────────────────────────────
-    Route::resource('payroll', PayrollController::class);
-    Route::post('/payroll/{payrollBatch}/compute', [PayrollController::class, 'compute'])->name('payroll.compute');
-    Route::post('/payroll/{payrollBatch}/approve', [PayrollController::class, 'approve'])->name('payroll.approve');
-    Route::post('/payroll/{payrollBatch}/lock',    [PayrollController::class, 'lock'])->name('payroll.lock');
+Route::resource('payroll', PayrollController::class);
+Route::post('/payroll/{payroll}/compute', [PayrollController::class, 'compute'])->name('payroll.compute');
+Route::post('/payroll/{payroll}/approve', [PayrollController::class, 'approve'])->name('payroll.approve');
+Route::post('/payroll/{payroll}/lock',    [PayrollController::class, 'lock'])->name('payroll.lock');
 
     Route::get('/payroll/{payrollBatch}/entries',
                [PayrollEntryController::class, 'index'])->name('payroll.entries.index');

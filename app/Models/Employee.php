@@ -67,9 +67,25 @@ class Employee extends Model
         return $this->hasMany(EmployeePromotionHistory::class)->orderByDesc('effective_date');
     }
 
+    /**
+     * Primary relationship name used in views/forms.
+     */
     public function deductions(): HasMany
     {
         return $this->hasMany(EmployeeDeductionEnrollment::class);
+    }
+
+    /**
+     * Alias — PayrollComputationService and AttendanceService use this name.
+     */
+    public function deductionEnrollments(): HasMany
+    {
+        return $this->hasMany(EmployeeDeductionEnrollment::class);
+    }
+
+    public function payrollEntries(): HasMany
+    {
+        return $this->hasMany(PayrollEntry::class);
     }
 
     // ── Computed helpers ─────────────────────────────────────────
@@ -123,6 +139,38 @@ class Employee extends Model
     public function getSemiMonthlyGrossAttribute(): float
     {
         return round(($this->basic_salary + $this->pera) / 2, 2);
+    }
+
+    // ── Attribute aliases for PayrollComputationService ──────────
+    // The service was written expecting these names. These aliases
+    // map them to the actual column names in the database.
+
+    /**
+     * Alias: basic_monthly_salary → basic_salary column
+     * Used by: PayrollComputationService, AttendanceService
+     */
+    public function getBasicMonthlySalaryAttribute(): float
+    {
+        return (float) $this->basic_salary;
+    }
+
+    /**
+     * Alias: pera_amount → pera column
+     * Used by: PayrollComputationService
+     */
+    public function getPeraAmountAttribute(): float
+    {
+        return (float) $this->pera;
+    }
+
+    /**
+     * RATA allowance — not all employees have this.
+     * Returns 0.00 if not set on the model.
+     * Used by: PayrollComputationService
+     */
+    public function getRataAttribute(): float
+    {
+        return (float) ($this->attributes['rata'] ?? 0);
     }
 
     // ── Scopes ────────────────────────────────────────────────────
