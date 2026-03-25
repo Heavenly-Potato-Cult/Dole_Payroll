@@ -3,10 +3,11 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Mar 25, 2026 at 04:39 AM
+-- Generation Time: Mar 25, 2026 at 06:14 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
+SET FOREIGN_KEY_CHECKS=0;
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
 SET time_zone = "+00:00";
@@ -27,6 +28,7 @@ SET time_zone = "+00:00";
 -- Table structure for table `cache`
 --
 
+DROP TABLE IF EXISTS `cache`;
 CREATE TABLE `cache` (
   `key` varchar(255) NOT NULL,
   `value` mediumtext NOT NULL,
@@ -39,6 +41,7 @@ CREATE TABLE `cache` (
 -- Table structure for table `cache_locks`
 --
 
+DROP TABLE IF EXISTS `cache_locks`;
 CREATE TABLE `cache_locks` (
   `key` varchar(255) NOT NULL,
   `owner` varchar(255) NOT NULL,
@@ -51,6 +54,7 @@ CREATE TABLE `cache_locks` (
 -- Table structure for table `deduction_types`
 --
 
+DROP TABLE IF EXISTS `deduction_types`;
 CREATE TABLE `deduction_types` (
   `id` bigint(20) UNSIGNED NOT NULL,
   `code` varchar(30) NOT NULL COMMENT 'e.g. PAGIBIG1, GSIS_MPL, WHT',
@@ -71,6 +75,7 @@ CREATE TABLE `deduction_types` (
 -- Table structure for table `divisions`
 --
 
+DROP TABLE IF EXISTS `divisions`;
 CREATE TABLE `divisions` (
   `id` bigint(20) UNSIGNED NOT NULL,
   `code` varchar(20) NOT NULL,
@@ -87,6 +92,7 @@ CREATE TABLE `divisions` (
 -- Table structure for table `employees`
 --
 
+DROP TABLE IF EXISTS `employees`;
 CREATE TABLE `employees` (
   `id` bigint(20) UNSIGNED NOT NULL,
   `plantilla_item_no` varchar(50) NOT NULL,
@@ -127,6 +133,7 @@ CREATE TABLE `employees` (
 -- Table structure for table `employee_deduction_enrollments`
 --
 
+DROP TABLE IF EXISTS `employee_deduction_enrollments`;
 CREATE TABLE `employee_deduction_enrollments` (
   `id` bigint(20) UNSIGNED NOT NULL,
   `employee_id` bigint(20) UNSIGNED NOT NULL,
@@ -146,6 +153,7 @@ CREATE TABLE `employee_deduction_enrollments` (
 -- Table structure for table `employee_promotion_history`
 --
 
+DROP TABLE IF EXISTS `employee_promotion_history`;
 CREATE TABLE `employee_promotion_history` (
   `id` bigint(20) UNSIGNED NOT NULL,
   `employee_id` bigint(20) UNSIGNED NOT NULL,
@@ -170,6 +178,7 @@ CREATE TABLE `employee_promotion_history` (
 -- Table structure for table `failed_jobs`
 --
 
+DROP TABLE IF EXISTS `failed_jobs`;
 CREATE TABLE `failed_jobs` (
   `id` bigint(20) UNSIGNED NOT NULL,
   `uuid` varchar(255) NOT NULL,
@@ -186,6 +195,7 @@ CREATE TABLE `failed_jobs` (
 -- Table structure for table `jobs`
 --
 
+DROP TABLE IF EXISTS `jobs`;
 CREATE TABLE `jobs` (
   `id` bigint(20) UNSIGNED NOT NULL,
   `queue` varchar(255) NOT NULL,
@@ -202,6 +212,7 @@ CREATE TABLE `jobs` (
 -- Table structure for table `job_batches`
 --
 
+DROP TABLE IF EXISTS `job_batches`;
 CREATE TABLE `job_batches` (
   `id` varchar(255) NOT NULL,
   `name` varchar(255) NOT NULL,
@@ -221,6 +232,7 @@ CREATE TABLE `job_batches` (
 -- Table structure for table `migrations`
 --
 
+DROP TABLE IF EXISTS `migrations`;
 CREATE TABLE `migrations` (
   `id` int(10) UNSIGNED NOT NULL,
   `migration` varchar(255) NOT NULL,
@@ -261,6 +273,7 @@ INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES
 -- Table structure for table `model_has_permissions`
 --
 
+DROP TABLE IF EXISTS `model_has_permissions`;
 CREATE TABLE `model_has_permissions` (
   `permission_id` bigint(20) UNSIGNED NOT NULL,
   `model_type` varchar(255) NOT NULL,
@@ -273,6 +286,7 @@ CREATE TABLE `model_has_permissions` (
 -- Table structure for table `model_has_roles`
 --
 
+DROP TABLE IF EXISTS `model_has_roles`;
 CREATE TABLE `model_has_roles` (
   `role_id` bigint(20) UNSIGNED NOT NULL,
   `model_type` varchar(255) NOT NULL,
@@ -292,6 +306,7 @@ INSERT INTO `model_has_roles` (`role_id`, `model_type`, `model_id`) VALUES
 -- Table structure for table `office_orders`
 --
 
+DROP TABLE IF EXISTS `office_orders`;
 CREATE TABLE `office_orders` (
   `id` bigint(20) UNSIGNED NOT NULL,
   `office_order_no` varchar(50) NOT NULL,
@@ -316,6 +331,7 @@ CREATE TABLE `office_orders` (
 -- Table structure for table `password_reset_tokens`
 --
 
+DROP TABLE IF EXISTS `password_reset_tokens`;
 CREATE TABLE `password_reset_tokens` (
   `email` varchar(255) NOT NULL,
   `token` varchar(255) NOT NULL,
@@ -328,6 +344,7 @@ CREATE TABLE `password_reset_tokens` (
 -- Table structure for table `payroll_audit_log`
 --
 
+DROP TABLE IF EXISTS `payroll_audit_log`;
 CREATE TABLE `payroll_audit_log` (
   `id` bigint(20) UNSIGNED NOT NULL,
   `payroll_batch_id` bigint(20) UNSIGNED NOT NULL,
@@ -346,6 +363,7 @@ CREATE TABLE `payroll_audit_log` (
 -- Table structure for table `payroll_batches`
 --
 
+DROP TABLE IF EXISTS `payroll_batches`;
 CREATE TABLE `payroll_batches` (
   `id` bigint(20) UNSIGNED NOT NULL,
   `year` smallint(5) UNSIGNED NOT NULL,
@@ -374,6 +392,7 @@ CREATE TABLE `payroll_batches` (
 -- Table structure for table `payroll_deductions`
 --
 
+DROP TABLE IF EXISTS `payroll_deductions`;
 CREATE TABLE `payroll_deductions` (
   `id` bigint(20) UNSIGNED NOT NULL,
   `payroll_entry_id` bigint(20) UNSIGNED NOT NULL,
@@ -391,6 +410,7 @@ CREATE TABLE `payroll_deductions` (
 -- Table structure for table `payroll_entries`
 --
 
+DROP TABLE IF EXISTS `payroll_entries`;
 CREATE TABLE `payroll_entries` (
   `id` bigint(20) UNSIGNED NOT NULL,
   `payroll_batch_id` bigint(20) UNSIGNED NOT NULL,
@@ -422,6 +442,7 @@ CREATE TABLE `payroll_entries` (
 -- Table structure for table `permissions`
 --
 
+DROP TABLE IF EXISTS `permissions`;
 CREATE TABLE `permissions` (
   `id` bigint(20) UNSIGNED NOT NULL,
   `name` varchar(255) NOT NULL,
@@ -436,6 +457,7 @@ CREATE TABLE `permissions` (
 -- Table structure for table `personal_access_tokens`
 --
 
+DROP TABLE IF EXISTS `personal_access_tokens`;
 CREATE TABLE `personal_access_tokens` (
   `id` bigint(20) UNSIGNED NOT NULL,
   `tokenable_type` varchar(255) NOT NULL,
@@ -455,6 +477,7 @@ CREATE TABLE `personal_access_tokens` (
 -- Table structure for table `per_diem_rates`
 --
 
+DROP TABLE IF EXISTS `per_diem_rates`;
 CREATE TABLE `per_diem_rates` (
   `id` bigint(20) UNSIGNED NOT NULL,
   `travel_type` varchar(20) NOT NULL COMMENT 'local, regional, national',
@@ -473,6 +496,7 @@ CREATE TABLE `per_diem_rates` (
 -- Table structure for table `roles`
 --
 
+DROP TABLE IF EXISTS `roles`;
 CREATE TABLE `roles` (
   `id` bigint(20) UNSIGNED NOT NULL,
   `name` varchar(255) NOT NULL,
@@ -500,6 +524,7 @@ INSERT INTO `roles` (`id`, `name`, `guard_name`, `created_at`, `updated_at`) VAL
 -- Table structure for table `role_has_permissions`
 --
 
+DROP TABLE IF EXISTS `role_has_permissions`;
 CREATE TABLE `role_has_permissions` (
   `permission_id` bigint(20) UNSIGNED NOT NULL,
   `role_id` bigint(20) UNSIGNED NOT NULL
@@ -511,6 +536,7 @@ CREATE TABLE `role_has_permissions` (
 -- Table structure for table `salary_index_tables`
 --
 
+DROP TABLE IF EXISTS `salary_index_tables`;
 CREATE TABLE `salary_index_tables` (
   `id` bigint(20) UNSIGNED NOT NULL,
   `salary_grade` tinyint(3) UNSIGNED NOT NULL,
@@ -527,6 +553,7 @@ CREATE TABLE `salary_index_tables` (
 -- Table structure for table `sessions`
 --
 
+DROP TABLE IF EXISTS `sessions`;
 CREATE TABLE `sessions` (
   `id` varchar(255) NOT NULL,
   `user_id` bigint(20) UNSIGNED DEFAULT NULL,
@@ -549,6 +576,7 @@ INSERT INTO `sessions` (`id`, `user_id`, `ip_address`, `user_agent`, `payload`, 
 -- Table structure for table `special_payroll_batches`
 --
 
+DROP TABLE IF EXISTS `special_payroll_batches`;
 CREATE TABLE `special_payroll_batches` (
   `id` bigint(20) UNSIGNED NOT NULL,
   `type` varchar(30) NOT NULL COMMENT 'newly_hired, salary_differential, nosi, nosa, step_increment',
@@ -580,6 +608,7 @@ CREATE TABLE `special_payroll_batches` (
 -- Table structure for table `tev_approval_logs`
 --
 
+DROP TABLE IF EXISTS `tev_approval_logs`;
 CREATE TABLE `tev_approval_logs` (
   `id` bigint(20) UNSIGNED NOT NULL,
   `tev_request_id` bigint(20) UNSIGNED NOT NULL,
@@ -597,6 +626,7 @@ CREATE TABLE `tev_approval_logs` (
 -- Table structure for table `tev_certifications`
 --
 
+DROP TABLE IF EXISTS `tev_certifications`;
 CREATE TABLE `tev_certifications` (
   `id` bigint(20) UNSIGNED NOT NULL,
   `tev_request_id` bigint(20) UNSIGNED NOT NULL,
@@ -620,6 +650,7 @@ CREATE TABLE `tev_certifications` (
 -- Table structure for table `tev_itinerary_lines`
 --
 
+DROP TABLE IF EXISTS `tev_itinerary_lines`;
 CREATE TABLE `tev_itinerary_lines` (
   `id` bigint(20) UNSIGNED NOT NULL,
   `tev_request_id` bigint(20) UNSIGNED NOT NULL,
@@ -641,6 +672,7 @@ CREATE TABLE `tev_itinerary_lines` (
 -- Table structure for table `tev_requests`
 --
 
+DROP TABLE IF EXISTS `tev_requests`;
 CREATE TABLE `tev_requests` (
   `id` bigint(20) UNSIGNED NOT NULL,
   `tev_no` varchar(50) NOT NULL,
@@ -674,6 +706,7 @@ CREATE TABLE `tev_requests` (
 -- Table structure for table `users`
 --
 
+DROP TABLE IF EXISTS `users`;
 CREATE TABLE `users` (
   `id` bigint(20) UNSIGNED NOT NULL,
   `name` varchar(255) NOT NULL,
@@ -1208,6 +1241,7 @@ ALTER TABLE `tev_requests`
   ADD CONSTRAINT `tev_requests_employee_id_foreign` FOREIGN KEY (`employee_id`) REFERENCES `employees` (`id`),
   ADD CONSTRAINT `tev_requests_office_order_id_foreign` FOREIGN KEY (`office_order_id`) REFERENCES `office_orders` (`id`),
   ADD CONSTRAINT `tev_requests_submitted_by_foreign` FOREIGN KEY (`submitted_by`) REFERENCES `users` (`id`) ON DELETE SET NULL;
+SET FOREIGN_KEY_CHECKS=1;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
