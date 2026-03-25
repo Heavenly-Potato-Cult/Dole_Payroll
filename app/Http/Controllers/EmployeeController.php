@@ -42,7 +42,7 @@ class EmployeeController extends Controller
     // ── Create ───────────────────────────────────────────────────
     public function create()
     {
-        $divisions = Division::where('is_active', true)->orderBy('name')->get(['id', 'name', 'code']);
+        $divisions = Division::orderBy('name')->get(['id', 'name', 'code']);
         $sitYears  = [2022, 2021]; // latest first
         $latestYear = 2022;
 

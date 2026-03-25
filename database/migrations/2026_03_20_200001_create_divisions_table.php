@@ -10,12 +10,13 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('divisions', function (Blueprint $table) {
-            $table->id();
-            $table->string('name', 200)->unique();
-            $table->string('code', 20)->unique();
-            $table->text('description')->nullable();
-            $table->boolean('is_active')->default(true);
-            $table->timestamps();
+$table->id();
+$table->string('name', 200)->unique();
+$table->string('code', 20)->unique();
+$table->text('description')->nullable();   
+$table->boolean('is_active')->default(true); 
+$table->softDeletes();
+$table->timestamps();
         });
 
         // ── Seed the four official DOLE RO9 divisions ────────────
