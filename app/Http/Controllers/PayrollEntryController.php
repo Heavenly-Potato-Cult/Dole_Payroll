@@ -10,38 +10,33 @@ use Illuminate\Support\Facades\Auth;
 
 class PayrollEntryController extends Controller
 {
-    // ── index: list all entries for a batch ──────────────────────────────
+    // ── index ─────────────────────────────────────────────────────────────
     public function index(PayrollBatch $payrollBatch)
     {
         $payrollBatch->load(['entries.employee', 'entries.deductions']);
-
-        $entries = $payrollBatch->entries
-            ->sortBy(fn ($e) => $e->employee->last_name);
-
+        $entries = $payrollBatch->entries->sortBy(fn ($e) => $e->employee->last_name);
         return view('payroll.entries.index', compact('payrollBatch', 'entries'));
     }
 
-    // ── show: single entry detail ────────────────────────────────────────
+    // ── show ──────────────────────────────────────────────────────────────
     public function show(PayrollBatch $payrollBatch, PayrollEntry $entry)
     {
         $entry->load(['employee', 'deductions.deductionType', 'batch']);
-
         return view('payroll.entries.show', compact('payrollBatch', 'entry'));
     }
 
-    // ── update: manual override (admin only, logged to audit) ────────────
+    // ── update (manual override) ──────────────────────────────────────────
     public function update(Request $request, PayrollBatch $payrollBatch, PayrollEntry $entry)
     {
         if (!Auth::user()->hasAnyRole(['payroll_officer'])) {
             abort(403, 'Only Payroll Officers may override payroll entries.');
         }
-
         if ($payrollBatch->status === 'locked') {
             return back()->with('error', 'Locked payrolls cannot be edited.');
         }
 
         $validated = $request->validate([
-            'net_amount'   => ['required', 'numeric', 'min:0'],
+            'net_amount'      => ['required', 'numeric', 'min:0'],
             'override_reason' => ['required', 'string', 'max:500'],
         ]);
 
@@ -52,9 +47,8 @@ class PayrollEntryController extends Controller
             'payroll_batch_id' => $payrollBatch->id,
             'user_id'          => Auth::id(),
             'action'           => 'manual_override',
-            'old_value'        => $old,
-            'new_value'        => $validated['net_amount'],
-            'notes'            => $validated['override_reason'],
+            'old_value'        => (string) $old,
+            'new_value'        => (string) $validated['net_amount'],
             'ip_address'       => $request->ip(),
         ]);
 
@@ -63,33 +57,37 @@ class PayrollEntryController extends Controller
 
     // ── payslip: PDF download ─────────────────────────────────────────────
     /**
-     * Generate an individual payslip PDF for one employee for one payroll batch.
+     * Generate an individual payslip PDF.
      *
-     * Route: GET /payroll/{payrollBatch}/payslip/{entry}
-     * Name:  payroll.payslip
+     * Route:  GET /payroll/{payrollBatch}/payslip/{entry}
+     * Name:   payroll.payslip
      *
-     * The payslip shows BOTH cut-offs (1-15 and 16-30/31) on a single page.
-     * For the current batch we have the computed entry. The companion cut-off
-     * entry is looked up from the other batch for the same month/year/employee.
+     * IMPORTANT: The route uses {entry} (PayrollEntry), NOT {employee}.
+     * The PayrollEntry already contains employee_id; we load the employee
+     * from the entry. This avoids a second route parameter and matches
+     * the "Slip" link in payroll/show.blade.php.
      *
-     * If the companion cut-off has not been computed yet, its fields are shown
-     * as blank/zero — the payslip is still valid for the current cut-off.
+     * If you previously registered this route as:
+     *   Route::get('/payroll/{batch}/payslip/{employee}', ...)
+     * change it to:
+     *   Route::get('/payroll/{payrollBatch}/payslip/{entry}', [PayrollEntryController::class, 'payslip'])
+     *        ->name('payroll.payslip');
      */
     public function payslip(PayrollBatch $payrollBatch, PayrollEntry $entry)
     {
-        // Eager-load everything the view needs
         $entry->load([
             'employee.division',
-            'deductions.deductionType',
+            'deductions',          // PayrollDeduction rows — has 'code' column
             'batch',
         ]);
 
         $employee = $entry->employee;
         $batch    = $payrollBatch;
 
-        // ── Find the companion cut-off entry (same month/year, other cut-off) ──
-        $companionCutoff  = $batch->cutoff === '1st' ? '2nd' : '1st';
-        $companionBatch   = PayrollBatch::where([
+        // ── Companion cut-off entry (same month/year, opposite cut-off) ───
+        $companionCutoff = $batch->cutoff === '1st' ? '2nd' : '1st';
+
+        $companionBatch = PayrollBatch::where([
             'period_year'  => $batch->period_year,
             'period_month' => $batch->period_month,
             'cutoff'       => $companionCutoff,
@@ -97,13 +95,13 @@ class PayrollEntryController extends Controller
 
         $companionEntry = null;
         if ($companionBatch) {
-            $companionEntry = PayrollEntry::with(['deductions.deductionType'])
+            $companionEntry = PayrollEntry::with('deductions')
                 ->where('payroll_batch_id', $companionBatch->id)
                 ->where('employee_id', $employee->id)
                 ->first();
         }
 
-        // ── Determine which entry is 1st and which is 2nd cut-off ──────────
+        // Determine which is 1st and which is 2nd cut-off
         if ($batch->cutoff === '1st') {
             $entry1st = $entry;
             $entry2nd = $companionEntry;
@@ -112,27 +110,19 @@ class PayrollEntryController extends Controller
             $entry2nd = $entry;
         }
 
-        // ── Build ordered deduction map for each cut-off ───────────────────
-        // Key = deduction_type code, value = amount (0 if not present)
-        $ded1st = $entry1st
-            ? $entry1st->deductions->keyBy(fn ($d) => $d->code)
-            : collect();
+        // Build deduction lookup maps keyed by code
+        // PayrollDeduction.code = deduction_types.code (set by DeductionService)
+        $ded1st = $entry1st ? $entry1st->deductions->keyBy('code') : collect();
+        $ded2nd = $entry2nd ? $entry2nd->deductions->keyBy('code') : collect();
 
-        $ded2nd = $entry2nd
-            ? $entry2nd->deductions->keyBy(fn ($d) => $d->code)
-            : collect();
+        $months = [
+            '', 'January', 'February', 'March', 'April', 'May', 'June',
+            'July', 'August', 'September', 'October', 'November', 'December',
+        ];
+        $periodLabel = ($months[$batch->period_month] ?? '') . ' 1–31, ' . $batch->period_year;
 
-        // ── Period label ───────────────────────────────────────────────────
-        $months = ['','January','February','March','April','May','June',
-                   'July','August','September','October','November','December'];
-        $monthName   = $months[$batch->period_month] ?? '';
-        $periodLabel = "{$monthName} 1-31, {$batch->period_year}";
-
-        // ── Payslip row definitions (exact order from Excel template) ──────
-        // Each item: [ 'label' => string, 'code' => string|null, 'type' => 'income'|'deduction'|'total'|'net' ]
         $rows = $this->payslipRowDefinitions();
 
-        // ── Render PDF ─────────────────────────────────────────────────────
         $pdf = Pdf::loadView('payslip.show', compact(
             'employee',
             'batch',
@@ -145,10 +135,10 @@ class PayrollEntryController extends Controller
         ))
         ->setPaper('a4', 'portrait')
         ->setOptions([
-            'defaultFont'     => 'DejaVu Sans',
+            'defaultFont'          => 'DejaVu Sans',
             'isHtml5ParserEnabled' => true,
-            'isRemoteEnabled' => true,
-            'dpi'             => 96,
+            'isRemoteEnabled'      => true,
+            'dpi'                  => 96,
         ]);
 
         $filename = 'payslip_'
@@ -158,43 +148,44 @@ class PayrollEntryController extends Controller
         return $pdf->download($filename);
     }
 
-    // ═══════════════════════════════════════════════════════════════════
-    //  Private: payslip row order (matches Excel template exactly)
-    // ═══════════════════════════════════════════════════════════════════
-
+    // ── Payslip row definitions ────────────────────────────────────────────
     /**
-     * Returns the full ordered list of rows that appear on the payslip,
-     * from BASIC through NET PAY 16-30/31.
+     * Ordered list of all rows on the payslip.
      *
-     * 'type':
-     *   income     → shown in the income block (no indent)
-     *   deduction  → shown in the deductions block
-     *   sub        → indented deduction (HDMF sub-items)
-     *   spacer     → section label row (no amount)
-     *   divider    → TOTAL row
-     *   net        → NET PAY rows (bold, highlighted)
+     * ── CODE CONTRACT ────────────────────────────────────────────────────
+     * All 'code' values here MUST match deduction_types.code in the DB.
+     * Canonical list: DeductionTypeSeeder.
+     * DeductionService stores these exact codes into payroll_deductions.code.
+     * The $ded1st / $ded2nd maps are keyBy('code') — so lookup will only
+     * work when these strings match exactly, character-for-character.
+     * ─────────────────────────────────────────────────────────────────────
      *
-     * 'code':
-     *   matches deduction_types.code for lookup, or null for income/labels.
+     * 'type' values:
+     *   income    → BASIC / PERA row
+     *   spacer    → section header (no amount, navy background)
+     *   deduction → normal deduction row
+     *   sub       → indented sub-deduction (HDMF children)
+     *   divider   → TOTAL row
+     *   net       → NET PAY row (gold highlight)
      */
     private function payslipRowDefinitions(): array
     {
         return [
-            // ── Income ────────────────────────────────────────────────
+            // ── Income ─────────────────────────────────────────────────────
             ['label' => 'BASIC',          'code' => null,                   'type' => 'income'],
             ['label' => 'ALLOWANCE',      'code' => null,                   'type' => 'income'],
 
-            // ── Deductions section header ─────────────────────────────
+            // ── Section header ──────────────────────────────────────────────
             ['label' => 'DEDUCTIONS',     'code' => null,                   'type' => 'spacer'],
 
-            // ── HDMF / Pag-IBIG ──────────────────────────────────────
+            // ── HDMF / Pag-IBIG ────────────────────────────────────────────
             ['label' => 'PAG-IBIG I',     'code' => 'PAG_IBIG_1',           'type' => 'deduction'],
             ['label' => 'MULTI-PURPOSE',  'code' => 'HDMF_MPL',             'type' => 'sub'],
             ['label' => 'CALAMITY LOAN',  'code' => 'HDMF_CAL',             'type' => 'sub'],
             ['label' => 'HOUSE & LOT',    'code' => 'HDMF_HOUSING',         'type' => 'sub'],
             ['label' => 'PAG-IBIG II',    'code' => 'HDMF_P2',              'type' => 'sub'],
 
-            // ── PhilHealth & GSIS ─────────────────────────────────────
+            // ── PhilHealth & GSIS ───────────────────────────────────────────
             ['label' => 'PHILHEALTH',         'code' => 'PHILHEALTH',           'type' => 'deduction'],
             ['label' => 'LIFE/RETIREMENT',    'code' => 'GSIS_LIFE_RETIREMENT', 'type' => 'deduction'],
             ['label' => 'CONSO LOAN',         'code' => 'GSIS_CONSO',           'type' => 'deduction'],
@@ -207,7 +198,7 @@ class PayrollEntryController extends Controller
             ['label' => 'HELP',               'code' => 'GSIS_HELP',            'type' => 'deduction'],
             ['label' => 'GSIS EMERG LOAN',    'code' => 'GSIS_EMERGENCY',       'type' => 'deduction'],
 
-            // ── Other government / voluntary ──────────────────────────
+            // ── Other / Voluntary ───────────────────────────────────────────
             ['label' => 'MASS',               'code' => 'MASS',                 'type' => 'deduction'],
             ['label' => 'SSS CONTRIBUTION',   'code' => 'SSS',                  'type' => 'deduction'],
             ['label' => 'PROVIDENT FUND',     'code' => 'PROVIDENT_FUND',       'type' => 'deduction'],
@@ -216,16 +207,16 @@ class PayrollEntryController extends Controller
             ['label' => 'GSIS EDUCL LOAN',    'code' => 'GSIS_EDUC',            'type' => 'deduction'],
             ['label' => 'HMO',                'code' => 'HMO',                  'type' => 'deduction'],
 
-            // ── CARESS IX ─────────────────────────────────────────────
+            // ── CARESS IX ───────────────────────────────────────────────────
             ['label' => 'UNION DUES',         'code' => 'CARESS_UNION',         'type' => 'deduction'],
             ['label' => 'MORTUARY',           'code' => 'CARESS_MORTUARY',      'type' => 'deduction'],
             ['label' => 'CAREs',              'code' => 'CARESS_CARES',         'type' => 'deduction'],
 
-            // ── Misc ──────────────────────────────────────────────────
+            // ── Misc ────────────────────────────────────────────────────────
             ['label' => 'SMART PLAN GOLD EXCESS CHARGES', 'code' => 'SMART_PLAN_GOLD', 'type' => 'deduction'],
             ['label' => 'REFUND (VARIOUS)',   'code' => 'REFUND_VARIOUS',       'type' => 'deduction'],
 
-            // ── Totals ────────────────────────────────────────────────
+            // ── Totals / Net ─────────────────────────────────────────────────
             ['label' => 'TOTAL',              'code' => null,                   'type' => 'divider'],
             ['label' => 'NET PAY 1-15',       'code' => null,                   'type' => 'net'],
             ['label' => 'NET PAY 16-30/31',   'code' => null,                   'type' => 'net'],
