@@ -225,6 +225,7 @@ public function approve(Request $request, PayrollBatch $payroll)
             ->with('success', 'Draft payroll batch deleted.');
     }
 
+    
     // ═══════════════════════════════════════════════════════════════════════
     //  Private helpers
     // ═══════════════════════════════════════════════════════════════════════
