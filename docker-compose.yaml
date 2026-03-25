@@ -21,7 +21,7 @@ services:
       DB_USERNAME: root
       DB_PASSWORD: root
       SANCTUM_STATEFUL_DOMAINS: localhost:8000
-    command: ["sh", "/var/www/start.sh"]
+    command: ["sh", "/var/www/dev.sh"]
 
   db:
     image: mysql:8.0

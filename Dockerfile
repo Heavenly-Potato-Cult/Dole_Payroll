@@ -29,8 +29,8 @@ COPY . .
 RUN chown -R www-data:www-data /var/www \
     && chmod -R 755 /var/www
 
-# Install Composer dependencies
-RUN composer install --no-interaction --optimize-autoloader --ignore-platform-reqs
+# # Install Composer dependencies
+# RUN composer install --no-interaction --optimize-autoloader --ignore-platform-reqs
 
 # Expose Laravel dev server
 EXPOSE 8000
