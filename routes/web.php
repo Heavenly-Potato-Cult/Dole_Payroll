@@ -57,6 +57,8 @@ Route::middleware(['auth'])->group(function () {
                   [EmployeePromotionController::class, 'store'])->name('employees.promotions.store');
     Route::delete('/employees/{employee}/promotions/{promotion}',
                   [EmployeePromotionController::class, 'destroy'])->name('employees.promotions.destroy');
+    Route::get('/payroll/{payrollBatch}/payslip/{entry}',
+           [PayrollEntryController::class, 'payslip'])->name('payroll.payslip');
 
     // ── Divisions ────────────────────────────────────────────────
     Route::resource('divisions', DivisionController::class);
