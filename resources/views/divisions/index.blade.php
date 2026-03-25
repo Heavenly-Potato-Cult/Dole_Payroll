@@ -92,7 +92,7 @@
                     <td style="text-align:center;">
                         <div class="d-flex gap-2" style="justify-content:center;">
                             <a href="{{ route('divisions.edit', $division) }}"
-                               class="btn btn-outline btn-sm" title="Edit">✎ Edit</a>
+                               class="btn btn-outline btn-sm" title="Edit">✎</a>
 
                             {{-- Delete form --}}
                             <form method="POST"
