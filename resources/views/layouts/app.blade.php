@@ -10,7 +10,7 @@
     @yield('styles')
 </head>
 <body>
-<?php $userRole = auth()->user()->getRoleNames()->first() ?? ''; ?>
+
 
 <div class="app-shell">
 

@@ -26,7 +26,16 @@ Route::get('/', fn() => redirect()->route('login'));
 
 Route::get('/login',  [AuthController::class, 'showLogin'])->name('login')->middleware('guest');
 Route::post('/login', [AuthController::class, 'login'])->name('login.post')->middleware('guest');
-
+// Route::get('/debug-env', function () {
+//     return response()->json([
+//         'REDIS_HOST'       => env('REDIS_HOST'),
+//         'SESSION_DRIVER'   => env('SESSION_DRIVER'),
+//         'CACHE_STORE'      => env('CACHE_STORE'),
+//         'QUEUE_CONNECTION' => env('QUEUE_CONNECTION'),
+//         'session_driver'   => config('session.driver'),
+//         'redis_host'       => config('database.redis.default.host'),
+//     ]);
+// });
 /*
 |--------------------------------------------------------------------------
 | Protected Routes — Requires session auth

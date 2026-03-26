@@ -18,10 +18,12 @@ class TimingMiddleware
         Log::info('AFTER NEXT: ' . round((microtime(true) - LARAVEL_START) * 1000) . 'ms');
 
         // Force session save NOW and time it
-        $start = microtime(true);
-        $request->session()->save();
-        $elapsed = round((microtime(true) - $start) * 1000);
-        Log::info("SESSION SAVE took: {$elapsed}ms");
+        if ($request->hasSession()&& $request->session()->isStarted()) {
+            $start = microtime(true);
+            $request->session()->save();
+            $elapsed = round((microtime(true) - $start) * 1000);
+            Log::info("SESSION SAVE took: {$elapsed}ms");
+        }
 
         Log::info('MIDDLEWARE END: ' . round((microtime(true) - LARAVEL_START) * 1000) . 'ms');
 

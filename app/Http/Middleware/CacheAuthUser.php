@@ -15,15 +15,22 @@ class CacheAuthUser
             $userId = Auth::id();
             $cacheKey = "auth.user.{$userId}";
 
-            // Try to get user from Redis first
             $cachedUser = Cache::get($cacheKey);
 
             if ($cachedUser) {
-                // Swap the auth user with cached version
                 Auth::setUser($cachedUser);
+
+                // Load cached roles into Spatie so it skips the DB query
+                $roles = Cache::get("auth.user.{$userId}.roles");
+                if ($roles) {
+                    $cachedUser->setRelation('roles', $roles);
+                    $cachedUser->setRelation('permissions', 
+                        Cache::get("auth.user.{$userId}.permissions", collect())
+                    );
+                }
             } else {
-                // Not in cache — fetch from DB and store in Redis
-                Cache::put($cacheKey, Auth::user(), now()->addMinutes(30));
+                $user = Auth::user();
+                Cache::put($cacheKey, $user, now()->addMinutes(30));
             }
         }
 

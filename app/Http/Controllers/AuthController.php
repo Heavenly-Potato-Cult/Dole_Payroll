@@ -5,7 +5,7 @@ namespace App\Http\Controllers;
 use App\Jobs\WarmCache;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-
+use Illuminate\Support\Facades\Cache;
 class AuthController extends Controller
 {
     /**
@@ -30,8 +30,15 @@ class AuthController extends Controller
         if (Auth::attempt($credentials, $request->boolean('remember'))) {
             $request->session()->regenerate();
 
+            $user = Auth::user()->load('roles', 'permissions');
+            $userId = $user->id;
+
+            Cache::put("auth.user.{$userId}", $user, now()->addMinutes(30));
+            Cache::put("auth.user.{$userId}.roles", $user->roles, now()->addMinutes(30));
+            Cache::put("auth.user.{$userId}.permissions", $user->permissions, now()->addMinutes(30));
+
             // Dispatch the job to warm up the cache
-            WarmCache::dispatch();
+            WarmCache::dispatch($userId);
 
             return redirect()->intended(route('dashboard'));
         }

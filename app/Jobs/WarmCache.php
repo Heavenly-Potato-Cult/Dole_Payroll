@@ -20,10 +20,10 @@ class WarmCache implements ShouldQueue
 
     protected $userId;
 
-    public function __construct()
+    public function __construct(?int $userId = null)
     {
         // Capture the logged in user ID at dispatch time
-        $this->userId = Auth::id();
+        $this->userId = $userId;
     }
 
     public function handle(): void
@@ -33,9 +33,11 @@ class WarmCache implements ShouldQueue
         app(PermissionRegistrar::class)->getPermissions();
         // Cache the auth user
         if ($this->userId) {
-            $user = User::find($this->userId);
+            $user = User::with('roles', 'permissions')->find($this->userId);
             if ($user) {
                 Cache::put("auth.user.{$this->userId}", $user, now()->addMinutes(30));
+                Cache::put("auth.user.{$this->userId}.roles", $user->roles, now()->addMinutes(30));
+                Cache::put("auth.user.{$this->userId}.permissions", $user->permissions, now()->addMinutes(30));
             }
         }
 

@@ -23,13 +23,11 @@ return Application::configure(basePath: dirname(__DIR__))
             'role_or_permission' => \Spatie\Permission\Middleware\RoleOrPermissionMiddleware::class,
         ]);
 
-        $middleware->web(prepend: [
-        \App\Http\Middleware\TimingMiddleware::class,  
+        $middleware->web(append: [
+            \App\Http\Middleware\TimingMiddleware::class, 
+            \App\Http\Middleware\CacheAuthUser::class, 
         ]);
 
-        $middleware->web(append: [
-        \App\Http\Middleware\CacheAuthUser::class, 
-        ]);
 
     })
     ->withExceptions(function (Exceptions $exceptions) {
