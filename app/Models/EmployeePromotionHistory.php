@@ -7,28 +7,31 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class EmployeePromotionHistory extends Model
 {
+    protected $table = 'employee_promotion_history'; // ← add this
+
     protected $fillable = [
         'employee_id',
-        'effective_date',
-        'old_sg',
-        'old_step',
-        'old_salary',
-        'new_sg',
-        'new_step',
-        'new_salary',
+        'effectivity_date',       // was: effective_date
         'type',
+        'old_salary_grade',       // was: old_sg
+        'old_step',
+        'old_basic_salary',       // was: old_salary
+        'new_salary_grade',       // was: new_sg
+        'new_step',
+        'new_basic_salary',       // was: new_salary
+        'csb_no',
         'remarks',
-        'created_by',
+        'recorded_by',            // was: created_by
     ];
 
     protected $casts = [
-        'effective_date' => 'date',
-        'old_sg'         => 'integer',
-        'old_step'       => 'integer',
-        'old_salary'     => 'decimal:2',
-        'new_sg'         => 'integer',
-        'new_step'       => 'integer',
-        'new_salary'     => 'decimal:2',
+        'effectivity_date' => 'date',
+        'old_salary_grade' => 'integer',
+        'old_step'         => 'integer',
+        'old_basic_salary' => 'decimal:2',
+        'new_salary_grade' => 'integer',
+        'new_step'         => 'integer',
+        'new_basic_salary' => 'decimal:2',
     ];
 
     // ── Type constants ────────────────────────────────────────────

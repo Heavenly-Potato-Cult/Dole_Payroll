@@ -62,10 +62,11 @@ class Employee extends Model
         return $this->belongsTo(Division::class);
     }
 
-    public function promotionHistory(): HasMany
-    {
-        return $this->hasMany(EmployeePromotionHistory::class)->orderByDesc('effective_date');
-    }
+  public function promotionHistory(): HasMany
+{
+    return $this->hasMany(EmployeePromotionHistory::class)
+                ->orderByDesc('effectivity_date'); // was: effective_date
+}
 
     /**
      * Primary relationship name used in views/forms.

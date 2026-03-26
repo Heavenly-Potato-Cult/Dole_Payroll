@@ -19,3 +19,4 @@ yarn-error.log
 /.vscode
 /.laravel_initialized
 certs/
+backups/
