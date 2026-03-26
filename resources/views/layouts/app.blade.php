@@ -6,6 +6,7 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'Dashboard') — DOLE RO9 Payroll</title>
     <link rel="stylesheet" href="{{ asset('css/app.css') }}">
+    @livewireStyles 
     @yield('styles')
 </head>
 <body>
@@ -30,19 +31,19 @@
 
         <nav class="sidebar-nav">
 
-            <a href="{{ route('dashboard') }}"
+            <a href="{{ route('dashboard') }}" wire:navigate
                class="nav-item {{ request()->routeIs('dashboard') ? 'active' : '' }}">
                 <span class="nav-icon">⊞</span> Dashboard
             </a>
 
             @role('payroll_officer|hrmo|accountant|chief_admin_officer')
             <div class="nav-section-label">Employees</div>
-            <a href="{{ route('employees.index') }}"
+            <a href="{{ route('employees.index') }}" wire:navigate
                class="nav-item {{ request()->routeIs('employees.*') ? 'active' : '' }}">
                 <span class="nav-icon">👤</span> Employees
             </a>
             @role('payroll_officer|hrmo')
-            <a href="{{ route('divisions.index') }}"
+            <a href="{{ route('divisions.index') }}" wire:navigate
                class="nav-item {{ request()->routeIs('divisions.*') ? 'active' : '' }}">
                 <span class="nav-icon">🏢</span> Divisions
             </a>
@@ -51,12 +52,12 @@
 
             @role('payroll_officer|hrmo|accountant|ard|cashier|chief_admin_officer')
             <div class="nav-section-label">Payroll</div>
-            <a href="{{ route('payroll.index') }}"
+            <a href="{{ route('payroll.index') }}" wire:navigate
                class="nav-item {{ request()->routeIs('payroll.*') ? 'active' : '' }}">
                 <span class="nav-icon">💰</span> Regular Payroll
             </a>
             @role('payroll_officer|hrmo')
-            <a href="{{ route('special-payroll.index') }}"
+            <a href="{{ route('special-payroll.index') }} " wire:navigate
                class="nav-item {{ request()->routeIs('special-payroll.*') ? 'active' : '' }}">
                 <span class="nav-icon">📋</span> Special Payroll
             </a>
@@ -65,11 +66,11 @@
 
             @role('payroll_officer|hrmo|accountant|budget_officer|ard|cashier|chief_admin_officer')
             <div class="nav-section-label">Travel (TEV)</div>
-            <a href="{{ route('office-orders.index') }}"
+            <a href="{{ route('office-orders.index') }}" wire:navigate
                class="nav-item {{ request()->routeIs('office-orders.*') ? 'active' : '' }}">
                 <span class="nav-icon">📝</span> Office Orders
             </a>
-            <a href="{{ route('tev.index') }}"
+            <a href="{{ route('tev.index') }}" wire:navigate
                class="nav-item {{ request()->routeIs('tev.*') ? 'active' : '' }}">
                 <span class="nav-icon">✈</span> TEV Requests
             </a>
@@ -77,7 +78,7 @@
 
             @role('payroll_officer|hrmo|accountant|budget_officer|chief_admin_officer')
             <div class="nav-section-label">Reports</div>
-            <a href="{{ route('reports.index') }}"
+            <a href="{{ route('reports.index') }}" wire:navigate
                class="nav-item {{ request()->routeIs('reports.*') ? 'active' : '' }}">
                 <span class="nav-icon">📊</span> All Reports
             </a>
@@ -85,7 +86,7 @@
 
             @role('payroll_officer')
             <div class="nav-section-label">Administration</div>
-            <a href="{{ route('users.index') }}"
+            <a href="{{ route('users.index') }}" wire:navigate
                class="nav-item {{ request()->routeIs('users.*') ? 'active' : '' }}">
                 <span class="nav-icon">⚙</span> User Management
             </a>
@@ -182,6 +183,7 @@ document.querySelectorAll('.nav-item').forEach(link => {
     link.addEventListener('click', closeSidebar);
 });
 </script>
+@livewireScripts 
 @yield('scripts')
 
 </body>

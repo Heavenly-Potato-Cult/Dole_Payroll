@@ -17,7 +17,10 @@ RUN apt-get update && apt-get install -y \
     wget \
     sudo \
     default-mysql-client \
-    && docker-php-ext-install pdo_mysql mbstring zip xml curl bcmath opcache
+    libfreetype6-dev \
+    libjpeg62-turbo-dev \
+    && docker-php-ext-configure gd --with-freetype --with-jpeg \
+    && docker-php-ext-install pdo_mysql mbstring zip xml curl bcmath opcache gd
 
  # Install Redis extension
 RUN pecl install redis && docker-php-ext-enable redis
