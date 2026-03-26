@@ -13,6 +13,15 @@ services:
     environment:
       SANCTUM_STATEFUL_DOMAINS: localhost:8000
     command: ["sh", "/var/www/start.sh"]
+    depends_on:
+      - redis
+
+  redis:            
+    image: redis:7-alpine
+    container_name: dole_payroll_redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"  
 
   adminer:
     image: adminer
