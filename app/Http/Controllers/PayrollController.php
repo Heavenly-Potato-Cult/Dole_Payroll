@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\ComputePayrollRequest;
 use App\Models\PayrollBatch;
 use App\Models\PayrollAuditLog;
+use App\Policies\PayrollPolicy;
 use App\Services\PayrollComputationService;
 use App\Services\AttendanceService;
 use Illuminate\Http\Request;
@@ -13,40 +14,45 @@ use Illuminate\Support\Facades\DB;
 
 class PayrollController extends Controller
 {
-    // ── Status transition map ─────────────────────────────────────────────
-    //  Each role may advance the batch to the next status.
-    const APPROVAL_CHAIN = [
-        // current status          => [ role_allowed, next_status, label ]
-        'draft'                    => ['payroll_officer|hrmo',  'pending_accountant',  'Submit for Accountant Review'],
-        'pending_accountant'       => ['accountant',            'pending_rd',          'Certify Funds Available'],
-        'pending_rd'               => ['ard',                   'released',            'Approve & Release'],
-        'released'                 => ['cashier',               'locked',              'Lock (Disbursed)'],
+    // ─────────────────────────────────────────────────────────────────────
+    //  Status labels (for display only — not the transition logic)
+    // ─────────────────────────────────────────────────────────────────────
+    const STATUS_LABELS = [
+        'draft'                => 'Draft',
+        'computed'             => 'Computed',
+        'pending_accountant'   => 'Pending Accountant',
+        'pending_rd'           => 'Pending RD/ARD',
+        'released'             => 'Released',
+        'locked'               => 'Locked',
     ];
 
-    // ── index ─────────────────────────────────────────────────────────────
-    public function index(Request $request)
-    {
-        $query = PayrollBatch::with('creator')
-            ->orderByDesc('period_year')
-            ->orderByDesc('period_month')
-            ->orderByDesc('id');
+    // ─────────────────────────────────────────────────────────────────────
+    //  index
+    // ─────────────────────────────────────────────────────────────────────
+public function index(Request $request)
+{
+    $query = PayrollBatch::with('creator')
+        ->withCount('entries')
+        ->withSum('entries', 'gross_income')
+        ->withSum('entries', 'total_deductions')
+        ->withSum('entries', 'net_amount')
+        ->orderByDesc('period_year')
+        ->orderByDesc('period_month')
+        ->orderByDesc('id');
 
-        if ($request->filled('year')) {
-            $query->where('period_year', $request->year);
-        }
-        if ($request->filled('month')) {
-            $query->where('period_month', $request->month);
-        }
-        if ($request->filled('status')) {
-            $query->where('status', $request->status);
-        }
+    if ($request->filled('year'))   $query->where('period_year',  $request->year);
+    if ($request->filled('month'))  $query->where('period_month', $request->month);
+    if ($request->filled('status')) $query->where('status',       $request->status);
 
-        $batches = $query->paginate(15)->withQueryString();
+    $batches = $query->paginate(15)->withQueryString();
 
-        return view('payroll.index', compact('batches'));
-    }
+    return view('payroll.index', compact('batches'));
+    // statusLabels removed — index.blade.php builds its own map inline
+}
 
-    // ── create (show form) ────────────────────────────────────────────────
+    // ─────────────────────────────────────────────────────────────────────
+    //  create / store
+    // ─────────────────────────────────────────────────────────────────────
     public function create()
     {
         $this->authorizeRole(['payroll_officer', 'hrmo']);
@@ -58,158 +64,216 @@ class PayrollController extends Controller
         return view('payroll.create', compact('currentYear', 'currentMonth', 'years'));
     }
 
-    // ── store (create batch + run computation immediately) ────────────────
-// ── store (create batch + run computation immediately) ────────────────
-public function store(ComputePayrollRequest $request)
-{
-    $year   = (int) $request->period_year;
-    $month  = (int) $request->period_month;
-    $cutoff = $request->cutoff;
+    public function store(ComputePayrollRequest $request)
+    {
+        $year   = (int) $request->period_year;
+        $month  = (int) $request->period_month;
+        $cutoff = $request->cutoff;
 
-    // Prevent duplicate batches
-    $exists = PayrollBatch::where([
-        'period_year'  => $year,
-        'period_month' => $month,
-        'cutoff'       => $cutoff,
-    ])->exists();
+        $exists = PayrollBatch::where([
+            'period_year'  => $year,
+            'period_month' => $month,
+            'cutoff'       => $cutoff,
+        ])->exists();
 
-    if ($exists) {
-        return back()
-            ->withInput()
-            ->with('error', "A {$cutoff} cut-off payroll batch for {$request->periodLabel()} already exists.");
+        if ($exists) {
+            return back()->withInput()
+                ->with('error', "A {$cutoff} cut-off payroll batch for {$request->periodLabel()} already exists.");
+        }
+
+        $periodStart = $cutoff === '1st'
+            ? \Carbon\Carbon::create($year, $month, 1)
+            : \Carbon\Carbon::create($year, $month, 16);
+
+        $periodEnd = $cutoff === '1st'
+            ? \Carbon\Carbon::create($year, $month, 15)
+            : \Carbon\Carbon::create($year, $month)->endOfMonth();
+
+        $batch = PayrollBatch::create([
+            'period_year'  => $year,
+            'period_month' => $month,
+            'cutoff'       => $cutoff,
+            'period_start' => $periodStart->toDateString(),
+            'period_end'   => $periodEnd->toDateString(),
+            'status'       => 'draft',
+            'created_by'   => Auth::id(),
+        ]);
+
+        $this->log($batch, 'created', null, 'draft');
+
+        return redirect()->route('payroll.show', $batch)
+            ->with('success', "Payroll batch created for {$request->periodLabel()}. Click 'Compute' to calculate all entries.");
     }
 
-    // Compute period_start and period_end from year/month/cutoff
-    $periodStart = $cutoff === '1st'
-        ? \Carbon\Carbon::create($year, $month, 1)
-        : \Carbon\Carbon::create($year, $month, 16);
-
-    $periodEnd = $cutoff === '1st'
-        ? \Carbon\Carbon::create($year, $month, 15)
-        : \Carbon\Carbon::create($year, $month)->endOfMonth();
-
-    // Create the batch record
-    $batch = PayrollBatch::create([
-        'period_year'  => $year,
-        'period_month' => $month,
-        'cutoff'       => $cutoff,
-        'period_start' => $periodStart->toDateString(),
-        'period_end'   => $periodEnd->toDateString(),
-        'status'       => 'draft',
-        'created_by'   => Auth::id(),
-    ]);
-
-    // Log creation
-    $this->log($batch, 'created', null, 'draft');
-
-    return redirect()
-        ->route('payroll.show', $batch)
-        ->with('success', "Payroll batch created for {$request->periodLabel()}. Click 'Compute' to calculate all entries.");
-}
-
-    // ── show (batch detail + entries list) ───────────────────────────────
+    // ─────────────────────────────────────────────────────────────────────
+    //  show
+    // ─────────────────────────────────────────────────────────────────────
     public function show(PayrollBatch $payroll)
     {
-        $payroll->load(['entries.employee', 'entries.deductions', 'creator']);
+        $payroll->load(['entries.employee', 'entries.deductions', 'creator', 'auditLogs.user']);
 
-        $entries     = $payroll->entries->sortBy(fn ($e) => $e->employee->last_name);
-        $totalGross  = $payroll->entries->sum('gross_income');
-        $totalDeds   = $payroll->entries->sum('total_deductions');
-        $totalNet    = $payroll->entries->sum('net_amount');
+        $entries       = $payroll->entries->sortBy(fn ($e) => $e->employee->last_name);
+        $totalGross    = $payroll->entries->sum('gross_income');
+        $totalDeds     = $payroll->entries->sum('total_deductions');
+        $totalNet      = $payroll->entries->sum('net_amount');
         $employeeCount = $payroll->entries->count();
-
-        // Determine the next approval action for the current user
-        $nextAction = $this->getNextAction($payroll);
+        $auditLogs     = $payroll->auditLogs->sortByDesc('performed_at');
 
         return view('payroll.show', compact(
             'payroll', 'entries',
             'totalGross', 'totalDeds', 'totalNet', 'employeeCount',
-            'nextAction'
+            'auditLogs'
         ));
     }
 
-    // ── compute (POST — triggers PayrollComputationService for all employees) ──
+    // ─────────────────────────────────────────────────────────────────────
+    //  compute
+    // ─────────────────────────────────────────────────────────────────────
     public function compute(Request $request, PayrollBatch $payroll)
     {
-        $this->authorizeRole(['payroll_officer', 'hrmo']);
-
-        if ($payroll->status === 'locked') {
-            return back()->with('error', 'This payroll batch is locked and cannot be recomputed.');
-        }
+        $this->authorize('compute', $payroll);
 
         /** @var PayrollComputationService $service */
-        $service = app(PayrollComputationService::class);
-
-        // Fetch attendance snapshot from HRIS API (or use empty array for manual)
-        /** @var AttendanceService $attendance */
+        $service       = app(PayrollComputationService::class);
         $attendance    = app(AttendanceService::class);
         $attendanceMap = $attendance->getAttendanceForBatch($payroll);
 
         $result = $service->computeBatch($payroll, $attendanceMap);
 
-        // Update batch status to 'computed' if it was 'draft'
         if ($payroll->status === 'draft') {
             $payroll->update(['status' => 'computed']);
             $this->log($payroll, 'computed', 'draft', 'computed');
         }
 
         $message = "Computation complete: {$result['computed']} employee(s) processed.";
+
         if (!empty($result['errors'])) {
             $errList = implode('; ', $result['errors']);
-            return redirect()
-                ->route('payroll.show', $payroll)
+            return redirect()->route('payroll.show', $payroll)
                 ->with('warning', "{$message} Errors: {$errList}");
         }
 
-        return redirect()
-            ->route('payroll.show', $payroll)
+        return redirect()->route('payroll.show', $payroll)
             ->with('success', $message);
     }
 
-    // ── approve (advance through approval chain) ─────────────────────────
-public function approve(Request $request, PayrollBatch $payroll)
-{
-    // ADD THIS LINE — 'computed' advances the same as 'draft'
-    $currentStatus = $payroll->status === 'computed' ? 'draft' : $payroll->status;
-    
-    $chain = self::APPROVAL_CHAIN[$currentStatus] ?? null;  // ← use $currentStatus, not $payroll->status
+    // ─────────────────────────────────────────────────────────────────────
+    //  submit  — HR → Accountant
+    //  POST /payroll/{payroll}/submit
+    //  draft | computed  →  pending_accountant
+    // ─────────────────────────────────────────────────────────────────────
+    public function submit(Request $request, PayrollBatch $payroll)
+    {
+        $this->authorize('submit', $payroll);
 
-    if (!$chain) {
-        return back()->with('error', 'This batch cannot be advanced from its current status.');
+        $request->validate([
+            'remarks' => ['nullable', 'string', 'max:500'],
+        ]);
+
+        $old = $payroll->status;
+
+        $payroll->update([
+            'status'      => 'pending_accountant',
+            'prepared_at' => now(),
+            'remarks'     => $request->input('remarks'),
+        ]);
+
+        $this->log($payroll, 'Submitted for Accountant Review', $old, 'pending_accountant');
+
+        return redirect()->route('payroll.show', $payroll)
+            ->with('success', 'Payroll batch submitted to the Accountant for review.');
     }
 
-    [$allowedRoles, $nextStatus, $label] = $chain;
+    // ─────────────────────────────────────────────────────────────────────
+    //  certify  — Accountant certifies funds → RD/ARD
+    //  POST /payroll/{payroll}/certify
+    //  pending_accountant  →  pending_rd
+    // ─────────────────────────────────────────────────────────────────────
+    public function certify(Request $request, PayrollBatch $payroll)
+    {
+        $this->authorize('certify', $payroll);
 
-    $roles = explode('|', $allowedRoles);
-    if (!Auth::user()->hasAnyRole($roles)) {
-        abort(403, "Only {$allowedRoles} may perform this action.");
+        $request->validate([
+            'remarks' => ['nullable', 'string', 'max:500'],
+        ]);
+
+        $old = $payroll->status;
+
+        $payroll->update([
+            'status'      => 'pending_rd',
+            'reviewed_by' => Auth::id(),
+            'reviewed_at' => now(),
+            'remarks'     => $request->input('remarks') ?? $payroll->remarks,
+        ]);
+
+        $this->log($payroll, 'Funds Certified — Forwarded to RD/ARD', $old, 'pending_rd');
+
+        return redirect()->route('payroll.show', $payroll)
+            ->with('success', 'Payroll certified. Forwarded to RD/ARD for approval.');
     }
 
-    $old = $payroll->status;
-    $payroll->update([
-        'status'      => $nextStatus,
-        'approved_by' => Auth::id(),
-    ]);
+    // ─────────────────────────────────────────────────────────────────────
+    //  approve  — RD/ARD approves → released
+    //  POST /payroll/{payroll}/approve
+    //  pending_rd  →  released
+    // ─────────────────────────────────────────────────────────────────────
+    public function approve(Request $request, PayrollBatch $payroll)
+    {
+        $this->authorize('approve', $payroll);
 
-    if ($nextStatus === 'released') {
-        $payroll->update(['released_at' => now()]);
+        $request->validate([
+            'remarks' => ['nullable', 'string', 'max:500'],
+        ]);
+
+        $old = $payroll->status;
+
+        $payroll->update([
+            'status'      => 'released',
+            'approved_by' => Auth::id(),
+            'approved_at' => now(),
+            'released_at' => now(),
+            'remarks'     => $request->input('remarks') ?? $payroll->remarks,
+        ]);
+
+        $this->log($payroll, 'Approved & Released by RD/ARD', $old, 'released');
+
+        return redirect()->route('payroll.show', $payroll)
+            ->with('success', 'Payroll approved and released.');
     }
 
-    $this->log($payroll, $label, $old, $nextStatus);
+    // ─────────────────────────────────────────────────────────────────────
+    //  lock  — Cashier locks after disbursement
+    //  POST /payroll/{payroll}/lock
+    //  released  →  locked
+    // ─────────────────────────────────────────────────────────────────────
+    public function lock(Request $request, PayrollBatch $payroll)
+    {
+        $this->authorize('lock', $payroll);
 
-    return redirect()
-        ->route('payroll.show', $payroll)
-        ->with('success', "Payroll batch has been moved to: " . ucfirst(str_replace('_', ' ', $nextStatus)) . ".");
-}
+        $request->validate([
+            'remarks' => ['nullable', 'string', 'max:500'],
+        ]);
 
-    // ── destroy (only drafts) ─────────────────────────────────────────────
+        $old = $payroll->status;
+
+        $payroll->update([
+            'status'      => 'locked',
+            'released_by' => Auth::id(),
+            'remarks'     => $request->input('remarks') ?? $payroll->remarks,
+        ]);
+
+        $this->log($payroll, 'Locked after Disbursement', $old, 'locked');
+
+        return redirect()->route('payroll.show', $payroll)
+            ->with('success', 'Payroll batch locked. Disbursement complete.');
+    }
+
+    // ─────────────────────────────────────────────────────────────────────
+    //  destroy  — delete draft only
+    // ─────────────────────────────────────────────────────────────────────
     public function destroy(PayrollBatch $payroll)
     {
-        $this->authorizeRole(['payroll_officer']);
-
-        if ($payroll->status !== 'draft') {
-            return back()->with('error', 'Only draft batches can be deleted.');
-        }
+        $this->authorize('delete', $payroll);
 
         DB::transaction(function () use ($payroll) {
             foreach ($payroll->entries as $entry) {
@@ -220,38 +284,16 @@ public function approve(Request $request, PayrollBatch $payroll)
             $payroll->delete();
         });
 
-        return redirect()
-            ->route('payroll.index')
+        return redirect()->route('payroll.index')
             ->with('success', 'Draft payroll batch deleted.');
     }
 
-    
-    // ═══════════════════════════════════════════════════════════════════════
+    // ─────────────────────────────────────────────────────────────────────
     //  Private helpers
-    // ═══════════════════════════════════════════════════════════════════════
+    // ─────────────────────────────────────────────────────────────────────
 
     /**
-     * Return the next action array for the current user on this batch, or null.
-     * Shape: [ 'label' => string, 'next_status' => string ]
-     */
-    private function getNextAction(PayrollBatch $batch): ?array
-    {
-        // 'computed' shares the same transition as 'draft'
-        $status = $batch->status === 'computed' ? 'draft' : $batch->status;
-        $chain  = self::APPROVAL_CHAIN[$status] ?? null;
-
-        if (!$chain) return null;
-
-        [$allowedRoles, $nextStatus, $label] = $chain;
-        $roles = explode('|', $allowedRoles);
-
-        if (!Auth::user()->hasAnyRole($roles)) return null;
-
-        return compact('label', 'nextStatus');
-    }
-
-    /**
-     * Quick role gate — abort 403 if user lacks all listed roles.
+     * Quick role gate for actions not yet covered by policy.
      */
     private function authorizeRole(array $roles): void
     {

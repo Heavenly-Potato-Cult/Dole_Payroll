@@ -42,13 +42,11 @@ Route::middleware(['auth'])->group(function () {
     // ── Employees ────────────────────────────────────────────────
     Route::resource('employees', EmployeeController::class);
 
-    // Deductions (managed by dedicated controller)
     Route::get( '/employees/{employee}/deductions',
                 [EmployeeDeductionController::class, 'index'])->name('employees.deductions');
     Route::post('/employees/{employee}/deductions',
                 [EmployeeDeductionController::class, 'update'])->name('employees.deductions.update');
 
-    // Promotion / Step History
     Route::get(   '/employees/{employee}/promotions',
                   [EmployeePromotionController::class, 'index'])->name('employees.promotions.index');
     Route::get(   '/employees/{employee}/promotions/create',
@@ -57,18 +55,21 @@ Route::middleware(['auth'])->group(function () {
                   [EmployeePromotionController::class, 'store'])->name('employees.promotions.store');
     Route::delete('/employees/{employee}/promotions/{promotion}',
                   [EmployeePromotionController::class, 'destroy'])->name('employees.promotions.destroy');
-    Route::get('/payroll/{payrollBatch}/payslip/{entry}',
-           [PayrollEntryController::class, 'payslip'])->name('payroll.payslip');
 
     // ── Divisions ────────────────────────────────────────────────
     Route::resource('divisions', DivisionController::class);
 
     // ── Payroll ──────────────────────────────────────────────────
-Route::resource('payroll', PayrollController::class);
-Route::post('/payroll/{payroll}/compute', [PayrollController::class, 'compute'])->name('payroll.compute');
-Route::post('/payroll/{payroll}/approve', [PayrollController::class, 'approve'])->name('payroll.approve');
-Route::post('/payroll/{payroll}/lock',    [PayrollController::class, 'lock'])->name('payroll.lock');
+    Route::resource('payroll', PayrollController::class);
 
+    // Payroll workflow actions
+    Route::post('/payroll/{payroll}/compute', [PayrollController::class, 'compute'])->name('payroll.compute');
+    Route::post('/payroll/{payroll}/submit',  [PayrollController::class, 'submit']) ->name('payroll.submit');
+    Route::post('/payroll/{payroll}/certify', [PayrollController::class, 'certify'])->name('payroll.certify');
+    Route::post('/payroll/{payroll}/approve', [PayrollController::class, 'approve'])->name('payroll.approve');
+    Route::post('/payroll/{payroll}/lock',    [PayrollController::class, 'lock'])   ->name('payroll.lock');
+
+    // Payroll entries
     Route::get('/payroll/{payrollBatch}/entries',
                [PayrollEntryController::class, 'index'])->name('payroll.entries.index');
     Route::get('/payroll/{payrollBatch}/entries/{entry}',
