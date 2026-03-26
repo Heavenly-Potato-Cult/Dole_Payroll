@@ -35,19 +35,32 @@ done
 echo "MySQL is ready!"
 
 # ---------------------------
-# Run migrations 
+# Run migrations
 # ---------------------------
 echo "Running migrations..."
 php /var/www/artisan migrate --force
 
 # ---------------------------
-#  Seed database if users table is empty
+# Seed database if users table is empty
 # ---------------------------
 USERS_COUNT=$(php /var/www/artisan tinker --execute="echo \App\Models\User::count();")
 if [ "$USERS_COUNT" -eq 0 ]; then
     echo "Seeding database..."
     php /var/www/artisan db:seed --force
 fi
+
+# ---------------------------
+# Clear & warm up caches
+# ---------------------------
+echo "Clearing caches..."
+php /var/www/artisan config:clear
+php /var/www/artisan view:clear
+php /var/www/artisan route:clear
+
+echo "Caching config & routes for performance..."
+php /var/www/artisan config:cache
+php /var/www/artisan route:cache
+php /var/www/artisan view:cache
 
 # ---------------------------
 # Print info at the very end
@@ -63,7 +76,31 @@ echo " Admin account seeded: admin@dole9.gov.ph / Admin@DOLE9!"
 echo " Adminer (DB GUI): http://localhost:8080"
 echo "======================================="
 
+# # ---------------------------
+# # Start Laravel dev server
+# # ---------------------------
+# php /var/www/artisan serve --host=0.0.0.0 --port=8000
+
 # ---------------------------
-# Start Laravel dev server
+# Start queue worker (background jobs)
 # ---------------------------
-php /var/www/artisan serve --host=0.0.0.0 --port=8000
+echo "Starting queue worker..."
+php /var/www/artisan queue:work --daemon --sleep=3 --tries=3 &
+
+# ---------------------------
+# Start scheduler (cache refresh polling)
+# ---------------------------
+echo "Starting scheduler..."
+php /var/www/artisan schedule:work &
+
+# ---------------------------
+# Start PHP-FPM
+# ---------------------------
+echo "Starting PHP-FPM..."
+php-fpm -D
+
+# ---------------------------
+# Start Nginx (foreground — keeps container alive)
+# ---------------------------
+echo "Starting Nginx..."
+nginx -g "daemon off;"
