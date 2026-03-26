@@ -5,7 +5,7 @@
 @section('page-title', 'Employees')
 
 @section('content')
-
+<?php \Log::info('VIEW START: ' . round((microtime(true) - LARAVEL_START) * 1000) . 'ms'); ?>
 <div class="page-header">
     <div class="page-header-left">
         <h1>Employees</h1>
@@ -171,4 +171,5 @@
     @endif
 </div>
 
+<?php \Log::info('VIEW END: ' . round((microtime(true) - LARAVEL_START) * 1000) . 'ms'); ?>
 @endsection

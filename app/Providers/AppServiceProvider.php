@@ -2,23 +2,23 @@
 
 namespace App\Providers;
 
+use App\Auth\CachedUserProvider;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
 {
-    /**
-     * Register any application services.
-     */
-    public function register(): void
-    {
-        //
-    }
-
-    /**
-     * Bootstrap any application services.
-     */
     public function boot(): void
     {
-        //
+        Auth::provider('cached-eloquent', function ($app, array $config) {
+            return new CachedUserProvider($app['hash'], $config['model']);
+        });
+
+        // Log ALL queries with their execution time
+        DB::listen(function ($query) {
+            Log::info('DB QUERY: ' . round($query->time) . 'ms — ' . $query->sql);
+        });
     }
 }

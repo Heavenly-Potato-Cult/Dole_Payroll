@@ -13,15 +13,23 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware) {
 
         // Sanctum stateful middleware — session/cookie auth for Blade web routes
-        $middleware->statefulApi();
+        // $middleware->statefulApi();
 
         // Middleware aliases
-$middleware->alias([
-    'sanctum.web'        => \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
-    'role'               => \Spatie\Permission\Middleware\RoleMiddleware::class,
-    'permission'         => \Spatie\Permission\Middleware\PermissionMiddleware::class,
-    'role_or_permission' => \Spatie\Permission\Middleware\RoleOrPermissionMiddleware::class,
-]);
+        $middleware->alias([
+            'sanctum.web'        => \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
+            'role'               => \Spatie\Permission\Middleware\RoleMiddleware::class,
+            'permission'         => \Spatie\Permission\Middleware\PermissionMiddleware::class,
+            'role_or_permission' => \Spatie\Permission\Middleware\RoleOrPermissionMiddleware::class,
+        ]);
+
+        $middleware->web(prepend: [
+        \App\Http\Middleware\TimingMiddleware::class,  
+        ]);
+
+        $middleware->web(append: [
+        \App\Http\Middleware\CacheAuthUser::class, 
+        ]);
 
     })
     ->withExceptions(function (Exceptions $exceptions) {

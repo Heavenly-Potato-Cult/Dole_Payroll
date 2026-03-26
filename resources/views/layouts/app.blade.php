@@ -6,17 +6,16 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'Dashboard') — DOLE RO9 Payroll</title>
     <link rel="stylesheet" href="{{ asset('css/app.css') }}">
-    @livewireStyles 
+    @livewireStyles
     @yield('styles')
 </head>
 <body>
+<?php $userRole = auth()->user()->getRoleNames()->first() ?? ''; ?>
 
 <div class="app-shell">
 
-    {{-- Mobile overlay (tap to close sidebar) --}}
     <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
 
-    {{-- ═══ SIDEBAR ═══ --}}
     <aside class="sidebar" id="sidebar">
 
         <div class="sidebar-brand">
@@ -57,7 +56,7 @@
                 <span class="nav-icon">💰</span> Regular Payroll
             </a>
             @role('payroll_officer|hrmo')
-            <a href="{{ route('special-payroll.index') }} " wire:navigate
+            <a href="{{ route('special-payroll.index') }}" wire:navigate
                class="nav-item {{ request()->routeIs('special-payroll.*') ? 'active' : '' }}">
                 <span class="nav-icon">📋</span> Special Payroll
             </a>
@@ -101,7 +100,7 @@
                 </div>
                 <div class="sidebar-user-info">
                     <strong>{{ auth()->user()->name }}</strong>
-                    <span>{{ auth()->user()->getRoleNames()->first() ?? 'No Role' }}</span>
+                    <span>{{ $userRole ?: 'No Role' }}</span>
                 </div>
             </div>
             <form method="POST" action="{{ route('logout') }}">
@@ -112,12 +111,10 @@
 
     </aside>
 
-    {{-- ═══ MAIN AREA ═══ --}}
     <div class="main-content">
 
         <header class="topbar">
             <div class="topbar-left">
-                {{-- Burger button — mobile only --}}
                 <button class="burger-btn" onclick="openSidebar()" aria-label="Open menu">
                     <span></span>
                     <span></span>
@@ -128,9 +125,7 @@
             <div class="topbar-right">
                 <div class="topbar-user">
                     <span>{{ auth()->user()->name }}</span>
-                    <span class="role-badge">
-                        {{ str_replace('_', ' ', auth()->user()->getRoleNames()->first() ?? '') }}
-                    </span>
+                    <span class="role-badge">{{ str_replace('_', ' ', $userRole) }}</span>
                 </div>
             </div>
         </header>
@@ -178,12 +173,11 @@ function closeSidebar() {
     document.getElementById('sidebarOverlay').classList.remove('show');
     document.body.style.overflow = '';
 }
-// Close sidebar on nav link click (mobile)
 document.querySelectorAll('.nav-item').forEach(link => {
     link.addEventListener('click', closeSidebar);
 });
 </script>
-@livewireScripts 
+@livewireScripts
 @yield('scripts')
 
 </body>
