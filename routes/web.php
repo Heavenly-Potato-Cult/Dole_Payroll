@@ -27,6 +27,7 @@ Route::get('/', fn() => redirect()->route('login'));
 Route::get('/login',  [AuthController::class, 'showLogin'])->name('login')->middleware('guest');
 Route::post('/login', [AuthController::class, 'login'])->name('login.post')->middleware('guest');
 
+
 /*
 |--------------------------------------------------------------------------
 | Protected Routes — Requires session auth
@@ -68,6 +69,8 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/payroll/{payroll}/certify', [PayrollController::class, 'certify'])->name('payroll.certify');
     Route::post('/payroll/{payroll}/approve', [PayrollController::class, 'approve'])->name('payroll.approve');
     Route::post('/payroll/{payroll}/lock',    [PayrollController::class, 'lock'])   ->name('payroll.lock');
+    Route::get( '/payroll/{payroll}/verify',     [PayrollController::class, 'verify'])   ->name('payroll.verify');
+Route::post('/payroll/{payroll}/force-edit', [PayrollController::class, 'forceEdit'])->name('payroll.forceEdit');
 
     // Payroll entries
     Route::get('/payroll/{payrollBatch}/entries',
@@ -80,9 +83,31 @@ Route::middleware(['auth'])->group(function () {
                [PayrollEntryController::class, 'payslip'])->name('payroll.payslip');
 
     // ── Special Payroll ──────────────────────────────────────────
-    Route::resource('special-payroll', SpecialPayrollController::class);
-    Route::post('/special-payroll/{specialPayrollBatch}/approve',
-                [SpecialPayrollController::class, 'approve'])->name('special-payroll.approve');
+    Route::get( '/special-payroll/newly-hired',
+            [SpecialPayrollController::class, 'newHireIndex'])
+    ->name('special-payroll.newly-hired.index');
+ 
+Route::get( '/special-payroll/newly-hired/create',
+            [SpecialPayrollController::class, 'newHireCreate'])
+    ->name('special-payroll.newly-hired.create');
+ 
+Route::post('/special-payroll/newly-hired',
+            [SpecialPayrollController::class, 'newHireStore'])
+    ->name('special-payroll.newly-hired.store');
+ 
+Route::get( '/special-payroll/newly-hired/{id}',
+            [SpecialPayrollController::class, 'newHireShow'])
+    ->name('special-payroll.newly-hired.show');
+ 
+Route::post('/special-payroll/newly-hired/{id}/approve',
+            [SpecialPayrollController::class, 'newHireApprove'])
+    ->name('special-payroll.newly-hired.approve');
+
+    Route::delete('/special-payroll/newly-hired/{id}',
+    [SpecialPayrollController::class, 'newHireDestroy'])
+    ->name('special-payroll.newly-hired.destroy');
+
+
 
     // ── Office Orders ────────────────────────────────────────────
     Route::resource('office-orders', OfficeOrderController::class);

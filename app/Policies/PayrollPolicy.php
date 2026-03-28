@@ -143,4 +143,7 @@ class PayrollPolicy
         return $user->hasRole('payroll_officer')
             && $batch->status === 'locked';
     }
+
+
+    
 }

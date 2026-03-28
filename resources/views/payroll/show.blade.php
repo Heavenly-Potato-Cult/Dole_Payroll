@@ -265,12 +265,18 @@
                 </button>
             </form>
         @endif
-
-        {{-- Payroll Register PDF --}}
+ {{-- Payroll Register PDF --}}
         @if ($isComputed)
             <a href="{{ route('reports.payroll-register', ['batch_id' => $payroll->id]) }}"
                class="btn btn-outline btn-sm" target="_blank">
                 📄 Payroll Register PDF
+            </a>
+        @endif
+ 
+        {{-- Verify Net Pay — visible when released OR user is cashier --}}
+        @if ($payroll->status === 'released' || auth()->user()->hasRole('cashier'))
+            <a href="{{ route('payroll.verify', $payroll) }}" class="btn btn-outline btn-sm">
+                📋 Verify Net Pay
             </a>
         @endif
     </div>
