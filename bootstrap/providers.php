@@ -2,5 +2,5 @@
 
 return [
     App\Providers\AppServiceProvider::class,
-    Spatie\Permission\PermissionServiceProvider::class,  // ← was Spatie\LaravelPermission\...
+    Spatie\Permission\PermissionServiceProvider::class,
 ];
