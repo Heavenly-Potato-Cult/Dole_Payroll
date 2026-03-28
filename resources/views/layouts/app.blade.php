@@ -56,7 +56,7 @@
                 <span class="nav-icon">💰</span> Regular Payroll
             </a>
             @role('payroll_officer|hrmo')
-            <a href="{{ route('special-payroll.index') }}" wire:navigate
+            <a href="{{ route('special-payroll.newly-hired.index') }}"
                class="nav-item {{ request()->routeIs('special-payroll.*') ? 'active' : '' }}">
                 <span class="nav-icon">📋</span> Special Payroll
             </a>

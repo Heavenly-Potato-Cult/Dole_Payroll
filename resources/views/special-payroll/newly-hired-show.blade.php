@@ -1,0 +1,496 @@
+{{-- resources/views/special-payroll/newly-hired-show.blade.php --}}
+{{--
+    Expects from SpecialPayrollController@newHireShow:
+      $batch    — SpecialPayrollBatch (type=newly_hired, with employee, approver)
+      $employee — Employee model
+      $result   — array from NewlyHiredPayrollService::compute()
+--}}
+
+@extends('layouts.app')
+
+@section('title', 'Pro-Rated Payroll — ' . optional($employee)->last_name)
+@section('page-title', 'Special Payroll')
+
+@section('styles')
+<style>
+/* ── Approval bar (mirrors payroll/_approval_bar styles) ── */
+.approval-bar {
+    display: flex;
+    align-items: stretch;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    box-shadow: var(--shadow);
+    margin-bottom: 24px;
+}
+.approval-step {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 18px;
+    font-size: 0.80rem;
+    font-weight: 600;
+    color: var(--text-light);
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    transition: background 0.2s;
+}
+.approval-step:last-child { border-right: none; }
+.approval-step.done   { background: #F1FAF5; color: #1B6B3A; }
+.approval-step.active { background: #EEF1FA; color: var(--navy); }
+.approval-step.released-step { background: var(--navy); color: #ffffff; }
+.approval-step-dot {
+    width: 30px; height: 30px;
+    border-radius: 50%;
+    border: 2px solid currentColor;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.9rem; font-weight: 700; flex-shrink: 0;
+    background: #ffffff; color: inherit;
+}
+.approval-step.done .approval-step-dot     { background: #2E7D52; border-color: #2E7D52; color: #fff; }
+.approval-step.active .approval-step-dot   { background: var(--navy); border-color: var(--navy); color: #fff; }
+.approval-step.released-step .approval-step-dot { background: rgba(255,255,255,.15); border-color: rgba(255,255,255,.6); color: #fff; }
+.approval-step-label { line-height: 1.3; min-width: 0; }
+.approval-step-label small {
+    display: block; font-weight: 400; font-size: 0.70rem;
+    opacity: 0.72; margin-top: 2px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
+/* ── Payroll document header ── */
+.doc-header {
+    text-align: center;
+    padding: 8px 0 20px;
+    border-bottom: 2px solid var(--navy);
+    margin-bottom: 20px;
+}
+.doc-header h2 {
+    font-size: 1rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.04em;
+    color: var(--navy); margin: 0 0 4px;
+}
+.doc-header p { font-size: 0.82rem; color: var(--text-mid); margin: 0; }
+
+/* ── Meta grid ── */
+.doc-meta {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 10px 24px;
+    margin-bottom: 20px;
+    font-size: 0.85rem;
+}
+.doc-meta-item { display: flex; flex-direction: column; gap: 2px; }
+.doc-meta-item .label {
+    font-size: 0.70rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-light);
+}
+.doc-meta-item .value { font-weight: 600; color: var(--text); }
+
+/* ── Computation table ── */
+.comp-wrap { overflow-x: auto; margin-bottom: 20px; }
+.comp-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; white-space: nowrap; }
+.comp-table thead th {
+    background: var(--navy); color: white;
+    padding: 8px 12px; text-align: left;
+    font-size: 0.73rem; font-weight: 600; letter-spacing: 0.03em;
+}
+.comp-table thead th.text-right { text-align: right; }
+.comp-table tbody td { padding: 10px 12px; border-bottom: 1px solid var(--border); }
+.comp-table tbody td.text-right { text-align: right; }
+.comp-table tfoot td {
+    padding: 10px 12px; font-weight: 700; font-size: 0.86rem;
+    background: var(--navy); color: white;
+}
+.comp-table tfoot td.text-right { text-align: right; }
+.comp-table tfoot td.gold-text   { color: var(--gold); }
+.comp-table tfoot td.green-text  { color: #69F0AE; }
+.comp-table tfoot td.red-text    { color: #FF8A80; }
+
+/* ── Govt share note ── */
+.govtshare-note {
+    background: #FAFBFF; border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 12px 16px;
+    font-size: 0.80rem; color: var(--text-mid); margin-bottom: 20px;
+}
+
+/* ── Certification blocks ── */
+.cert-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 28px;
+}
+.cert-block {
+    border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 16px 20px 22px;
+}
+.cert-block-tag {
+    font-size: 0.70rem; font-weight: 700; letter-spacing: 0.06em;
+    text-transform: uppercase; color: var(--text-light); margin-bottom: 4px;
+}
+.cert-block-title { font-weight: 600; font-size: 0.83rem; color: var(--navy); margin-bottom: 20px; }
+.cert-sig-line { border-bottom: 1px solid var(--text-mid); margin-bottom: 6px; width: 80%; }
+.cert-sig-name { font-weight: 700; font-size: 0.85rem; }
+.cert-sig-role { font-size: 0.75rem; color: var(--text-light); }
+.cert-date     { font-size: 0.78rem; color: var(--text-mid); margin-top: 8px; }
+
+/* ── Print ── */
+@media print {
+    .no-print { display: none !important; }
+    .card { box-shadow: none !important; border: 1px solid #ccc !important; }
+    .approval-bar { display: none !important; }
+    .cert-grid { page-break-inside: avoid; }
+    .comp-table { font-size: 9pt; }
+    .doc-header h2 { font-size: 12pt; }
+    body { font-size: 10pt; }
+    @page { margin: 1.5cm 1.2cm; }
+}
+</style>
+@endsection
+
+@section('content')
+
+@php
+    $statusClass = match ($batch->status) {
+        'approved' => 'badge-released',
+        'released' => 'badge-locked',
+        default    => 'badge-draft',
+    };
+    $statusLabel = match ($batch->status) {
+        'draft'    => 'Draft',
+        'approved' => 'Approved',
+        'released' => 'Released',
+        default    => ucfirst($batch->status),
+    };
+
+    $periodLabel      = $batch->period_start->format('M d') . '–' . $batch->period_end->format('d, Y');
+    $effectivityFmt   = $batch->effectivity_date->format('M d, Y');
+
+    $canApprove = auth()->user()->hasRole('accountant')
+               && $batch->status === 'draft';
+    $canRelease = auth()->user()->hasAnyRole(['ard', 'chief_admin_officer'])
+               && $batch->status === 'approved';
+
+    // Build approval step state (3-step: Draft → Approved → Released)
+    $spSteps = [
+        ['label' => 'HR Prepared',  'sub' => 'Payroll Officer / HRMO', 'icon' => '✏'],
+        ['label' => 'Accountant',   'sub' => 'Certify Funds',           'icon' => '💼'],
+        ['label' => 'RD / ARD',     'sub' => 'Released',                'icon' => '🏛'],
+    ];
+    $spActiveStep = match ($batch->status) {
+        'draft'    => 0,
+        'approved' => 1,
+        'released' => 2,
+        default    => 0,
+    };
+@endphp
+
+{{-- ═══════════════ PAGE HEADER ═══════════════ --}}
+<div class="page-header no-print">
+    <div class="page-header-left">
+        <h1>Pro-Rated Payroll</h1>
+        <p>
+            {{ optional($employee)->last_name }}, {{ optional($employee)->first_name }} ·
+            {{ $periodLabel }} ·
+            <span class="badge {{ $statusClass }}">{{ $statusLabel }}</span>
+        </p>
+    </div>
+    <div class="d-flex gap-2 flex-wrap">
+        <a href="{{ route('special-payroll.newly-hired.index') }}"
+           class="btn btn-outline btn-sm no-print">← All Records</a>
+
+        <button onclick="window.print()" class="btn btn-outline btn-sm no-print">
+            🖨 Print
+        </button>
+
+        @if ($canApprove)
+            <form method="POST"
+                  action="{{ route('special-payroll.newly-hired.approve', $batch->id) }}"
+                  onsubmit="return confirm('Approve this pro-rated payroll record?')">
+                @csrf
+                <button type="submit" class="btn btn-gold btn-sm no-print">
+                    ✔ Approve
+                </button>
+            </form>
+        @endif
+
+        @if ($canRelease)
+            <form method="POST"
+                  action="{{ route('special-payroll.newly-hired.approve', $batch->id) }}"
+                  onsubmit="return confirm('Release this payroll record for disbursement?')">
+                @csrf
+                <button type="submit" class="btn btn-primary btn-sm no-print">
+                    ✔ Release
+                </button>
+            </form>
+        @endif
+    </div>
+</div>
+
+{{-- Alerts --}}
+@if (session('success'))
+    <div class="alert alert-success no-print">{{ session('success') }}</div>
+@endif
+@if (session('error'))
+    <div class="alert alert-error no-print">{{ session('error') }}</div>
+@endif
+
+{{-- ═══════════════ APPROVAL STEP BAR ═══════════════ --}}
+<div class="approval-bar no-print">
+    @foreach ($spSteps as $i => $step)
+        @php
+            if ($i < $spActiveStep) {
+                $cls = 'done';
+                $dot = '✓';
+            } elseif ($i === $spActiveStep) {
+                $cls = ($batch->status === 'released') ? 'released-step' : 'active';
+                $dot = $step['icon'];
+            } else {
+                $cls = '';
+                $dot = $step['icon'];
+            }
+        @endphp
+        <div class="approval-step {{ $cls }}">
+            <div class="approval-step-dot">{{ $dot }}</div>
+            <div class="approval-step-label">
+                {{ $step['label'] }}
+                <small>{{ $step['sub'] }}</small>
+            </div>
+        </div>
+    @endforeach
+</div>
+
+{{-- ═══════════════ PRINTABLE DOCUMENT ═══════════════ --}}
+<div class="card">
+    <div class="card-body">
+
+        {{-- DOLE document header --}}
+        <div class="doc-header">
+            <h2>General Payroll</h2>
+            <p>Department of Labor and Employment — Regional Office IX, Zamboanga City</p>
+            <p style="font-weight:700; font-size:0.90rem; color:var(--navy); margin-top:6px;">
+                PRO-RATED PAYROLL FOR NEWLY HIRED / TRANSFEREE EMPLOYEE
+            </p>
+            <p style="margin-top:4px;">For the Period of {{ $periodLabel }}</p>
+        </div>
+
+        <p style="font-size:0.78rem; color:var(--text-mid); font-style:italic; margin-bottom:18px;">
+            I acknowledge receipt of cash shown opposite my name as full compensation
+            for services rendered for the period covered.
+        </p>
+
+        {{-- Meta summary --}}
+        <div class="doc-meta">
+            <div class="doc-meta-item">
+                <span class="label">Employee Name</span>
+                <span class="value">
+                    {{ $employee->last_name }}, {{ $employee->first_name }}
+                    @if ($employee->middle_name) {{ substr($employee->middle_name, 0, 1) }}. @endif
+                </span>
+            </div>
+            <div class="doc-meta-item">
+                <span class="label">Position</span>
+                <span class="value">{{ $employee->position_title ?? '—' }}</span>
+            </div>
+            <div class="doc-meta-item">
+                <span class="label">Plantilla Item No.</span>
+                <span class="value">{{ $employee->plantilla_item_no ?? '—' }}</span>
+            </div>
+            <div class="doc-meta-item">
+                <span class="label">Effectivity Date</span>
+                <span class="value">{{ $effectivityFmt }}</span>
+            </div>
+            <div class="doc-meta-item">
+                <span class="label">Period Covered</span>
+                <span class="value">{{ $periodLabel }}</span>
+            </div>
+            <div class="doc-meta-item">
+                <span class="label">Working Days</span>
+                <span class="value">{{ $result['working_days'] }} of 22</span>
+            </div>
+        </div>
+
+        {{-- Computation table --}}
+        <div class="comp-wrap">
+            <table class="comp-table">
+                <thead>
+                    <tr>
+                        <th style="width:32px;">#</th>
+                        <th>Name</th>
+                        <th>Position</th>
+                        <th>Effectivity Date</th>
+                        <th class="text-right">Basic Salary</th>
+                        <th class="text-right">Salary Earned</th>
+                        <th class="text-right">PERA Allowance</th>
+                        <th class="text-right">PERA Earned</th>
+                        <th class="text-right">Total Earned</th>
+                        <th class="text-right">GSIS PS</th>
+                        <th class="text-right">PHIC</th>
+                        <th class="text-right">Pag-IBIG</th>
+                        <th class="text-right">WHT</th>
+                        <th class="text-right">Total Deductions</th>
+                        <th class="text-right">Net Amount</th>
+                        <th style="min-width:90px; text-align:center;">Signature</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td style="color:var(--text-light);">1</td>
+                        <td class="fw-bold">
+                            {{ $employee->last_name }}, {{ $employee->first_name }}
+                            @if ($employee->middle_name) {{ substr($employee->middle_name, 0, 1) }}. @endif
+                        </td>
+                        <td class="text-muted">{{ $employee->position_title ?? '—' }}</td>
+                        <td>{{ $effectivityFmt }}</td>
+                        <td class="text-right">₱{{ number_format($result['basic_salary'],    2) }}</td>
+                        <td class="text-right">₱{{ number_format($result['salary_earned'],   2) }}</td>
+                        <td class="text-right">₱{{ number_format($result['pera'],            2) }}</td>
+                        <td class="text-right">₱{{ number_format($result['pera_earned'],     2) }}</td>
+                        <td class="text-right fw-bold">
+                            ₱{{ number_format($result['net_earned'], 2) }}
+                        </td>
+                        <td class="text-right" style="color:#B71C1C;">
+                            ₱{{ number_format($result['gsis_ps'], 2) }}
+                        </td>
+                        <td class="text-right text-muted">
+                            ₱{{ number_format($result['phic'],   2) }}
+                        </td>
+                        <td class="text-right text-muted">
+                            ₱{{ number_format($result['pagibig'], 2) }}
+                        </td>
+                        <td class="text-right text-muted">
+                            ₱{{ number_format($result['wht'],    2) }}
+                        </td>
+                        <td class="text-right fw-bold" style="color:#B71C1C;">
+                            ₱{{ number_format($result['total_deductions'], 2) }}
+                        </td>
+                        <td class="text-right fw-bold" style="color:#1B5E20; font-size:0.90rem;">
+                            ₱{{ number_format($result['net_amount'], 2) }}
+                        </td>
+                        <td style="text-align:center; border-bottom:1px solid var(--text-mid);">&nbsp;</td>
+                    </tr>
+                </tbody>
+                <tfoot>
+                    <tr>
+                        <td colspan="4" style="color:rgba(255,255,255,0.6); font-size:0.78rem;">
+                            TOTALS — 1 employee
+                        </td>
+                        <td class="text-right">₱{{ number_format($result['basic_salary'],    2) }}</td>
+                        <td class="text-right gold-text">₱{{ number_format($result['salary_earned'],   2) }}</td>
+                        <td class="text-right">₱{{ number_format($result['pera'],            2) }}</td>
+                        <td class="text-right gold-text">₱{{ number_format($result['pera_earned'],     2) }}</td>
+                        <td class="text-right gold-text">₱{{ number_format($result['net_earned'],      2) }}</td>
+                        <td class="text-right red-text">₱{{ number_format($result['gsis_ps'],         2) }}</td>
+                        <td class="text-right">₱{{ number_format($result['phic'],   2) }}</td>
+                        <td class="text-right">₱{{ number_format($result['pagibig'], 2) }}</td>
+                        <td class="text-right">₱{{ number_format($result['wht'],    2) }}</td>
+                        <td class="text-right red-text">₱{{ number_format($result['total_deductions'], 2) }}</td>
+                        <td class="text-right green-text" style="font-size:0.95rem;">
+                            ₱{{ number_format($result['net_amount'], 2) }}
+                        </td>
+                        <td></td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+
+        {{-- Government shares note --}}
+        <div class="govtshare-note">
+            <strong style="color:var(--navy);">Government Shares</strong>
+            (remitted separately — not deducted from employee's net pay):
+            &emsp; GSIS GS: <strong>₱{{ number_format($result['gsis_gs'],  2) }}</strong>
+            &emsp;|&emsp; PhilHealth GS: <strong>₱{{ number_format($result['phic_gs'], 2) }}</strong>
+            &emsp;|&emsp; Pag-IBIG GS: <strong>₱{{ number_format($result['hdmf_gs'],  2) }}</strong>
+        </div>
+
+        {{-- Amount in words / ALOBS area --}}
+        <div class="d-flex" style="justify-content:space-between; align-items:flex-end;
+             font-size:0.82rem; color:var(--text-mid); margin-bottom:28px;">
+            <div></div>
+            <div style="text-align:right;">
+                <span style="font-weight:700; color:var(--navy);">=P=</span>
+                &nbsp; ₱{{ number_format($result['net_amount'], 2) }}
+                &emsp; ALOBS No.: ______________
+                &emsp; Date: ______________
+            </div>
+        </div>
+
+        {{-- ═══════════════ CERTIFICATION BLOCKS ═══════════════ --}}
+        <div class="cert-grid">
+
+            {{-- [ A ] HR / HRMO --}}
+            <div class="cert-block">
+                <div class="cert-block-tag">[ A ]</div>
+                <div class="cert-block-title">
+                    Certified: Services duly rendered as stated.
+                </div>
+                <div class="cert-sig-line"></div>
+                <div class="cert-sig-name">________________________________</div>
+                <div class="cert-sig-role">Administrative Officer V / HRMO Designate</div>
+                <div class="cert-sig-role">Authorized Official</div>
+                <div class="cert-date">Date: ________________________</div>
+            </div>
+
+            {{-- [ B ] Accountant --}}
+            <div class="cert-block">
+                <div class="cert-block-tag">[ B ]</div>
+                <div class="cert-block-title">
+                    Certified: Funds available, cash available, supporting documents complete and proper.
+                </div>
+                <div class="cert-sig-line"></div>
+                @if ($batch->approver && $batch->status !== 'draft')
+                    <div class="cert-sig-name">{{ $batch->approver->name }}</div>
+                    <div class="cert-sig-role">Accountant</div>
+                    <div class="cert-date">
+                        Date:
+                        {{ $batch->approved_at ? \Carbon\Carbon::parse($batch->approved_at)->format('M d, Y') : '________________________' }}
+                    </div>
+                @else
+                    <div class="cert-sig-name">________________________________</div>
+                    <div class="cert-sig-role">Accountant</div>
+                    <div class="cert-date">Date: ________________________</div>
+                @endif
+            </div>
+
+            {{-- [ C ] Regional Director --}}
+            <div class="cert-block">
+                <div class="cert-block-tag">[ C ]</div>
+                <div class="cert-block-title">Approved for Payment:</div>
+                <div style="font-size:0.82rem; color:var(--text-mid); margin-bottom:14px;">
+                    <strong>=P=</strong> ₱{{ number_format($result['net_amount'], 2) }}
+                    &emsp; JEV No.: ______________
+                </div>
+                <div class="cert-sig-line"></div>
+                <div class="cert-sig-name">________________________________</div>
+                <div class="cert-sig-role">Regional Director / ARD</div>
+                <div class="cert-sig-role">Head of Agency / Authorized Representative</div>
+                <div class="cert-date">Date: ________________________</div>
+            </div>
+
+            {{-- [ D ] Cashier --}}
+            <div class="cert-block">
+                <div class="cert-block-tag">[ D ]</div>
+                <div class="cert-block-title">
+                    Certified: Each employee whose name appears above has been paid
+                    the amount indicated opposite his/her name.
+                </div>
+                <div class="cert-sig-line"></div>
+                <div class="cert-sig-name">________________________________</div>
+                <div class="cert-sig-role">AO V / Cashier</div>
+                <div class="cert-date">Date: ________________________</div>
+            </div>
+
+        </div>
+
+        @if ($batch->remarks)
+        <div style="margin-top:20px; padding:12px 16px; background:#FAFBFF;
+                    border:1px solid var(--border); border-radius:var(--radius);
+                    font-size:0.83rem;" class="no-print">
+            <strong style="color:var(--navy);">Remarks:</strong>
+            {{ $batch->remarks }}
+        </div>
+        @endif
+
+    </div>
+</div>
+
+@endsection

@@ -1,3 +1,12 @@
+{{-- resources/views/payroll/show.blade.php --}}
+{{--
+    Expects from PayrollController@show:
+      $payroll        — PayrollBatch (with entries.employee, entries.deductions, creator, auditLogs.user)
+      $entries        — sorted collection
+      $totalGross, $totalDeds, $totalNet, $employeeCount
+      $auditLogs
+--}}
+
 @extends('layouts.app')
 
 @section('title', 'Payroll Batch Detail')
@@ -5,64 +14,92 @@
 
 @section('styles')
 <style>
-/* ── Approval stage bar ──────────────────────────────────── */
+/* ══════════════════════════════════════════════════
+   APPROVAL STAGE BAR - HORIZONTAL TIMELINE STYLE
+══════════════════════════════════════════════════ */
 .approval-bar {
     display: flex;
-    align-items: center;
-    gap: 0;
-    margin-bottom: 24px;
+    align-items: stretch;
     background: var(--surface);
     border: 1px solid var(--border);
     border-radius: var(--radius);
     overflow: hidden;
     box-shadow: var(--shadow);
+    margin-bottom: 24px;
 }
 .approval-step {
     flex: 1;
     display: flex;
     align-items: center;
     gap: 10px;
-    padding: 12px 18px;
+    padding: 14px 18px;
     font-size: 0.80rem;
     font-weight: 600;
     color: var(--text-light);
     background: var(--surface);
-    position: relative;
-    transition: background 0.2s;
     border-right: 1px solid var(--border);
+    transition: background 0.2s;
 }
-.approval-step:last-child { border-right: none; }
+.approval-step:last-child {
+    border-right: none;
+}
 .approval-step.done {
-    background: var(--success-bg);
-    color: var(--success);
+    background: #F1FAF5;
+    color: #1B6B3A;
 }
 .approval-step.active {
-    background: var(--navy-light);
+    background: #EEF1FA;
     color: var(--navy);
 }
 .approval-step.locked {
     background: var(--navy);
-    color: white;
+    color: #ffffff;
 }
 .approval-step-dot {
-    width: 22px;
-    height: 22px;
+    width: 30px;
+    height: 30px;
     border-radius: 50%;
     border: 2px solid currentColor;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 0.70rem;
+    font-size: 0.9rem;
+    font-weight: 700;
     flex-shrink: 0;
-    background: white;
+    background: #ffffff;
+    color: inherit;
 }
-.approval-step.done   .approval-step-dot { background: var(--success); border-color: var(--success); color: white; }
-.approval-step.active .approval-step-dot { background: var(--navy); border-color: var(--navy); color: white; }
-.approval-step.locked .approval-step-dot { background: white; border-color: white; color: var(--navy); }
-.approval-step-label { line-height: 1.2; }
-.approval-step-label small { display: block; font-weight: 400; font-size: 0.72rem; opacity: 0.7; margin-top: 1px; }
+.approval-step.done .approval-step-dot {
+    background: #2E7D52;
+    border-color: #2E7D52;
+    color: #ffffff;
+}
+.approval-step.active .approval-step-dot {
+    background: var(--navy);
+    border-color: var(--navy);
+    color: #ffffff;
+}
+.approval-step.locked .approval-step-dot {
+    background: rgba(255,255,255,0.15);
+    border-color: rgba(255,255,255,0.6);
+    color: #ffffff;
+}
+.approval-step-label {
+    line-height: 1.3;
+    min-width: 0;
+}
+.approval-step-label small {
+    display: block;
+    font-weight: 400;
+    font-size: 0.70rem;
+    opacity: 0.72;
+    margin-top: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
 
-/* ── Deduction expansion panel ───────────────────────────── */
+/* ── Deduction expansion panel ── */
 .ded-toggle {
     background: none;
     border: 1px solid var(--border);
@@ -74,12 +111,7 @@
     white-space: nowrap;
 }
 .ded-toggle:hover { background: var(--navy-light); }
-.ded-panel {
-    display: none;
-    background: var(--bg);
-    border-top: 1px solid var(--border);
-    padding: 10px 14px;
-}
+.ded-panel { display: none; background: var(--bg); border-top: 1px solid var(--border); padding: 10px 14px; }
 .ded-panel.open { display: block; }
 .ded-grid {
     display: grid;
@@ -95,15 +127,7 @@
     color: var(--text-mid);
 }
 .ded-row span:last-child { font-weight: 600; color: var(--text); }
-
-/* ── Summary footer emphasis ─────────────────────────────── */
-.tfoot-totals td {
-    padding: 12px 14px;
-    font-weight: 700;
-    font-size: 0.88rem;
-}
-
-/* ── Net pay warning ─────────────────────────────────────── */
+.tfoot-totals td { padding: 12px 14px; font-weight: 700; font-size: 0.88rem; }
 .net-warn { background: #FFF8E1 !important; }
 .net-warn-badge {
     display: inline-block;
@@ -116,35 +140,29 @@
     font-weight: 700;
     letter-spacing: 0.03em;
 }
-
-/* ── Mobile scroll hint ──────────────────────────────────── */
-.scroll-hint {
-    font-size: 0.75rem;
-    color: var(--text-light);
-    padding: 6px 14px 0;
-}
-
-/* ── Empty state ─────────────────────────────────────────── */
-.empty-state {
-    text-align: center;
-    padding: 60px 20px;
-    color: var(--text-light);
-}
+.scroll-hint { font-size: 0.75rem; color: var(--text-light); padding: 6px 14px 0; }
+.empty-state { text-align: center; padding: 60px 20px; color: var(--text-light); }
 .empty-state-icon { font-size: 2.5rem; margin-bottom: 12px; }
-.empty-state h3   { color: var(--text-mid); margin-bottom: 8px; }
+.empty-state h3 { color: var(--text-mid); margin-bottom: 8px; }
+
+/* ── Audit log ── */
+.audit-table td { font-size: 0.80rem; vertical-align: top; }
+.audit-arrow { color: var(--text-light); margin: 0 4px; }
 </style>
 @endsection
 
 @section('content')
 
 @php
-    $months = ['','January','February','March','April','May','June',
-               'July','August','September','October','November','December'];
-    $periodLabel = ($months[$payroll->period_month] ?? '?') . ' ' .
-                   ($payroll->cutoff === '1st' ? '1–15' : '16–30/31') .
-                   ', ' . $payroll->period_year;
+    $months = [
+        '', 'January', 'February', 'March', 'April', 'May', 'June',
+        'July', 'August', 'September', 'October', 'November', 'December',
+    ];
+    $periodLabel = ($months[$payroll->period_month] ?? '?')
+        . ' ' . ($payroll->cutoff === '1st' ? '1–15' : '16–30/31')
+        . ', ' . $payroll->period_year;
 
-    $statusClass = match($payroll->status) {
+    $statusClass = match ($payroll->status) {
         'draft'              => 'badge-draft',
         'computed'           => 'badge-computed',
         'pending_accountant',
@@ -153,11 +171,61 @@
         'locked'             => 'badge-locked',
         default              => 'badge-draft',
     };
-    $statusLabel = ucfirst(str_replace('_', ' ', $payroll->status));
-    $isLocked    = $payroll->status === 'locked';
-    $isComputed  = !in_array($payroll->status, ['draft']);
-    $canCompute  = in_array($payroll->status, ['draft','computed'])
-                   && auth()->user()->hasAnyRole(['payroll_officer','hrmo']);
+    $statusLabels = [
+        'draft'               => 'Draft',
+        'computed'            => 'Computed',
+        'pending_accountant'  => 'Pending Accountant',
+        'pending_rd'          => 'Pending RD / ARD',
+        'released'            => 'Released',
+        'locked'              => 'Locked',
+    ];
+    $statusLabel = $statusLabels[$payroll->status] ?? ucfirst(str_replace('_', ' ', $payroll->status));
+
+    $isLocked   = $payroll->status === 'locked';
+    $isComputed = ! in_array($payroll->status, ['draft']);
+
+    // Who can compute / re-compute
+    $canCompute = in_array($payroll->status, ['draft', 'computed'])
+               && auth()->user()->hasAnyRole(['payroll_officer', 'hrmo']);
+
+    // ── Derive the next workflow action for the current user ──────────────
+    // This replaces the missing $nextAction variable that the controller
+    // does not pass. Each role sees at most one action button.
+    $nextAction = null;
+
+    if (auth()->user()->hasAnyRole(['payroll_officer', 'hrmo'])
+        && in_array($payroll->status, ['draft', 'computed'])) {
+        $nextAction = [
+            'label'  => 'Submit to Accountant',
+            'route'  => route('payroll.submit', $payroll),
+            'class'  => 'btn-primary',
+            'confirm'=> 'Submit this payroll batch to the Accountant for review?',
+        ];
+    } elseif (auth()->user()->hasRole('accountant')
+              && $payroll->status === 'pending_accountant') {
+        $nextAction = [
+            'label'  => 'Certify & Forward to RD/ARD',
+            'route'  => route('payroll.certify', $payroll),
+            'class'  => 'btn-primary',
+            'confirm'=> 'Certify funds and forward to RD/ARD for approval?',
+        ];
+    } elseif (auth()->user()->hasAnyRole(['ard', 'chief_admin_officer'])
+              && $payroll->status === 'pending_rd') {
+        $nextAction = [
+            'label'  => 'Approve & Release',
+            'route'  => route('payroll.approve', $payroll),
+            'class'  => 'btn-gold',
+            'confirm'=> 'Approve and release this payroll batch?',
+        ];
+    } elseif (auth()->user()->hasRole('cashier')
+              && $payroll->status === 'released') {
+        $nextAction = [
+            'label'  => 'Lock — Disbursement Complete',
+            'route'  => route('payroll.lock', $payroll),
+            'class'  => 'btn-danger',
+            'confirm'=> 'Lock this payroll batch? This marks disbursement as complete and cannot be undone.',
+        ];
+    }
 @endphp
 
 {{-- ═══════════════════════════════════════════════════════════════
@@ -178,87 +246,57 @@
 
         {{-- Compute / Re-compute --}}
         @if ($canCompute)
-        <form method="POST" action="{{ route('payroll.compute', $payroll) }}"
-              onsubmit="return confirm('Run payroll computation for all active employees?\n\nExisting entries will be overwritten.')">
-            @csrf
-            <button class="btn btn-gold btn-sm">
-                ⚙ {{ $payroll->status === 'draft' ? 'Compute Payroll' : 'Re-compute' }}
-            </button>
-        </form>
+            <form method="POST" action="{{ route('payroll.compute', $payroll) }}"
+                  onsubmit="return confirm('Run payroll computation for all active employees?\n\nExisting entries will be overwritten.')">
+                @csrf
+                <button class="btn btn-gold btn-sm">
+                    ⚙ {{ $payroll->status === 'draft' ? 'Compute Payroll' : 'Re-compute' }}
+                </button>
+            </form>
         @endif
 
-        {{-- Approval action button --}}
+        {{-- Next workflow action button (role-aware, derived above) --}}
         @if ($nextAction)
-        <form method="POST" action="{{ route('payroll.approve', $payroll) }}"
-              onsubmit="return confirm('{{ $nextAction['label'] }}?\n\nThis action cannot be undone.')">
-            @csrf
-            <button class="btn btn-primary btn-sm">✔ {{ $nextAction['label'] }}</button>
-        </form>
+            <form method="POST" action="{{ $nextAction['route'] }}"
+                  onsubmit="return confirm('{{ $nextAction['confirm'] }}')">
+                @csrf
+                <button class="btn {{ $nextAction['class'] }} btn-sm">
+                    ✔ {{ $nextAction['label'] }}
+                </button>
+            </form>
         @endif
-
-        {{-- Payroll Register PDF --}}
+ {{-- Payroll Register PDF --}}
         @if ($isComputed)
-        <a href="{{ route('reports.payroll-register', ['batch_id' => $payroll->id]) }}"
-           class="btn btn-outline btn-sm" target="_blank">
-            📄 Payroll Register PDF
-        </a>
+            <a href="{{ route('reports.payroll-register', ['batch_id' => $payroll->id]) }}"
+               class="btn btn-outline btn-sm" target="_blank">
+                📄 Payroll Register PDF
+            </a>
+        @endif
+ 
+        {{-- Verify Net Pay — visible when released OR user is cashier --}}
+        @if ($payroll->status === 'released' || auth()->user()->hasRole('cashier'))
+            <a href="{{ route('payroll.verify', $payroll) }}" class="btn btn-outline btn-sm">
+                📋 Verify Net Pay
+            </a>
         @endif
     </div>
 </div>
+
+{{-- Alerts --}}
+@if (session('success'))
+    <div class="alert alert-success">{{ session('success') }}</div>
+@endif
+@if (session('error'))
+    <div class="alert alert-error">{{ session('error') }}</div>
+@endif
+@if (session('warning'))
+    <div class="alert alert-warning">{{ session('warning') }}</div>
+@endif
 
 {{-- ═══════════════════════════════════════════════════════════════
-     APPROVAL STAGE BAR
+     APPROVAL STAGE BAR  (partial — keeps show.blade.php clean)
 ═══════════════════════════════════════════════════════════════ --}}
-@php
-    $stages = [
-        ['key' => ['draft','computed'], 'label' => 'HR Prepared',   'sub' => 'Payroll Officer / HRMO'],
-        ['key' => ['pending_accountant'],         'label' => 'Accountant',     'sub' => 'Certify Funds'],
-        ['key' => ['pending_rd'],                 'label' => 'RD / ARD',        'sub' => 'Approval'],
-        ['key' => ['released'],                   'label' => 'Released',        'sub' => 'Cashier'],
-        ['key' => ['locked'],                     'label' => 'Locked',          'sub' => 'Disbursed'],
-    ];
-
-    $stageOrder = ['draft','computed','pending_accountant','pending_rd','released','locked'];
-    $currentIdx = array_search($payroll->status, $stageOrder);
-
-    // Map status → stage index
-    $statusToStage = [
-        'draft'               => 0,
-        'computed'            => 0,
-        'pending_accountant'  => 1,
-        'pending_rd'          => 2,
-        'released'            => 3,
-        'locked'              => 4,
-    ];
-    $activeStage = $statusToStage[$payroll->status] ?? 0;
-@endphp
-
-<div class="approval-bar">
-    @foreach ($stages as $si => $stage)
-    @php
-        $stageClass = '';
-        if ($payroll->status === 'locked') {
-            $stageClass = $si === 4 ? 'locked' : 'done';
-        } elseif ($si < $activeStage) {
-            $stageClass = 'done';
-        } elseif ($si === $activeStage) {
-            $stageClass = 'active';
-        }
-    @endphp
-    <div class="approval-step {{ $stageClass }}">
-        <div class="approval-step-dot">
-            @if ($stageClass === 'done') ✓
-            @elseif ($stageClass === 'locked') 🔒
-            @else {{ $si + 1 }}
-            @endif
-        </div>
-        <div class="approval-step-label">
-            {{ $stage['label'] }}
-            <small>{{ $stage['sub'] }}</small>
-        </div>
-    </div>
-    @endforeach
-</div>
+@include('payroll._approval_bar')
 
 {{-- ═══════════════════════════════════════════════════════════════
      SUMMARY STAT CARDS
@@ -288,9 +326,9 @@
 
 {{-- Draft with no entries yet --}}
 @if ($payroll->status === 'draft' && $employeeCount === 0)
-<div class="alert alert-warning">
-    No entries yet. Click <strong>Compute Payroll</strong> above to generate all employee entries.
-</div>
+    <div class="alert alert-warning">
+        No entries yet. Click <strong>Compute Payroll</strong> above to generate all employee entries.
+    </div>
 @endif
 
 {{-- ═══════════════════════════════════════════════════════════════
@@ -302,12 +340,12 @@
         <h3>Payroll Register — {{ $periodLabel }} ({{ $employeeCount }} Employees)</h3>
         <div class="d-flex gap-2 align-center flex-wrap">
             <span class="text-muted" style="font-size:0.78rem;">
-                Click <em>Deductions</em> to expand per-employee breakdown.
+                Click <em>Deductions ▾</em> to expand per-employee breakdown.
             </span>
             @if (!$isLocked)
-            <span class="text-muted" style="font-size:0.78rem;">
-                · Click <em>Payslip</em> to view / print.
-            </span>
+                <span class="text-muted" style="font-size:0.78rem;">
+                    · Click <em>Payslip</em> to view / print.
+                </span>
             @endif
         </div>
     </div>
@@ -336,101 +374,102 @@
                 </thead>
                 <tbody>
                     @foreach ($entries as $i => $entry)
-                    @php
-                        $netWarn  = $entry->net_amount < 5000;
-                        $tardy    = ($entry->tardiness ?? 0) + ($entry->undertime ?? 0);
-                        $lwop     = $entry->lwop_deduction ?? 0;
-                        $dedCount = $entry->deductions->count();
-                    @endphp
+                        @php
+                            $netWarn  = $entry->net_amount < 5000;
+                            $tardy    = ($entry->tardiness ?? 0) + ($entry->undertime ?? 0);
+                            $lwop     = $entry->lwop_deduction ?? 0;
+                            $dedCount = $entry->deductions->count();
+                        @endphp
 
-                    {{-- Main row --}}
-                    <tr class="{{ $netWarn ? 'net-warn' : '' }}" id="row-{{ $entry->id }}">
-                        <td class="text-muted" style="font-size:0.75rem;">{{ $i + 1 }}</td>
-                        <td>
-                            <div class="fw-bold" style="font-size:0.86rem; white-space:nowrap;">
-                                {{ $entry->employee->full_name }}
-                            </div>
-                            <div class="text-muted" style="font-size:0.73rem;">
-                                {{ $entry->employee->position_title }}
-                            </div>
-                        </td>
-                        <td style="font-size:0.82rem; white-space:nowrap;">
-                            SG {{ $entry->employee->salary_grade }}–{{ $entry->employee->step }}
-                        </td>
-                        <td class="text-right" style="white-space:nowrap;">
-                            ₱{{ number_format($entry->basic_salary, 2) }}
-                        </td>
-                        <td class="text-right" style="white-space:nowrap;">
-                            ₱{{ number_format($entry->pera, 2) }}
-                        </td>
-                        <td class="text-right" style="white-space:nowrap; color:var(--text-light);">
-                            {{ $entry->rata > 0 ? '₱' . number_format($entry->rata, 2) : '—' }}
-                        </td>
-                        <td class="text-right fw-bold" style="white-space:nowrap; background:rgba(249,168,37,0.06);">
-                            ₱{{ number_format($entry->gross_income, 2) }}
-                        </td>
-                        <td class="text-right {{ $tardy > 0 ? 'text-red' : '' }}" style="white-space:nowrap;">
-                            {{ $tardy > 0 ? '₱' . number_format($tardy, 2) : '—' }}
-                        </td>
-                        <td class="text-right {{ $lwop > 0 ? 'text-red' : '' }}" style="white-space:nowrap;">
-                            {{ $lwop > 0 ? '₱' . number_format($lwop, 2) : '—' }}
-                        </td>
-                        <td class="text-right" style="white-space:nowrap;">
-                            @if ($dedCount > 0)
-                            <button class="ded-toggle"
-                                    onclick="toggleDed({{ $entry->id }})"
-                                    id="toggle-{{ $entry->id }}">
-                                {{ $dedCount }} lines ▾
-                            </button>
-                            @else
-                            <span class="text-muted" style="font-size:0.78rem;">—</span>
-                            @endif
-                        </td>
-                        <td class="text-right" style="white-space:nowrap; background:rgba(183,28,28,0.04);">
-                            ₱{{ number_format($entry->total_deductions, 2) }}
-                        </td>
-                        <td class="text-right fw-bold {{ $netWarn ? 'text-red' : '' }}"
-                            style="white-space:nowrap; background:rgba(27,94,32,0.04);">
-                            ₱{{ number_format($entry->net_amount, 2) }}
-                            @if ($netWarn)
-                            <span class="net-warn-badge">Below ₱5K</span>
-                            @endif
-                        </td>
-                        <td>
-                            <a href="{{ route('payroll.payslip', [$payroll, $entry]) }}"
-                               class="btn btn-outline btn-sm" target="_blank">
-                                Payslip
-                            </a>
-                        </td>
-                    </tr>
+                        {{-- Main row --}}
+                        <tr class="{{ $netWarn ? 'net-warn' : '' }}" id="row-{{ $entry->id }}">
+                            <td class="text-muted" style="font-size:0.75rem;">{{ $i + 1 }}</td>
+                            <td>
+                                <div class="fw-bold" style="font-size:0.86rem; white-space:nowrap;">
+                                    {{ $entry->employee->full_name }}
+                                </div>
+                                <div class="text-muted" style="font-size:0.73rem;">
+                                    {{ $entry->employee->position_title }}
+                                </div>
+                            </td>
+                            <td style="font-size:0.82rem; white-space:nowrap;">
+                                SG {{ $entry->employee->salary_grade }}–{{ $entry->employee->step }}
+                            </td>
+                            <td class="text-right" style="white-space:nowrap;">
+                                ₱{{ number_format($entry->basic_salary, 2) }}
+                            </td>
+                            <td class="text-right" style="white-space:nowrap;">
+                                ₱{{ number_format($entry->pera, 2) }}
+                            </td>
+                            <td class="text-right" style="white-space:nowrap; color:var(--text-light);">
+                                {{ $entry->rata > 0 ? '₱' . number_format($entry->rata, 2) : '—' }}
+                            </td>
+                            <td class="text-right fw-bold" style="white-space:nowrap; background:rgba(249,168,37,0.06);">
+                                ₱{{ number_format($entry->gross_income, 2) }}
+                            </td>
+                            <td class="text-right {{ $tardy > 0 ? 'text-red' : '' }}" style="white-space:nowrap;">
+                                {{ $tardy > 0 ? '₱' . number_format($tardy, 2) : '—' }}
+                            </td>
+                            <td class="text-right {{ $lwop > 0 ? 'text-red' : '' }}" style="white-space:nowrap;">
+                                {{ $lwop > 0 ? '₱' . number_format($lwop, 2) : '—' }}
+                            </td>
+                            <td class="text-right" style="white-space:nowrap;">
+                                @if ($dedCount > 0)
+                                    <button class="ded-toggle"
+                                            onclick="toggleDed({{ $entry->id }})"
+                                            id="toggle-{{ $entry->id }}">
+                                        {{ $dedCount }} lines ▾
+                                    </button>
+                                @else
+                                    <span class="text-muted" style="font-size:0.78rem;">—</span>
+                                @endif
+                            </td>
+                            <td class="text-right" style="white-space:nowrap; background:rgba(183,28,28,0.04);">
+                                ₱{{ number_format($entry->total_deductions, 2) }}
+                            </td>
+                            <td class="text-right fw-bold {{ $netWarn ? 'text-red' : '' }}"
+                                style="white-space:nowrap; background:rgba(27,94,32,0.04);">
+                                ₱{{ number_format($entry->net_amount, 2) }}
+                                @if ($netWarn)
+                                    <span class="net-warn-badge">Below ₱5K</span>
+                                @endif
+                            </td>
+                            <td>
+                                <a href="{{ route('payroll.payslip', [$payroll, $entry]) }}"
+                                   class="btn btn-outline btn-sm" target="_blank">
+                                    Payslip
+                                </a>
+                            </td>
+                        </tr>
 
-                    {{-- Deduction expansion panel (spans all columns) --}}
-                    @if ($dedCount > 0)
-                    <tr class="{{ $netWarn ? 'net-warn' : '' }}" id="ded-row-{{ $entry->id }}" style="display:none;">
-                        <td colspan="13" style="padding:0;">
-                            <div class="ded-panel" id="ded-panel-{{ $entry->id }}">
-                                <div class="ded-grid">
-                                    @foreach ($entry->deductions->sortBy(fn($d) => $d->deductionType->display_order ?? 99) as $ded)
-                                    <div class="ded-row">
-                                        <span>{{ $ded->name }}</span>
-                                        <span>₱{{ number_format($ded->amount, 2) }}</span>
+                        {{-- Deduction expansion panel --}}
+                        @if ($dedCount > 0)
+                            <tr class="{{ $netWarn ? 'net-warn' : '' }}"
+                                id="ded-row-{{ $entry->id }}" style="display:none;">
+                                <td colspan="13" style="padding:0;">
+                                    <div class="ded-panel" id="ded-panel-{{ $entry->id }}">
+                                        <div class="ded-grid">
+                                            @foreach ($entry->deductions->sortBy(fn ($d) => $d->deductionType->display_order ?? 99) as $ded)
+                                                <div class="ded-row">
+                                                    <span>{{ $ded->name }}</span>
+                                                    <span>₱{{ number_format($ded->amount, 2) }}</span>
+                                                </div>
+                                            @endforeach
+                                        </div>
+                                        <div style="text-align:right; margin-top:6px; font-size:0.78rem; color:var(--text-mid);">
+                                            Sub-total:
+                                            <strong>₱{{ number_format($entry->deductions->sum('amount'), 2) }}</strong>
+                                            @if (($entry->tardiness + $entry->undertime + $entry->lwop_deduction) > 0)
+                                                · Attendance deduction:
+                                                <strong class="text-red">
+                                                    ₱{{ number_format($entry->tardiness + $entry->undertime + ($entry->lwop_deduction ?? 0), 2) }}
+                                                </strong>
+                                            @endif
+                                        </div>
                                     </div>
-                                    @endforeach
-                                </div>
-                                <div style="text-align:right; margin-top:6px; font-size:0.78rem; color:var(--text-mid);">
-                                    Sub-total:
-                                    <strong>₱{{ number_format($entry->deductions->sum('amount'), 2) }}</strong>
-                                    @if (($entry->tardiness + $entry->undertime + $entry->lwop_deduction) > 0)
-                                    · Attendance deduction:
-                                    <strong class="text-red">
-                                        ₱{{ number_format($entry->tardiness + $entry->undertime + ($entry->lwop_deduction ?? 0), 2) }}
-                                    </strong>
-                                    @endif
-                                </div>
-                            </div>
-                        </td>
-                    </tr>
-                    @endif
+                                </td>
+                            </tr>
+                        @endif
 
                     @endforeach
                 </tbody>
@@ -448,8 +487,7 @@
                         </td>
                         <td class="text-right" style="color:rgba(255,255,255,0.5);">
                             {{ $payroll->entries->sum('rata') > 0
-                               ? '₱' . number_format($payroll->entries->sum('rata'), 2)
-                               : '—' }}
+                               ? '₱' . number_format($payroll->entries->sum('rata'), 2) : '—' }}
                         </td>
                         <td class="text-right" style="color:var(--gold); background:rgba(249,168,37,0.15);">
                             ₱{{ number_format($totalGross, 2) }}
@@ -476,30 +514,33 @@
 
     {{-- Certification footer --}}
     @if ($isComputed)
-    <div class="card-body" style="background:#FAFBFF; border-top:1px solid var(--border); padding:14px 20px;">
-        <div class="d-flex gap-2 flex-wrap" style="justify-content:space-between; align-items:flex-end; font-size:0.82rem; color:var(--text-mid);">
-            <div>
-                <strong>Prepared by:</strong>
-                {{ $payroll->creator->name ?? '—' }}
-                <span class="text-muted">· {{ $payroll->created_at->format('M d, Y') }}</span>
-            </div>
-            @if ($payroll->approved_by)
-            <div>
-                <strong>Approved by:</strong>
-                {{ $payroll->approver->name ?? '—' }}
-                @if ($payroll->approved_at)
-                <span class="text-muted">· {{ \Carbon\Carbon::parse($payroll->approved_at)->format('M d, Y') }}</span>
+        <div class="card-body" style="background:#FAFBFF; border-top:1px solid var(--border); padding:14px 20px;">
+            <div class="d-flex gap-2 flex-wrap"
+                 style="justify-content:space-between; align-items:flex-end; font-size:0.82rem; color:var(--text-mid);">
+                <div>
+                    <strong>Prepared by:</strong>
+                    {{ $payroll->creator->name ?? '—' }}
+                    <span class="text-muted">· {{ $payroll->created_at->format('M d, Y') }}</span>
+                </div>
+                {{-- approved_by is an ID — load the user via relation on the model --}}
+                @if ($payroll->approved_by)
+                    <div>
+                        <strong>Approved by:</strong>
+                        {{-- PayrollBatch must define: public function approver() { return $this->belongsTo(User::class, 'approved_by'); } --}}
+                        {{ optional($payroll->approver)->name ?? '—' }}
+                        @if ($payroll->approved_at)
+                            <span class="text-muted">· {{ \Carbon\Carbon::parse($payroll->approved_at)->format('M d, Y') }}</span>
+                        @endif
+                    </div>
+                @endif
+                @if ($payroll->released_at)
+                    <div>
+                        <strong>Released:</strong>
+                        <span class="text-muted">{{ \Carbon\Carbon::parse($payroll->released_at)->format('M d, Y g:i A') }}</span>
+                    </div>
                 @endif
             </div>
-            @endif
-            @if ($payroll->released_at)
-            <div>
-                <strong>Released:</strong>
-                <span class="text-muted">{{ \Carbon\Carbon::parse($payroll->released_at)->format('M d, Y g:i A') }}</span>
-            </div>
-            @endif
         </div>
-    </div>
     @endif
 </div>
 
@@ -516,29 +557,75 @@
 
 @endif
 
+{{-- ═══════════════════════════════════════════════════════════════
+     AUDIT LOG
+═══════════════════════════════════════════════════════════════ --}}
+@if ($auditLogs->isNotEmpty())
+<div class="card" style="margin-top:24px;">
+    <div class="card-header">
+        <h3>Audit Log</h3>
+        <span class="text-muted" style="font-size:0.80rem;">
+            {{ $auditLogs->count() }} entr{{ $auditLogs->count() === 1 ? 'y' : 'ies' }}
+        </span>
+    </div>
+    <div class="card-body" style="padding:0;">
+        <div class="table-wrap">
+            <table class="audit-table">
+                <thead>
+                    <tr>
+                        <th>Date / Time</th>
+                        <th>User</th>
+                        <th>Action</th>
+                        <th>Status Change</th>
+                        <th>IP</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach ($auditLogs as $log)
+                        <tr>
+                            <td style="white-space:nowrap;">
+                                {{ \Carbon\Carbon::parse($log->performed_at)->format('M d, Y g:i A') }}
+                            </td>
+                            <td>{{ $log->user->name ?? '—' }}</td>
+                            <td>{{ $log->action }}</td>
+                            <td>
+                                @if ($log->old_value || $log->new_value)
+                                    <span class="badge badge-draft" style="font-size:0.70rem;">
+                                        {{ $log->old_value ?? '—' }}
+                                    </span>
+                                    <span class="audit-arrow">→</span>
+                                    <span class="badge badge-computed" style="font-size:0.70rem;">
+                                        {{ $log->new_value ?? '—' }}
+                                    </span>
+                                @else
+                                    <span class="text-muted">—</span>
+                                @endif
+                            </td>
+                            <td class="text-muted">{{ $log->ip_address ?? '—' }}</td>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+@endif
+
 @endsection
 
 @section('scripts')
 <script>
-/**
- * Toggle the deduction breakdown panel for a single employee row.
- */
 function toggleDed(entryId) {
     const row    = document.getElementById('ded-row-' + entryId);
     const toggle = document.getElementById('toggle-' + entryId);
-
     if (!row) return;
 
     const isOpen = row.style.display !== 'none';
     row.style.display = isOpen ? 'none' : 'table-row';
-    toggle.textContent = toggle.textContent.replace(isOpen ? '▴' : '▾', isOpen ? '▾' : '▴');
-    toggle.textContent = toggle.textContent.includes('▾')
-        ? toggle.textContent.replace('▾', '▴')
-        : toggle.textContent.replace('▴', '▾');
 
-    // Simpler: just flip the arrow character
-    const count = toggle.textContent.replace(/[▾▴]/g, '').trim();
-    toggle.textContent = count + ' ' + (isOpen ? '▾' : '▴');
+    // Rebuild label cleanly — strip existing arrow, re-append correct one
+    const countText = toggle.textContent.replace(/[▾▴\s]+$/, '').trim();
+    toggle.textContent = countText + ' ' + (isOpen ? '▾' : '▴');
 }
 </script>
 @endsection
