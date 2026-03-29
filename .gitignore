@@ -20,3 +20,7 @@ yarn-error.log
 /.laravel_initialized
 certs/
 backups/
+aiven_dump.sql
+mysql_data/
+db-push.ps1
+db-pull.ps1
