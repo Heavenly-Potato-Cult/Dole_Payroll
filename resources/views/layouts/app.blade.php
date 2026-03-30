@@ -56,9 +56,16 @@
                 <span class="nav-icon">💰</span> Regular Payroll
             </a>
             @role('payroll_officer|hrmo')
+            <div class="nav-section-label" style="padding-left:12px; font-size:0.65rem;">Special Payroll</div>
             <a href="{{ route('special-payroll.newly-hired.index') }}"
-               class="nav-item {{ request()->routeIs('special-payroll.*') ? 'active' : '' }}">
-                <span class="nav-icon">📋</span> Special Payroll
+               class="nav-item {{ request()->routeIs('special-payroll.newly-hired.*') ? 'active' : '' }}"
+               style="padding-left:28px;">
+                <span class="nav-icon">🆕</span> Newly Hired
+            </a>
+            <a href="{{ route('special-payroll.differential.index') }}"
+               class="nav-item {{ request()->routeIs('special-payroll.differential.*') ? 'active' : '' }}"
+               style="padding-left:28px;">
+                <span class="nav-icon">📈</span> Salary Differential
             </a>
             @endrole
             @endrole

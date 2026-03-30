@@ -72,13 +72,13 @@ Route::middleware(['auth'])->group(function () {
     Route::resource('payroll', PayrollController::class);
 
     // Payroll workflow actions
-    Route::post('/payroll/{payroll}/compute', [PayrollController::class, 'compute'])->name('payroll.compute');
-    Route::post('/payroll/{payroll}/submit',  [PayrollController::class, 'submit']) ->name('payroll.submit');
-    Route::post('/payroll/{payroll}/certify', [PayrollController::class, 'certify'])->name('payroll.certify');
-    Route::post('/payroll/{payroll}/approve', [PayrollController::class, 'approve'])->name('payroll.approve');
-    Route::post('/payroll/{payroll}/lock',    [PayrollController::class, 'lock'])   ->name('payroll.lock');
-    Route::get( '/payroll/{payroll}/verify',     [PayrollController::class, 'verify'])   ->name('payroll.verify');
-Route::post('/payroll/{payroll}/force-edit', [PayrollController::class, 'forceEdit'])->name('payroll.forceEdit');
+    Route::post('/payroll/{payroll}/compute',    [PayrollController::class, 'compute'])   ->name('payroll.compute');
+    Route::post('/payroll/{payroll}/submit',     [PayrollController::class, 'submit'])    ->name('payroll.submit');
+    Route::post('/payroll/{payroll}/certify',    [PayrollController::class, 'certify'])   ->name('payroll.certify');
+    Route::post('/payroll/{payroll}/approve',    [PayrollController::class, 'approve'])   ->name('payroll.approve');
+    Route::post('/payroll/{payroll}/lock',       [PayrollController::class, 'lock'])      ->name('payroll.lock');
+    Route::get( '/payroll/{payroll}/verify',     [PayrollController::class, 'verify'])    ->name('payroll.verify');
+    Route::post('/payroll/{payroll}/force-edit', [PayrollController::class, 'forceEdit'])->name('payroll.forceEdit');
 
     // Payroll entries
     Route::get('/payroll/{payrollBatch}/entries',
@@ -90,32 +90,63 @@ Route::post('/payroll/{payroll}/force-edit', [PayrollController::class, 'forceEd
     Route::get('/payroll/{payrollBatch}/payslip/{entry}',
                [PayrollEntryController::class, 'payslip'])->name('payroll.payslip');
 
-    // ── Special Payroll ──────────────────────────────────────────
-    Route::get( '/special-payroll/newly-hired',
-            [SpecialPayrollController::class, 'newHireIndex'])
-    ->name('special-payroll.newly-hired.index');
- 
-Route::get( '/special-payroll/newly-hired/create',
-            [SpecialPayrollController::class, 'newHireCreate'])
-    ->name('special-payroll.newly-hired.create');
- 
-Route::post('/special-payroll/newly-hired',
-            [SpecialPayrollController::class, 'newHireStore'])
-    ->name('special-payroll.newly-hired.store');
- 
-Route::get( '/special-payroll/newly-hired/{id}',
-            [SpecialPayrollController::class, 'newHireShow'])
-    ->name('special-payroll.newly-hired.show');
- 
-Route::post('/special-payroll/newly-hired/{id}/approve',
-            [SpecialPayrollController::class, 'newHireApprove'])
-    ->name('special-payroll.newly-hired.approve');
+    // ── Special Payroll — Newly Hired ────────────────────────────
+    // ⚠ /create must be registered BEFORE /{id} to avoid Laravel
+    //   matching the literal string "create" as an {id} parameter.
+    Route::get(   '/special-payroll/newly-hired',
+                  [SpecialPayrollController::class, 'newHireIndex'])
+        ->name('special-payroll.newly-hired.index');
+
+    Route::get(   '/special-payroll/newly-hired/create',
+                  [SpecialPayrollController::class, 'newHireCreate'])
+        ->name('special-payroll.newly-hired.create');
+
+    Route::post(  '/special-payroll/newly-hired',
+                  [SpecialPayrollController::class, 'newHireStore'])
+        ->name('special-payroll.newly-hired.store');
+
+    Route::get(   '/special-payroll/newly-hired/{id}',
+                  [SpecialPayrollController::class, 'newHireShow'])
+        ->name('special-payroll.newly-hired.show')
+        ->where('id', '[0-9]+');
+
+    Route::post(  '/special-payroll/newly-hired/{id}/approve',
+                  [SpecialPayrollController::class, 'newHireApprove'])
+        ->name('special-payroll.newly-hired.approve')
+        ->where('id', '[0-9]+');
 
     Route::delete('/special-payroll/newly-hired/{id}',
-    [SpecialPayrollController::class, 'newHireDestroy'])
-    ->name('special-payroll.newly-hired.destroy');
+                  [SpecialPayrollController::class, 'newHireDestroy'])
+        ->name('special-payroll.newly-hired.destroy')
+        ->where('id', '[0-9]+');
 
+    // ── Special Payroll — Salary Differential ────────────────────
+    Route::get(  '/special-payroll/differential',
+                 [SpecialPayrollController::class, 'differentialIndex'])
+        ->name('special-payroll.differential.index');
 
+    Route::get(  '/special-payroll/differential/create',
+                 [SpecialPayrollController::class, 'differentialCreate'])
+        ->name('special-payroll.differential.create');
+
+    Route::post( '/special-payroll/differential',
+                 [SpecialPayrollController::class, 'differentialStore'])
+        ->name('special-payroll.differential.store');
+
+    Route::get(  '/special-payroll/differential/{id}',
+                 [SpecialPayrollController::class, 'differentialShow'])
+        ->name('special-payroll.differential.show')
+        ->where('id', '[0-9]+');
+
+    Route::post( '/special-payroll/differential/{id}/approve',
+                 [SpecialPayrollController::class, 'differentialApprove'])
+        ->name('special-payroll.differential.approve')
+        ->where('id', '[0-9]+');
+
+        Route::delete('/special-payroll/differential/{id}',
+              [SpecialPayrollController::class, 'differentialDestroy'])
+    ->name('special-payroll.differential.destroy')
+    ->where('id', '[0-9]+');
 
     // ── Office Orders ────────────────────────────────────────────
     Route::resource('office-orders', OfficeOrderController::class);
