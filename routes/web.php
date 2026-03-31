@@ -140,6 +140,35 @@ Route::middleware(['auth'])->group(function () {
     ->name('special-payroll.differential.destroy')
     ->where('id', '[0-9]+');
 
+
+        // ── Special Payroll — NOSI / NOSA ────────────────────────────
+    Route::get(    '/special-payroll/nosi-nosa',
+                   [SpecialPayrollController::class, 'nosiNosaIndex'])
+        ->name('special-payroll.nosi-nosa.index');
+ 
+    Route::get(    '/special-payroll/nosi-nosa/create',
+                   [SpecialPayrollController::class, 'nosiNosaCreate'])
+        ->name('special-payroll.nosi-nosa.create');
+ 
+    Route::post(   '/special-payroll/nosi-nosa',
+                   [SpecialPayrollController::class, 'nosiNosaStore'])
+        ->name('special-payroll.nosi-nosa.store');
+ 
+    Route::get(    '/special-payroll/nosi-nosa/{id}',
+                   [SpecialPayrollController::class, 'nosiNosaShow'])
+        ->name('special-payroll.nosi-nosa.show')
+        ->where('id', '[0-9]+');
+ 
+    Route::post(   '/special-payroll/nosi-nosa/{id}/approve',
+                   [SpecialPayrollController::class, 'nosiNosaApprove'])
+        ->name('special-payroll.nosi-nosa.approve')
+        ->where('id', '[0-9]+');
+ 
+    Route::delete( '/special-payroll/nosi-nosa/{id}',
+                   [SpecialPayrollController::class, 'nosiNosaDestroy'])
+        ->name('special-payroll.nosi-nosa.destroy')
+        ->where('id', '[0-9]+');
+
     // ── Office Orders ────────────────────────────────────────────
     Route::resource('office-orders', OfficeOrderController::class);
     Route::post('/office-orders/{officeOrder}/approve',
