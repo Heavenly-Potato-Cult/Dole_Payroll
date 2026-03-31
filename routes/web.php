@@ -186,6 +186,8 @@ Route::post('/office-orders/{id}/cancel',
     Route::post('/tev/{tevRequest}/submit',  [TevController::class, 'submit'])->name('tev.submit');
     Route::post('/tev/{tevRequest}/approve', [TevController::class, 'approve'])->name('tev.approve');
     Route::post('/tev/{tevRequest}/certify', [TevController::class, 'certify'])->name('tev.certify');
+    Route::post('/tev/{tevRequest}/reject',  [TevController::class, 'reject'])->name('tev.reject');
+
 
     Route::post(  '/tev/{tevRequest}/itinerary',
                   [TevItineraryController::class, 'store'])->name('tev.itinerary.store');
@@ -193,6 +195,7 @@ Route::post('/office-orders/{id}/cancel',
                   [TevItineraryController::class, 'update'])->name('tev.itinerary.update');
     Route::delete('/tev/{tevRequest}/itinerary/{line}',
                   [TevItineraryController::class, 'destroy'])->name('tev.itinerary.destroy');
+                  
 
     // ── Reports ──────────────────────────────────────────────────
     Route::get('/reports',                    [ReportController::class, 'index'])->name('reports.index');
