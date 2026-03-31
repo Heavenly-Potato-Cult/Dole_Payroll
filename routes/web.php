@@ -171,8 +171,15 @@ Route::middleware(['auth'])->group(function () {
 
     // ── Office Orders ────────────────────────────────────────────
     Route::resource('office-orders', OfficeOrderController::class);
-    Route::post('/office-orders/{officeOrder}/approve',
-                [OfficeOrderController::class, 'approve'])->name('office-orders.approve');
+Route::post('/office-orders/{id}/approve',
+            [OfficeOrderController::class, 'approve'])
+    ->name('office-orders.approve')
+    ->where('id', '[0-9]+');
+
+Route::post('/office-orders/{id}/cancel',
+            [OfficeOrderController::class, 'cancel'])
+    ->name('office-orders.cancel')
+    ->where('id', '[0-9]+');
 
     // ── TEV ──────────────────────────────────────────────────────
     Route::resource('tev', TevController::class);
