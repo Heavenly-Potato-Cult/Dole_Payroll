@@ -15,7 +15,7 @@
 @section('styles')
 <style>
 /* ══════════════════════════════════════════════════
-   APPROVAL STAGE BAR - HORIZONTAL TIMELINE STYLE
+   APPROVAL STAGE BAR
 ══════════════════════════════════════════════════ */
 .approval-bar {
     display: flex;
@@ -40,75 +40,35 @@
     border-right: 1px solid var(--border);
     transition: background 0.2s;
 }
-.approval-step:last-child {
-    border-right: none;
-}
-.approval-step.done {
-    background: #F1FAF5;
-    color: #1B6B3A;
-}
-.approval-step.active {
-    background: #EEF1FA;
-    color: var(--navy);
-}
-.approval-step.locked {
-    background: var(--navy);
-    color: #ffffff;
-}
+.approval-step:last-child { border-right: none; }
+.approval-step.done   { background: #F1FAF5; color: #1B6B3A; }
+.approval-step.active { background: #EEF1FA; color: var(--navy); }
+.approval-step.locked { background: var(--navy); color: #ffffff; }
 .approval-step-dot {
-    width: 30px;
-    height: 30px;
+    width: 30px; height: 30px;
     border-radius: 50%;
     border: 2px solid currentColor;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 0.9rem;
-    font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.9rem; font-weight: 700;
     flex-shrink: 0;
-    background: #ffffff;
-    color: inherit;
+    background: #ffffff; color: inherit;
 }
-.approval-step.done .approval-step-dot {
-    background: #2E7D52;
-    border-color: #2E7D52;
-    color: #ffffff;
-}
-.approval-step.active .approval-step-dot {
-    background: var(--navy);
-    border-color: var(--navy);
-    color: #ffffff;
-}
-.approval-step.locked .approval-step-dot {
-    background: rgba(255,255,255,0.15);
-    border-color: rgba(255,255,255,0.6);
-    color: #ffffff;
-}
-.approval-step-label {
-    line-height: 1.3;
-    min-width: 0;
-}
+.approval-step.done   .approval-step-dot { background: #2E7D52; border-color: #2E7D52; color: #ffffff; }
+.approval-step.active .approval-step-dot { background: var(--navy); border-color: var(--navy); color: #ffffff; }
+.approval-step.locked .approval-step-dot { background: rgba(255,255,255,0.15); border-color: rgba(255,255,255,0.6); color: #ffffff; }
+.approval-step-label { line-height: 1.3; min-width: 0; }
 .approval-step-label small {
-    display: block;
-    font-weight: 400;
-    font-size: 0.70rem;
-    opacity: 0.72;
-    margin-top: 2px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    display: block; font-weight: 400; font-size: 0.70rem;
+    opacity: 0.72; margin-top: 2px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 
 /* ── Deduction expansion panel ── */
 .ded-toggle {
-    background: none;
-    border: 1px solid var(--border);
-    color: var(--navy);
-    border-radius: 4px;
-    padding: 2px 8px;
-    font-size: 0.73rem;
-    cursor: pointer;
-    white-space: nowrap;
+    background: none; border: 1px solid var(--border);
+    color: var(--navy); border-radius: 4px;
+    padding: 2px 8px; font-size: 0.73rem;
+    cursor: pointer; white-space: nowrap;
 }
 .ded-toggle:hover { background: var(--navy-light); }
 .ded-panel { display: none; background: var(--bg); border-top: 1px solid var(--border); padding: 10px 14px; }
@@ -116,29 +76,21 @@
 .ded-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: 4px 16px;
-    font-size: 0.76rem;
+    gap: 4px 16px; font-size: 0.76rem;
 }
 .ded-row {
-    display: flex;
-    justify-content: space-between;
-    padding: 2px 0;
-    border-bottom: 1px solid var(--border);
+    display: flex; justify-content: space-between;
+    padding: 2px 0; border-bottom: 1px solid var(--border);
     color: var(--text-mid);
 }
 .ded-row span:last-child { font-weight: 600; color: var(--text); }
 .tfoot-totals td { padding: 12px 14px; font-weight: 700; font-size: 0.88rem; }
 .net-warn { background: #FFF8E1 !important; }
 .net-warn-badge {
-    display: inline-block;
-    margin-top: 3px;
-    font-size: 0.67rem;
-    background: #FFE082;
-    color: #7A5900;
-    padding: 1px 6px;
-    border-radius: 10px;
-    font-weight: 700;
-    letter-spacing: 0.03em;
+    display: inline-block; margin-top: 3px;
+    font-size: 0.67rem; background: #FFE082; color: #7A5900;
+    padding: 1px 6px; border-radius: 10px;
+    font-weight: 700; letter-spacing: 0.03em;
 }
 .scroll-hint { font-size: 0.75rem; color: var(--text-light); padding: 6px 14px 0; }
 .empty-state { text-align: center; padding: 60px 20px; color: var(--text-light); }
@@ -148,6 +100,83 @@
 /* ── Audit log ── */
 .audit-table td { font-size: 0.80rem; vertical-align: top; }
 .audit-arrow { color: var(--text-light); margin: 0 4px; }
+
+/* ══════════════════════════════════════════════════
+   MOBILE RESPONSIVE
+══════════════════════════════════════════════════ */
+@media (max-width: 768px) {
+
+    /* Page header: stack vertically */
+    .page-header {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        gap: 12px !important;
+    }
+    .page-header > .d-flex {
+        width: 100%;
+        flex-wrap: wrap;
+    }
+    .page-header > .d-flex .btn {
+        flex: 1;
+        justify-content: center;
+        text-align: center;
+        min-width: calc(50% - 4px);
+    }
+
+    /* Approval bar: scroll horizontally on mobile */
+    .approval-bar {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    .approval-step {
+        min-width: 130px;
+        flex: 0 0 auto;
+    }
+
+    /* Stat grid: 2 columns on mobile */
+    .stat-grid {
+        grid-template-columns: 1fr 1fr !important;
+        gap: 10px !important;
+    }
+    .stat-card { padding: 14px !important; }
+    .stat-value { font-size: 1.2rem !important; }
+
+    /* Payroll register table: keep horizontal scroll with sticky # column */
+    .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+    /* Scroll hint more visible */
+    .scroll-hint {
+        background: var(--bg);
+        border-bottom: 1px solid var(--border);
+        padding: 8px 14px;
+        font-size: 0.78rem;
+        color: var(--text-mid);
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+    .scroll-hint::before { content: '↔'; font-size: 1rem; }
+
+    /* Make action buttons in header stack into 2-col grid */
+    .payroll-show-actions {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+        width: 100%;
+    }
+    .payroll-show-actions .btn,
+    .payroll-show-actions form { width: 100%; }
+    .payroll-show-actions form .btn { width: 100%; }
+
+    /* Certification footer: stack */
+    .cert-footer > div {
+        flex-direction: column !important;
+        gap: 10px !important;
+    }
+
+    /* Audit table: horizontal scroll */
+    .audit-table { min-width: 600px; }
+}
 </style>
 @endsection
 
@@ -184,15 +213,10 @@
     $isLocked   = $payroll->status === 'locked';
     $isComputed = ! in_array($payroll->status, ['draft']);
 
-    // Who can compute / re-compute
     $canCompute = in_array($payroll->status, ['draft', 'computed'])
                && auth()->user()->hasAnyRole(['payroll_officer', 'hrmo']);
 
-    // ── Derive the next workflow action for the current user ──────────────
-    // This replaces the missing $nextAction variable that the controller
-    // does not pass. Each role sees at most one action button.
     $nextAction = null;
-
     if (auth()->user()->hasAnyRole(['payroll_officer', 'hrmo'])
         && in_array($payroll->status, ['draft', 'computed'])) {
         $nextAction = [
@@ -241,10 +265,9 @@
             on {{ $payroll->created_at->format('M d, Y') }}
         </p>
     </div>
-    <div class="d-flex gap-2 flex-wrap">
+    <div class="d-flex gap-2 flex-wrap payroll-show-actions">
         <a href="{{ route('payroll.index') }}" class="btn btn-outline btn-sm">← All Batches</a>
 
-        {{-- Compute / Re-compute --}}
         @if ($canCompute)
             <form method="POST" action="{{ route('payroll.compute', $payroll) }}"
                   onsubmit="return confirm('Run payroll computation for all active employees?\n\nExisting entries will be overwritten.')">
@@ -255,7 +278,6 @@
             </form>
         @endif
 
-        {{-- Next workflow action button (role-aware, derived above) --}}
         @if ($nextAction)
             <form method="POST" action="{{ $nextAction['route'] }}"
                   onsubmit="return confirm('{{ $nextAction['confirm'] }}')">
@@ -265,15 +287,14 @@
                 </button>
             </form>
         @endif
- {{-- Payroll Register PDF --}}
+
         @if ($isComputed)
             <a href="{{ route('reports.payroll-register', ['batch_id' => $payroll->id]) }}"
                class="btn btn-outline btn-sm" target="_blank">
                 📄 Payroll Register PDF
             </a>
         @endif
- 
-        {{-- Verify Net Pay — visible when released OR user is cashier --}}
+
         @if ($payroll->status === 'released' || auth()->user()->hasRole('cashier'))
             <a href="{{ route('payroll.verify', $payroll) }}" class="btn btn-outline btn-sm">
                 📋 Verify Net Pay
@@ -294,7 +315,7 @@
 @endif
 
 {{-- ═══════════════════════════════════════════════════════════════
-     APPROVAL STAGE BAR  (partial — keeps show.blade.php clean)
+     APPROVAL STAGE BAR
 ═══════════════════════════════════════════════════════════════ --}}
 @include('payroll._approval_bar')
 
@@ -324,7 +345,6 @@
     </div>
 </div>
 
-{{-- Draft with no entries yet --}}
 @if ($payroll->status === 'draft' && $employeeCount === 0)
     <div class="alert alert-warning">
         No entries yet. Click <strong>Compute Payroll</strong> above to generate all employee entries.
@@ -350,7 +370,7 @@
         </div>
     </div>
 
-    <div class="scroll-hint">← Scroll horizontally on mobile</div>
+    <div class="scroll-hint">Scroll horizontally to see all columns</div>
 
     <div class="card-body" style="padding:0;">
         <div class="table-wrap">
@@ -381,7 +401,6 @@
                             $dedCount = $entry->deductions->count();
                         @endphp
 
-                        {{-- Main row --}}
                         <tr class="{{ $netWarn ? 'net-warn' : '' }}" id="row-{{ $entry->id }}">
                             <td class="text-muted" style="font-size:0.75rem;">{{ $i + 1 }}</td>
                             <td>
@@ -442,7 +461,6 @@
                             </td>
                         </tr>
 
-                        {{-- Deduction expansion panel --}}
                         @if ($dedCount > 0)
                             <tr class="{{ $netWarn ? 'net-warn' : '' }}"
                                 id="ded-row-{{ $entry->id }}" style="display:none;">
@@ -512,9 +530,8 @@
         </div>
     </div>
 
-    {{-- Certification footer --}}
     @if ($isComputed)
-        <div class="card-body" style="background:#FAFBFF; border-top:1px solid var(--border); padding:14px 20px;">
+        <div class="card-body cert-footer" style="background:#FAFBFF; border-top:1px solid var(--border); padding:14px 20px;">
             <div class="d-flex gap-2 flex-wrap"
                  style="justify-content:space-between; align-items:flex-end; font-size:0.82rem; color:var(--text-mid);">
                 <div>
@@ -522,11 +539,9 @@
                     {{ $payroll->creator->name ?? '—' }}
                     <span class="text-muted">· {{ $payroll->created_at->format('M d, Y') }}</span>
                 </div>
-                {{-- approved_by is an ID — load the user via relation on the model --}}
                 @if ($payroll->approved_by)
                     <div>
                         <strong>Approved by:</strong>
-                        {{-- PayrollBatch must define: public function approver() { return $this->belongsTo(User::class, 'approved_by'); } --}}
                         {{ optional($payroll->approver)->name ?? '—' }}
                         @if ($payroll->approved_at)
                             <span class="text-muted">· {{ \Carbon\Carbon::parse($payroll->approved_at)->format('M d, Y') }}</span>
@@ -546,7 +561,6 @@
 
 @else
 
-{{-- Empty state --}}
 <div class="card">
     <div class="card-body empty-state">
         <div class="empty-state-icon">📊</div>
@@ -623,7 +637,6 @@ function toggleDed(entryId) {
     const isOpen = row.style.display !== 'none';
     row.style.display = isOpen ? 'none' : 'table-row';
 
-    // Rebuild label cleanly — strip existing arrow, re-append correct one
     const countText = toggle.textContent.replace(/[▾▴\s]+$/, '').trim();
     toggle.textContent = countText + ' ' + (isOpen ? '▾' : '▴');
 }
