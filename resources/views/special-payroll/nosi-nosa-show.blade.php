@@ -1,14 +1,14 @@
-{{-- resources/views/special-payroll/differential-show.blade.php --}}
+{{-- resources/views/special-payroll/nosi-nosa-show.blade.php --}}
 {{--
-    Expects from SpecialPayrollController@differentialShow:
-      $batch    — SpecialPayrollBatch (type=salary_differential, with employee, approver)
+    Expects from SpecialPayrollController@nosiNosaShow:
+      $batch    — SpecialPayrollBatch (type=nosi|nosa, with employee, approver)
       $employee — Employee model
       $result   — array from SalaryDifferentialService::compute()
 --}}
 
 @extends('layouts.app')
 
-@section('title', 'Salary Differential — ' . optional($employee)->last_name)
+@section('title', ($batch->type === 'nosi' ? 'NOSI' : 'NOSA') . ' — ' . optional($employee)->last_name)
 @section('page-title', 'Special Payroll')
 
 @section('styles')
@@ -56,9 +56,15 @@
     font-size: 0.96rem; font-weight: 700; text-transform: uppercase;
     letter-spacing: 0.04em; color: var(--navy); margin: 0 0 4px;
 }
+.doc-header .doc-type-badge {
+    display: inline-block; padding: 3px 14px;
+    background: var(--navy); color: #fff;
+    border-radius: 20px; font-size: 0.75rem; font-weight: 700;
+    letter-spacing: 0.06em; margin-bottom: 6px;
+}
 .doc-header .doc-period { font-size: 0.82rem; color: var(--text-mid); margin: 0; }
 
-/* ── Document meta ── */
+/* ── Doc meta ── */
 .doc-meta {
     display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
     gap: 10px 24px; margin-bottom: 20px; font-size: 0.85rem;
@@ -70,7 +76,7 @@
 }
 .doc-meta-item .value { font-weight: 600; color: var(--text); }
 
-/* ── Payroll table ── */
+/* ── Payroll table (desktop) ── */
 .comp-wrap { overflow-x: auto; margin-bottom: 20px; }
 .comp-table { width: 100%; border-collapse: collapse; font-size: 0.78rem; white-space: nowrap; }
 .comp-table thead tr:first-child th {
@@ -99,7 +105,7 @@
 .comp-table tfoot td.green-text { color: #69F0AE; }
 .comp-table tfoot td.red-text   { color: #FF8A80; }
 
-/* ── Mobile summary card (replaces scrollable table on small screens) ── */
+/* ── Mobile summary card ── */
 .mobile-summary {
     display: none;
     border: 1px solid var(--border); border-radius: var(--radius);
@@ -178,6 +184,12 @@
 @section('content')
 
 @php
+    $typeCode  = $batch->type;
+    $typeUpper = strtoupper($typeCode);
+    $typeTitle = $typeCode === 'nosi'
+        ? 'NOTICE OF SALARY INCREASE'
+        : 'NOTICE OF SALARY ADJUSTMENT';
+
     $statusClass = match ($batch->status) {
         'approved' => 'badge-released',
         'released' => 'badge-locked',
@@ -190,17 +202,17 @@
         default    => ucfirst($batch->status),
     };
 
-    $fromFmt = $batch->period_start->format('M d, Y');
-    $toFmt   = $batch->period_end->format('M d, Y');
-    $period  = $fromFmt . ' – ' . $toFmt;
+    $fromFmt = $batch->period_start->format('F j, Y');
+    $toFmt   = $batch->period_end->format('F j, Y');
+    $period  = $fromFmt . ' to ' . $toFmt;
 
     $canApprove = auth()->user()->hasRole('accountant') && $batch->status === 'draft';
     $canRelease = auth()->user()->hasAnyRole(['ard', 'chief_admin_officer']) && $batch->status === 'approved';
 
     $spSteps = [
-        ['label' => 'HR Prepared',  'sub' => 'Payroll Officer / HRMO', 'icon' => '✏'],
-        ['label' => 'Accountant',   'sub' => 'Certify & Approve',       'icon' => '💼'],
-        ['label' => 'RD / ARD',     'sub' => 'Released',                'icon' => '🏛'],
+        ['label' => 'HR Prepared', 'sub' => 'Payroll Officer / HRMO', 'icon' => '✏'],
+        ['label' => 'Accountant',  'sub' => 'Certify & Approve',       'icon' => '💼'],
+        ['label' => 'RD / ARD',    'sub' => 'Released',                'icon' => '🏛'],
     ];
     $spActiveStep = match ($batch->status) {
         'draft'    => 0,
@@ -213,15 +225,14 @@
 {{-- ═══ PAGE HEADER ═══ --}}
 <div class="page-header no-print">
     <div class="page-header-left">
-        <h1>Salary Differential</h1>
+        <h1>{{ $typeUpper }} — {{ optional($employee)->last_name }}, {{ optional($employee)->first_name }}</h1>
         <p>
-            {{ optional($employee)->last_name }}, {{ optional($employee)->first_name }} ·
             {{ $period }} ·
             <span class="badge {{ $statusClass }}">{{ $statusLabel }}</span>
         </p>
     </div>
     <div class="d-flex gap-2 flex-wrap">
-        <a href="{{ route('special-payroll.differential.index') }}"
+        <a href="{{ route('special-payroll.nosi-nosa.index') }}"
            class="btn btn-outline btn-sm no-print">← All Records</a>
         <button onclick="window.print()" class="btn btn-outline btn-sm no-print">🖨 Print</button>
     </div>
@@ -232,7 +243,7 @@
     @foreach ($spSteps as $idx => $step)
         @php
             $cls = '';
-            if ($idx < $spActiveStep)      $cls = 'done';
+            if ($idx < $spActiveStep)       $cls = 'done';
             elseif ($idx === $spActiveStep) $cls = ($batch->status === 'released') ? 'released-step' : 'active';
         @endphp
         <div class="approval-step {{ $cls }}">
@@ -251,18 +262,19 @@
 
 {{-- ═══ APPROVE / RELEASE FORM ═══ --}}
 @if ($canApprove || $canRelease)
-<div class="card mb-3 no-print" style="border-left: 4px solid var(--gold);">
+<div class="card mb-3 no-print" style="border-left:4px solid var(--gold);">
     <div class="card-body" style="padding:14px 20px;">
         <form method="POST"
-              action="{{ route('special-payroll.differential.approve', $batch->id) }}"
+              action="{{ route('special-payroll.nosi-nosa.approve', $batch->id) }}"
               style="display:flex; gap:12px; align-items:flex-end; flex-wrap:wrap;">
             @csrf
             <div class="form-group" style="flex:1; min-width:220px; margin:0;">
                 <label for="approve_remarks" style="margin-bottom:4px;">Remarks (optional)</label>
-                <input type="text" id="approve_remarks" name="remarks" placeholder="Optional remarks..." style="width:100%;">
+                <input type="text" id="approve_remarks" name="remarks"
+                       placeholder="Optional remarks..." style="width:100%;">
             </div>
             <button type="submit" class="btn btn-primary"
-                    onclick="return confirm('{{ $canApprove ? 'Approve' : 'Release' }} this salary differential record?')">
+                    onclick="return confirm('{{ $canApprove ? 'Approve' : 'Release' }} this {{ $typeUpper }} record?')">
                 {{ $canApprove ? '✓ Approve' : '✓ Release' }}
             </button>
         </form>
@@ -284,8 +296,9 @@
         {{-- ── Document Header ── --}}
         <div class="doc-header">
             <p class="doc-agency">DEPARTMENT OF LABOR AND EMPLOYMENT — RO9, ZAMBOANGA CITY</p>
+            <div class="doc-type-badge">{{ $typeUpper }}</div>
             <h2>General Payroll</h2>
-            <h2>Salary Differential for Newly Promoted, Step Increment, Salary Adjustment</h2>
+            <h2>{{ $typeTitle }}</h2>
             <p class="doc-period">For the Period of {{ strtoupper($period) }}</p>
         </div>
 
@@ -314,10 +327,14 @@
                 <span class="value">₱{{ number_format($batch->new_basic_salary, 2) }}</span>
             </div>
             <div class="doc-meta-item">
-                <span class="label">Differential</span>
+                <span class="label">Differential / mo.</span>
                 <span class="value" style="color:var(--navy);">
-                    ₱{{ number_format($result['differential'], 2) }} / mo.
+                    ₱{{ number_format($result['differential'], 2) }}
                 </span>
+            </div>
+            <div class="doc-meta-item">
+                <span class="label">Months Covered</span>
+                <span class="value">{{ count($result['per_month']) }} month(s)</span>
             </div>
             <div class="doc-meta-item">
                 <span class="label">WHT Rate</span>
@@ -499,7 +516,7 @@
         </div>
         @endif
 
-        {{-- ── Certification Blocks ── --}}
+        {{-- ── Certification Blocks A / B / C / D ── --}}
         <div class="cert-grid">
 
             <div class="cert-block">
@@ -516,7 +533,7 @@
                 <div class="cert-block-title">
                     APPROVED FOR PAYMENT:
                     <br>
-                    <strong>{{ strtoupper(amountToWords($result['net_amount'])) }}</strong>
+                    <strong>{{ strtoupper(nosiAmountToWords($result['net_amount'])) }}</strong>
                     <br>= ₱ {{ number_format($result['net_amount'], 2) }}
                 </div>
                 <div class="cert-sig-line"></div>
@@ -527,7 +544,8 @@
             <div class="cert-block">
                 <div class="cert-block-ref">B</div>
                 <div class="cert-block-title">
-                    CERTIFIED: Funds available, cash available, supporting documents complete and proper.
+                    CERTIFIED: Funds available, cash available, supporting documents
+                    complete and proper.
                 </div>
                 <div class="cert-sig-line"></div>
                 <div class="cert-sig-name">NAME</div>
@@ -562,7 +580,7 @@
 @endsection
 
 @php
-function amountToWords(float $amount): string
+function nosiAmountToWords(float $amount): string
 {
     $ones = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine',
              'Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen',

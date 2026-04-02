@@ -1,12 +1,12 @@
-{{-- resources/views/special-payroll/differential-create.blade.php --}}
+{{-- resources/views/special-payroll/nosi-nosa-create.blade.php --}}
 {{--
-    Expects from SpecialPayrollController@differentialCreate:
+    Expects from SpecialPayrollController@nosiNosaCreate:
       $employees — collection of active Employee models
 --}}
 
 @extends('layouts.app')
 
-@section('title', 'Salary Differential — New Entry')
+@section('title', 'NOSI / NOSA — New Entry')
 @section('page-title', 'Special Payroll')
 
 @section('styles')
@@ -24,6 +24,11 @@
     grid-template-columns: 1fr 1fr;
     gap: 16px;
 }
+.sp-nosi-info-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+}
 @media (max-width: 900px) {
     .sp-create-grid {
         grid-template-columns: 1fr;
@@ -31,9 +36,13 @@
 }
 @media (max-width: 600px) {
     .sp-date-row,
-    .sp-salary-row {
+    .sp-salary-row,
+    .sp-nosi-info-grid {
         grid-template-columns: 1fr;
         gap: 0;
+    }
+    .sp-nosi-info-grid {
+        gap: 12px;
     }
     .page-header {
         flex-direction: column;
@@ -55,22 +64,38 @@
 
 <div class="page-header">
     <div class="page-header-left">
-        <h1>Salary Differential — New Entry</h1>
-        <p>Promotion, step increment, or salary adjustment differential payroll.</p>
+        <h1>NOSI / NOSA — New Entry</h1>
+        <p>Notice of Salary Increase or Notice of Salary Adjustment back pay computation.</p>
     </div>
-    <a href="{{ route('special-payroll.differential.index') }}" class="btn btn-outline btn-sm">
+    <a href="{{ route('special-payroll.nosi-nosa.index') }}" class="btn btn-outline btn-sm">
         ← Back to Records
     </a>
 </div>
 
+{{-- Type explanation --}}
 <div class="alert alert-info mb-3">
-    <div>
-        <strong>Formula used (matching 01C Excel WP sheet):</strong>
+    <div class="sp-nosi-info-grid">
+        <div>
+            <strong>📋 NOSI — Notice of Salary Increase</strong><br>
+            <span style="font-size:0.83rem;">
+                Merit-based or step increment ordered by the President / CSC.
+                Covers a specific effectivity date range with retroactive back pay.
+            </span>
+        </div>
+        <div>
+            <strong>📋 NOSA — Notice of Salary Adjustment</strong><br>
+            <span style="font-size:0.83rem;">
+                Salary standardization or restructuring adjustment.
+                May cover all employees or a group for a long date range (e.g. full year).
+            </span>
+        </div>
+    </div>
+    <div style="margin-top:10px; font-size:0.82rem; border-top:1px solid var(--border); padding-top:10px;">
+        <strong>Formula (same as Salary Differential):</strong>
         Differential = New Rate − Old Rate.
         Partial months: <strong>ROUND(Differential × Days / 22, 2)</strong>.
         Full months: Differential.
-        Deductions: GSIS PS (9%), PhilHealth (2.5%), Pag-IBIG (₱200/mo fixed),
-        WHT (employee rate or 20% default) applied on total earned.
+        Deductions: GSIS PS (9%), PhilHealth (2.5%), Pag-IBIG (₱200/mo), WHT (20% default).
     </div>
 </div>
 
@@ -92,8 +117,29 @@
             <h3>📋 Entry Details</h3>
         </div>
         <div class="card-body">
-            <form method="POST" action="{{ route('special-payroll.differential.store') }}" id="diffForm">
+            <form method="POST" action="{{ route('special-payroll.nosi-nosa.store') }}" id="nosiForm">
                 @csrf
+
+                {{-- Type --}}
+                <div class="form-group">
+                    <label for="type">
+                        Type <span style="color:var(--red);">*</span>
+                    </label>
+                    <select name="type" id="type"
+                            class="{{ $errors->has('type') ? 'is-invalid' : '' }}"
+                            required>
+                        <option value="">— Select Type —</option>
+                        <option value="nosi" {{ old('type') === 'nosi' ? 'selected' : '' }}>
+                            NOSI — Notice of Salary Increase
+                        </option>
+                        <option value="nosa" {{ old('type') === 'nosa' ? 'selected' : '' }}>
+                            NOSA — Notice of Salary Adjustment
+                        </option>
+                    </select>
+                    @error('type')
+                        <div class="invalid-feedback">{{ $message }}</div>
+                    @enderror
+                </div>
 
                 {{-- Employee --}}
                 <div class="form-group">
@@ -201,7 +247,7 @@
                 <div class="form-group">
                     <label for="remarks">Remarks <span class="text-muted">(optional)</span></label>
                     <textarea id="remarks" name="remarks" rows="2"
-                              placeholder="e.g. Promoted to SG-19 Step 5 per appointment dated..."
+                              placeholder="e.g. Per EO No. 64 s. 2024, effective January 1, 2024..."
                               class="{{ $errors->has('remarks') ? 'is-invalid' : '' }}"
                               style="width:100%; resize:vertical;">{{ old('remarks') }}</textarea>
                     @error('remarks')
@@ -213,7 +259,7 @@
                     <button type="submit" class="btn btn-primary btn-lg">
                         ⚙ Compute &amp; Save
                     </button>
-                    <a href="{{ route('special-payroll.differential.index') }}"
+                    <a href="{{ route('special-payroll.nosi-nosa.index') }}"
                        class="btn btn-outline btn-lg">Cancel</a>
                 </div>
 
@@ -221,7 +267,7 @@
         </div>
     </div>
 
-    {{-- ── Right: Live Estimate ── --}}
+    {{-- ── Right: Live Estimate + Formula Reference ── --}}
     <div style="display:flex; flex-direction:column; gap:16px;">
 
         <div class="card">
@@ -237,6 +283,10 @@
                         <tr style="border-bottom:1px solid var(--border);">
                             <td style="padding:5px 0; color:var(--text-light);">Differential / mo.</td>
                             <td style="text-align:right; font-weight:600;" id="prev-diff">—</td>
+                        </tr>
+                        <tr style="border-bottom:1px solid var(--border);">
+                            <td style="padding:5px 0; color:var(--text-light);">Months</td>
+                            <td style="text-align:right;" id="prev-months-count">—</td>
                         </tr>
                         <tr style="border-bottom:1px solid var(--border);">
                             <td style="padding:5px 0; color:var(--text-light);">Total Earned</td>
@@ -267,6 +317,7 @@
                             <td style="text-align:right; font-weight:700; color:var(--navy); font-size:1.05rem;" id="prev-net">—</td>
                         </tr>
                     </table>
+
                     <div id="prev-months-wrap" style="margin-top:12px; display:none;">
                         <div style="font-size:0.72rem; font-weight:700; letter-spacing:0.04em;
                              text-transform:uppercase; color:var(--text-light); margin-bottom:6px;">
@@ -287,7 +338,6 @@
             </div>
         </div>
 
-        {{-- Formula Reference --}}
         <div class="card">
             <div class="card-header">
                 <h3>📐 Formula Reference</h3>
@@ -299,8 +349,14 @@
                 <strong>GSIS PS</strong> = 9% × monthly earned<br>
                 <strong>PhilHealth</strong> = 2.5% × monthly earned<br>
                 <strong>Pag-IBIG</strong> = ₱200.00 per month (fixed)<br>
-                <strong>WHT</strong> = employee rate × total earned<br>
-                <strong>Net</strong> = Total Earned − All Deductions
+                <strong>WHT</strong> = 20% × total earned (default)<br>
+                <strong>Net</strong> = Total Earned − All Deductions<br>
+                <br>
+                <span style="color:var(--navy); font-weight:600;">
+                    NOSI/NOSA tip:
+                </span>
+                For a full-year range (Jan 1 – Dec 31), all 12 months
+                will be full months = 12 × differential.
             </div>
         </div>
 
@@ -312,15 +368,13 @@
 @section('scripts')
 <script>
 (function () {
-    var fields = ['effectivity_date_from', 'effectivity_date_to', 'old_salary', 'new_salary'];
-
-    fields.forEach(function (id) {
+    var watchFields = ['effectivity_date_from', 'effectivity_date_to', 'old_salary', 'new_salary'];
+    watchFields.forEach(function (id) {
         var el = document.getElementById(id);
-        if (el) el.addEventListener('change', updatePreview);
-        if (el) el.addEventListener('input',  updatePreview);
+        if (el) { el.addEventListener('change', updatePreview); el.addEventListener('input', updatePreview); }
     });
 
-    // ── Auto-fill Old Salary when employee is selected ──────────────────
+    // Auto-fill Old Salary on employee select
     var empSelect = document.getElementById('employee_id');
     empSelect.addEventListener('change', function () {
         var opt   = this.options[this.selectedIndex];
@@ -328,101 +382,87 @@
         var oldSalaryField = document.getElementById('old_salary');
 
         if (!isNaN(basic) && basic > 0) {
-            oldSalaryField.value = basic.toFixed(2);
+            oldSalaryField.value          = basic.toFixed(2);
             oldSalaryField.style.background = 'var(--surface-alt, #f0f2ff)';
             oldSalaryField.style.color      = 'var(--text-mid)';
             oldSalaryField.title            = 'Auto-filled from employee record. Click to override.';
         } else {
-            oldSalaryField.value      = '';
+            oldSalaryField.value            = '';
             oldSalaryField.style.background = '';
             oldSalaryField.style.color      = '';
             oldSalaryField.title            = '';
         }
-
         updatePreview();
     });
 
-    // Allow manual override — restore normal styling on direct input
     document.getElementById('old_salary').addEventListener('input', function () {
         this.style.background = '';
         this.style.color      = '';
         this.title            = '';
     });
 
-    // ── If old('employee_id') is set on page reload, re-trigger fill ────
-    var empSel = document.getElementById('employee_id');
-    if (empSel.value) {
-        var evt = new Event('change');
-        empSel.dispatchEvent(evt);
-    }
+    // Re-trigger on validation reload
+    if (empSelect.value) { empSelect.dispatchEvent(new Event('change')); }
 
-    // ────────────────────────────────────────────────────────────────────
-
+    // ── Helpers ─────────────────────────────────────────────────────────
     function fmt(n) {
         return '₱' + Number(n).toLocaleString('en-PH', {minimumFractionDigits:2, maximumFractionDigits:2});
     }
+    function rnd(v) { return Math.round(v * 100) / 100; }
+    function daysInMonth(y, m) { return new Date(y, m, 0).getDate(); }
 
-    function rnd(val) { return Math.round(val * 100) / 100; }
-
-    function daysInMonth(year, month) {
-        return new Date(year, month, 0).getDate();
-    }
-
+    // ── Main compute ─────────────────────────────────────────────────────
     function updatePreview() {
-        var empSel   = document.getElementById('employee_id');
-        var fromVal  = document.getElementById('effectivity_date_from').value;
-        var toVal    = document.getElementById('effectivity_date_to').value;
-        var oldSal   = parseFloat(document.getElementById('old_salary').value) || 0;
-        var newSal   = parseFloat(document.getElementById('new_salary').value) || 0;
+        var empSel  = document.getElementById('employee_id');
+        var fromVal = document.getElementById('effectivity_date_from').value;
+        var toVal   = document.getElementById('effectivity_date_to').value;
+        var oldSal  = parseFloat(document.getElementById('old_salary').value) || 0;
+        var newSal  = parseFloat(document.getElementById('new_salary').value) || 0;
 
-        // Differential badge + inline warning
-        var diffBadge    = document.getElementById('diff-badge');
-        var diffVal      = document.getElementById('diff-val');
-        var newSalWarn   = document.getElementById('new-salary-warn');
-        var warnOldVal   = document.getElementById('warn-old-val');
+        // Differential badge + warning
+        var diffBadge  = document.getElementById('diff-badge');
+        var diffValEl  = document.getElementById('diff-val');
+        var warnBox    = document.getElementById('new-salary-warn');
+        var warnOldEl  = document.getElementById('warn-old-val');
 
         if (newSal > 0 && oldSal > 0) {
             var diff = rnd(newSal - oldSal);
             diffBadge.style.display = 'block';
-            diffVal.textContent     = fmt(diff);
-
+            diffValEl.textContent   = fmt(diff);
             if (diff <= 0) {
-                diffBadge.style.color  = '#B71C1C';
-                newSalWarn.style.display = 'block';
-                warnOldVal.textContent   = Number(oldSal).toLocaleString('en-PH', {minimumFractionDigits:2});
+                diffBadge.style.color = '#B71C1C';
+                warnBox.style.display = 'block';
+                warnOldEl.textContent = Number(oldSal).toLocaleString('en-PH', {minimumFractionDigits:2});
             } else {
-                diffBadge.style.color    = 'var(--navy)';
-                newSalWarn.style.display = 'none';
+                diffBadge.style.color = 'var(--navy)';
+                warnBox.style.display = 'none';
             }
         } else {
-            diffBadge.style.display  = 'none';
-            newSalWarn.style.display = 'none';
+            diffBadge.style.display = 'none';
+            warnBox.style.display   = 'none';
         }
 
         if (!fromVal || !toVal || oldSal <= 0 || newSal <= 0 || newSal <= oldSal) {
-            document.getElementById('previewEmpty').style.display = 'block';
+            document.getElementById('previewEmpty').style.display   = 'block';
             document.getElementById('previewContent').style.display = 'none';
             return;
         }
 
         var whtRate = 0.20;
         if (empSel && empSel.selectedIndex > 0) {
-            var opt = empSel.options[empSel.selectedIndex];
-            var raw = parseFloat(opt.getAttribute('data-wht'));
+            var raw = parseFloat(empSel.options[empSel.selectedIndex].getAttribute('data-wht'));
             if (!isNaN(raw) && raw > 0) whtRate = raw;
         }
 
         var differential = rnd(newSal - oldSal);
         var DENOM = 22;
-
-        var from = new Date(fromVal + 'T00:00:00');
-        var to   = new Date(toVal   + 'T00:00:00');
+        var from  = new Date(fromVal + 'T00:00:00');
+        var to    = new Date(toVal   + 'T00:00:00');
 
         var perMonth    = [];
         var totalEarned = 0;
-
-        var cursor  = new Date(from.getFullYear(), from.getMonth(), 1);
-        var toMonth = new Date(to.getFullYear(),   to.getMonth(),   1);
+        var cursor      = new Date(from.getFullYear(), from.getMonth(), 1);
+        var toMonth     = new Date(to.getFullYear(),   to.getMonth(),   1);
 
         while (cursor <= toMonth) {
             var mYear  = cursor.getFullYear();
@@ -434,23 +474,17 @@
             var segEnd   = (cursor.getTime() === new Date(to.getFullYear(), to.getMonth(), 1).getTime())
                            ? to.getDate() : dim;
 
-            var days = segEnd - segStart + 1;
+            var days        = segEnd - segStart + 1;
             var isFullMonth = (segStart === 1 && segEnd === dim);
-            var earned = isFullMonth ? rnd(differential) : rnd(differential * days / DENOM);
+            var earned      = isFullMonth ? rnd(differential) : rnd(differential * days / DENOM);
 
-            var monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-            perMonth.push({
-                label:  monthNames[mMonth] + ' ' + mYear,
-                days:   days,
-                earned: earned
-            });
+            var mNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+            perMonth.push({ label: mNames[mMonth] + ' ' + mYear, days: days, earned: earned });
             totalEarned += earned;
-
             cursor = new Date(mYear, mMonth + 1, 1);
         }
 
         totalEarned = rnd(totalEarned);
-
         var totalGsis    = rnd(totalEarned * 0.09);
         var totalPhic    = rnd(totalEarned * 0.025);
         var totalPagIbig = rnd(perMonth.length * 200);
@@ -458,35 +492,33 @@
         var totalDeduct  = rnd(totalGsis + totalPhic + totalPagIbig + totalWht);
         var netAmount    = rnd(totalEarned - totalDeduct);
 
-        document.getElementById('previewEmpty').style.display    = 'none';
-        document.getElementById('previewContent').style.display  = 'block';
+        document.getElementById('previewEmpty').style.display   = 'none';
+        document.getElementById('previewContent').style.display = 'block';
 
-        document.getElementById('prev-diff').textContent    = fmt(differential) + '/mo.';
-        document.getElementById('prev-earned').textContent  = fmt(totalEarned);
-        document.getElementById('prev-gsis').textContent    = fmt(totalGsis);
-        document.getElementById('prev-phic').textContent    = fmt(totalPhic);
-        document.getElementById('prev-pagibig').textContent = fmt(totalPagIbig);
-        document.getElementById('prev-wht-rate').textContent = Math.round(whtRate * 100);
-        document.getElementById('prev-wht').textContent    = fmt(totalWht);
-        document.getElementById('prev-deduct').textContent = fmt(totalDeduct);
-        document.getElementById('prev-net').textContent    = fmt(netAmount);
+        document.getElementById('prev-diff').textContent         = fmt(differential) + '/mo.';
+        document.getElementById('prev-months-count').textContent = perMonth.length + ' month(s)';
+        document.getElementById('prev-earned').textContent       = fmt(totalEarned);
+        document.getElementById('prev-gsis').textContent         = fmt(totalGsis);
+        document.getElementById('prev-phic').textContent         = fmt(totalPhic);
+        document.getElementById('prev-pagibig').textContent      = fmt(totalPagIbig);
+        document.getElementById('prev-wht-rate').textContent     = Math.round(whtRate * 100);
+        document.getElementById('prev-wht').textContent          = fmt(totalWht);
+        document.getElementById('prev-deduct').textContent       = fmt(totalDeduct);
+        document.getElementById('prev-net').textContent          = fmt(netAmount);
 
-        // Per-month table
         var tbody = document.getElementById('prev-months-body');
         tbody.innerHTML = '';
         perMonth.forEach(function (m) {
             var tr = document.createElement('tr');
             tr.style.borderBottom = '1px solid var(--border)';
             tr.innerHTML =
-                '<td style="padding:3px 6px;">'                          + m.label  + '</td>' +
-                '<td style="padding:3px 6px; text-align:center;">'       + m.days   + '</td>' +
-                '<td style="padding:3px 6px; text-align:right;">'        + fmt(m.earned) + '</td>';
+                '<td style="padding:3px 6px;">' + m.label + '</td>' +
+                '<td style="padding:3px 6px; text-align:center;">' + m.days + '</td>' +
+                '<td style="padding:3px 6px; text-align:right;">' + fmt(m.earned) + '</td>';
             tbody.appendChild(tr);
         });
 
-        if (perMonth.length > 0) {
-            document.getElementById('prev-months-wrap').style.display = 'block';
-        }
+        document.getElementById('prev-months-wrap').style.display = perMonth.length > 0 ? 'block' : 'none';
     }
 })();
 </script>

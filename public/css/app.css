@@ -425,9 +425,13 @@ p { margin-bottom: 0.6rem; color: var(--text-mid); }
     height: var(--topbar-h);
     background: white;
     border-bottom: 2px solid var(--border);
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 0 28px; z-index: 90;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 28px 0 20px;   /* slightly less left padding on mobile */
+    z-index: 90;
     box-shadow: 0 1px 4px rgba(15,27,76,0.05);
+    min-width: 0;
 }
 
 .topbar-title { font-size: 1.03rem; font-weight: 600; color: var(--navy); }
@@ -634,11 +638,26 @@ input.is-invalid,select.is-invalid { border-color: var(--red); }
         margin-left: 0;
     }
  
-    /* Topbar also full width */
     .topbar {
         left: 0;
+        padding: 0 16px;
     }
- 
+
+    .topbar-left {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .topbar-title {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    /* Hide the user name text on mobile, keep role badge */
+    .topbar-user span:first-child {
+        display: none;
+    }
     /* Show burger button */
     .burger-btn {
         display: flex;
@@ -651,4 +670,24 @@ input.is-invalid,select.is-invalid { border-color: var(--red); }
     .stat-grid {
         grid-template-columns: 1fr 1fr;
     }
+
+    
+}
+
+
+/* ── Topbar left — keep burger + title in one row ── */
+.topbar-left {
+    display: flex;
+    align-items: center;
+    gap: 0;           /* burger already has margin-right: 12px */
+    min-width: 0;
+}
+
+.topbar-title {
+    font-size: 1.03rem;
+    font-weight: 600;
+    color: var(--navy);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }

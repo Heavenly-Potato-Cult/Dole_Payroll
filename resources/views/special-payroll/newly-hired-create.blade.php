@@ -9,6 +9,51 @@
 @section('title', 'New Hire — Pro-Rated Payroll')
 @section('page-title', 'Special Payroll')
 
+@section('styles')
+<style>
+/* ── Responsive: Special Payroll Create Pages ── */
+.sp-create-grid {
+    display: grid;
+    grid-template-columns: 1fr 360px;
+    gap: 24px;
+    align-items: start;
+}
+.sp-date-row,
+.sp-cutoff-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+}
+@media (max-width: 900px) {
+    .sp-create-grid {
+        grid-template-columns: 1fr;
+    }
+}
+@media (max-width: 600px) {
+    .sp-date-row,
+    .sp-cutoff-row {
+        grid-template-columns: 1fr;
+        gap: 0;
+    }
+    .page-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+    .sp-action-row {
+        flex-direction: column;
+    }
+    .sp-action-row .btn {
+        width: 100%;
+        text-align: center;
+    }
+    .stat-grid {
+        grid-template-columns: 1fr 1fr !important;
+    }
+}
+</style>
+@endsection
+
 @section('content')
 
 <div class="page-header">
@@ -31,7 +76,7 @@
     </div>
 </div>
 
-<div style="display:grid; grid-template-columns:1fr 360px; gap:24px; align-items:start;">
+<div class="sp-create-grid">
 
     {{-- ── Main Form ── --}}
     <div class="card">
@@ -83,7 +128,7 @@
                 </div>
 
                 {{-- Cut-off dates --}}
-                <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+                <div class="sp-cutoff-row">
                     <div class="form-group">
                         <label for="cutoff_start">
                             Cut-off Start <span style="color:var(--red);">*</span>
@@ -136,7 +181,7 @@
                     @enderror
                 </div>
 
-                <div class="d-flex gap-2" style="margin-top:24px;">
+                <div class="d-flex gap-2 sp-action-row" style="margin-top:24px;">
                     <button type="submit" class="btn btn-primary btn-lg">
                         ⚙ Compute &amp; Save
                     </button>

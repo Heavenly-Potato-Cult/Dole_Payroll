@@ -423,6 +423,217 @@ public function differentialDestroy(int $id)
             ->with('success', "Salary differential record {$label} successfully.");
     }
 
+       // ─────────────────────────────────────────────────────────────────────
+    //  NOSI/NOSA — Index
+    //  GET /special-payroll/nosi-nosa
+    // ─────────────────────────────────────────────────────────────────────
+    public function nosiNosaIndex(Request $request)
+    {
+        $this->authorizeRole(['payroll_officer', 'hrmo', 'accountant', 'ard', 'cashier']);
+ 
+        $query = SpecialPayrollBatch::with('employee')
+            ->whereIn('type', ['nosi', 'nosa'])
+            ->orderByDesc('id');
+ 
+        if ($request->filled('year')) {
+            $query->where('year', $request->year);
+        }
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+        if ($request->filled('type')) {
+            $query->where('type', $request->type);
+        }
+ 
+        $batches     = $query->paginate(20)->withQueryString();
+        $currentYear = now()->year;
+ 
+        return view('special-payroll.nosi-nosa-index', compact('batches', 'currentYear'));
+    }
+ 
+    // ─────────────────────────────────────────────────────────────────────
+    //  NOSI/NOSA — Create Form
+    //  GET /special-payroll/nosi-nosa/create
+    // ─────────────────────────────────────────────────────────────────────
+    public function nosiNosaCreate()
+    {
+        $this->authorizeRole(['payroll_officer', 'hrmo']);
+ 
+        $employees = Employee::where('status', 'active')
+            ->orderBy('last_name')
+            ->orderBy('first_name')
+            ->get(['id', 'last_name', 'first_name', 'middle_name',
+                   'position_title', 'basic_salary']);
+ 
+        return view('special-payroll.nosi-nosa-create', compact('employees'));
+    }
+ 
+    // ─────────────────────────────────────────────────────────────────────
+    //  NOSI/NOSA — Store
+    //  POST /special-payroll/nosi-nosa
+    // ─────────────────────────────────────────────────────────────────────
+    public function nosiNosaStore(Request $request)
+    {
+        $this->authorizeRole(['payroll_officer', 'hrmo']);
+ 
+        $request->validate([
+            'type'                 => ['required', 'in:nosi,nosa'],
+            'employee_id'          => ['required', 'integer', 'exists:employees,id'],
+            'effectivity_date_from'=> ['required', 'date'],
+            'effectivity_date_to'  => ['required', 'date', 'after_or_equal:effectivity_date_from'],
+            'old_salary'           => ['required', 'numeric', 'min:0'],
+            'new_salary'           => ['required', 'numeric', 'gt:old_salary'],
+            'remarks'              => ['nullable', 'string', 'max:1000'],
+        ], [
+            'new_salary.gt' => 'New salary must be greater than the old salary.',
+            'type.in'       => 'Type must be either NOSI or NOSA.',
+        ]);
+ 
+        $employee = Employee::findOrFail($request->employee_id);
+ 
+        /** @var SalaryDifferentialService $service */
+        $service = app(SalaryDifferentialService::class);
+ 
+        $result = $service->compute(
+            employee:              $employee,
+            effectivity_date_from: $request->effectivity_date_from,
+            effectivity_date_to:   $request->effectivity_date_to,
+            old_salary:            (float) $request->old_salary,
+            new_salary:            (float) $request->new_salary,
+        );
+ 
+        $from      = Carbon::parse($request->effectivity_date_from);
+        $to        = Carbon::parse($request->effectivity_date_to);
+        $typeLabel = strtoupper($request->type);
+ 
+        $title = $typeLabel . ' — '
+            . $employee->last_name . ', ' . $employee->first_name
+            . ' (' . $from->format('M d, Y') . ' – ' . $to->format('M d, Y') . ')';
+ 
+        $batch = SpecialPayrollBatch::create([
+            'type'                => $request->type,
+            'title'               => $title,
+            'year'                => $from->year,
+            'month'               => $from->month,
+            'effectivity_date'    => $request->effectivity_date_from,
+            'period_start'        => $request->effectivity_date_from,
+            'period_end'          => $request->effectivity_date_to,
+            'employee_id'         => $employee->id,
+            'old_basic_salary'    => $request->old_salary,
+            'new_basic_salary'    => $request->new_salary,
+            'differential_amount' => $result['differential'],
+            'gross_amount'        => $result['total_earned'],
+            'deductions_amount'   => $result['total_deductions'],
+            'net_amount'          => $result['net_amount'],
+            'status'              => 'draft',
+            'remarks'             => $request->remarks,
+        ]);
+ 
+        PayrollAuditLog::create([
+            'user_id'    => Auth::id(),
+            'action'     => 'Created ' . $typeLabel . ': ' . $employee->last_name . ', ' . $employee->first_name,
+            'old_value'  => null,
+            'new_value'  => 'draft',
+            'ip_address' => $request->ip(),
+        ]);
+ 
+        return redirect()->route('special-payroll.nosi-nosa.show', $batch->id)
+            ->with('success', $typeLabel . " record created for {$employee->last_name}, {$employee->first_name}.");
+    }
+ 
+    // ─────────────────────────────────────────────────────────────────────
+    //  NOSI/NOSA — Show
+    //  GET /special-payroll/nosi-nosa/{id}
+    // ─────────────────────────────────────────────────────────────────────
+    public function nosiNosaShow(int $id)
+    {
+        $this->authorizeRole(['payroll_officer', 'hrmo', 'accountant', 'ard', 'cashier']);
+ 
+        $batch = SpecialPayrollBatch::with('employee', 'approver')
+            ->whereIn('type', ['nosi', 'nosa'])
+            ->findOrFail($id);
+ 
+        $employee = $batch->employee;
+ 
+        /** @var SalaryDifferentialService $service */
+        $service = app(SalaryDifferentialService::class);
+ 
+        $result = $service->compute(
+            employee:              $employee,
+            effectivity_date_from: $batch->period_start->toDateString(),
+            effectivity_date_to:   $batch->period_end->toDateString(),
+            old_salary:            (float) $batch->old_basic_salary,
+            new_salary:            (float) $batch->new_basic_salary,
+        );
+ 
+        return view('special-payroll.nosi-nosa-show', compact('batch', 'employee', 'result'));
+    }
+ 
+    // ─────────────────────────────────────────────────────────────────────
+    //  NOSI/NOSA — Approve / Release
+    //  POST /special-payroll/nosi-nosa/{id}/approve
+    // ─────────────────────────────────────────────────────────────────────
+    public function nosiNosaApprove(Request $request, int $id)
+    {
+        $batch = SpecialPayrollBatch::whereIn('type', ['nosi', 'nosa'])->findOrFail($id);
+ 
+        $old       = $batch->status;
+        $typeLabel = strtoupper($batch->type);
+ 
+        if ($batch->status === 'draft') {
+            $this->authorizeRole(['accountant']);
+            $new    = 'approved';
+            $action = 'Approved ' . $typeLabel;
+        } elseif ($batch->status === 'approved') {
+            $this->authorizeRole(['ard', 'chief_admin_officer']);
+            $new    = 'released';
+            $action = 'Released ' . $typeLabel;
+        } else {
+            return back()->with('error', 'This record cannot be advanced further.');
+        }
+ 
+        $request->validate(['remarks' => ['nullable', 'string', 'max:500']]);
+ 
+        $batch->update([
+            'status'      => $new,
+            'approved_by' => Auth::id(),
+            'approved_at' => now(),
+            'remarks'     => $request->remarks ?? $batch->remarks,
+        ]);
+ 
+        PayrollAuditLog::create([
+            'payroll_batch_id' => null,
+            'user_id'          => Auth::id(),
+            'action'           => $action . ': ' . $batch->title,
+            'old_value'        => $old,
+            'new_value'        => $new,
+            'ip_address'       => $request->ip(),
+        ]);
+ 
+        $label = $new === 'approved' ? 'approved' : 'approved and released';
+ 
+        return redirect()->route('special-payroll.nosi-nosa.show', $batch->id)
+            ->with('success', $typeLabel . " record {$label} successfully.");
+    }
+ 
+    // ─────────────────────────────────────────────────────────────────────
+    //  NOSI/NOSA — Destroy (draft only)
+    //  DELETE /special-payroll/nosi-nosa/{id}
+    // ─────────────────────────────────────────────────────────────────────
+    public function nosiNosaDestroy(int $id)
+    {
+        $this->authorizeRole(['payroll_officer', 'hrmo']);
+ 
+        $batch = SpecialPayrollBatch::whereIn('type', ['nosi', 'nosa'])
+            ->where('status', 'draft')
+            ->findOrFail($id);
+ 
+        $batch->delete();
+ 
+        return redirect()->route('special-payroll.nosi-nosa.index')
+            ->with('success', 'Record deleted.');
+    }
+
     // ─────────────────────────────────────────────────────────────────────
     //  Private helpers
     // ─────────────────────────────────────────────────────────────────────

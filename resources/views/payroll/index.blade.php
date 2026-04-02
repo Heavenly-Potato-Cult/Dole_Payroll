@@ -15,6 +15,215 @@
 @section('title', 'Regular Payroll')
 @section('page-title', 'Regular Payroll')
 
+@section('styles')
+<style>
+/* ─────────────────────────────────────────────────────
+   FILTER FORM — buttons match input/select height
+───────────────────────────────────────────────────── */
+.filter-form {
+    display: flex;
+    gap: 10px;
+    align-items: flex-end;
+    flex-wrap: wrap;
+}
+.filter-form .ff-group {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+.filter-form .ff-group label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    color: var(--text-mid);
+    line-height: 1;
+    margin: 0;
+}
+.filter-form input,
+.filter-form select {
+    height: 38px;
+    margin-bottom: 0 !important;
+    box-sizing: border-box;
+}
+.filter-form .ff-btns {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    height: 38px;
+}
+.filter-form .ff-btns .btn,
+.filter-form .ff-btns .btn-sm {
+    height: 38px;
+    padding-top: 0;
+    padding-bottom: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    white-space: nowrap;
+}
+
+/* ─────────────────────────────────────────────────────
+   RESPONSIVE TABLE
+───────────────────────────────────────────────────── */
+
+/* Detail rows + expand button: always hidden unless mobile overrides */
+.pr-detail-row { display: none !important; }
+.pr-expand-btn { display: none !important; }
+
+/* ── DESKTOP (≥ 769px): pure normal table ── */
+@media (min-width: 769px) {
+    .pr-table              { display: table; width: 100%; border-collapse: collapse; }
+    .pr-table thead        { display: table-header-group; }
+    .pr-table tbody        { display: table-row-group; }
+    .pr-table tr           { display: table-row; }
+    .pr-table th,
+    .pr-table td           { display: table-cell; }
+}
+
+/* ── MOBILE (≤ 768px): card rows ── */
+@media (max-width: 768px) {
+
+    /* Filter: stack vertically */
+    .filter-form              { flex-direction: column; align-items: stretch; }
+    .filter-form .ff-group,
+    .filter-form .ff-btns     { width: 100%; }
+    .filter-form .ff-btns     { height: auto; }
+    .filter-form .ff-btns .btn,
+    .filter-form .ff-btns .btn-sm { flex: 1; }
+
+    .table-wrap { overflow: visible; }
+
+    .pr-table        { display: block; }
+    .pr-table thead  { display: none; }
+    .pr-table tbody  { display: block; }
+
+    /* Card row */
+    .pr-table tr.pr-main-row {
+        display: flex;
+        align-items: center;
+        gap: 0;
+        padding: 14px 16px;
+        border-bottom: 1px solid var(--border);
+        cursor: pointer;
+        transition: background .15s;
+        min-height: 64px;
+    }
+    .pr-table tr.pr-main-row:active { background: var(--bg); }
+
+    /* Hide columns moved to detail panel */
+    .pr-table tr.pr-main-row td.col-cutoff,
+    .pr-table tr.pr-main-row td.col-employees,
+    .pr-table tr.pr-main-row td.col-gross,
+    .pr-table tr.pr-main-row td.col-deductions,
+    .pr-table tr.pr-main-row td.col-netpay,
+    .pr-table tr.pr-main-row td.col-creator,
+    .pr-table tr.pr-main-row td.col-actions {
+        display: none;
+    }
+
+    /* Period — takes all space */
+    .pr-table tr.pr-main-row td.col-period {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        gap: 4px;
+        padding: 0;
+        min-width: 0;
+    }
+    .pr-table tr.pr-main-row td.col-period .pr-period-label {
+        font-weight: 700;
+        font-size: 0.92rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .pr-table tr.pr-main-row td.col-period .pr-period-sub {
+        font-size: 0.74rem;
+        color: var(--text-mid);
+    }
+
+    /* Status badge */
+    .pr-table tr.pr-main-row td.col-status {
+        flex: 0 0 auto;
+        display: flex;
+        align-items: center;
+        padding: 0 10px;
+    }
+
+    /* Expand button */
+    .pr-expand-btn {
+        display: inline-flex !important;
+        align-items: center;
+        justify-content: center;
+        width: 26px;
+        height: 26px;
+        flex-shrink: 0;
+        border-radius: 50%;
+        background: transparent;
+        border: 1.5px solid var(--border);
+        cursor: pointer;
+        font-size: 0.65rem;
+        color: var(--text-mid);
+        transition: transform .2s, background .15s, border-color .15s;
+        margin-left: 6px;
+    }
+    .pr-main-row.open .pr-expand-btn {
+        transform: rotate(180deg);
+        background: var(--navy-light, #e8ecf4);
+        border-color: var(--navy);
+        color: var(--navy);
+    }
+
+    /* ── Expanded detail panel ── */
+    tr.pr-detail-row.open {
+        display: block !important;
+        border-bottom: 1px solid var(--border);
+        background: var(--bg, #f8f9fb);
+    }
+    tr.pr-detail-row.open td {
+        display: block;
+        padding: 12px 16px 16px;
+    }
+    .pr-detail-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px 20px;
+        margin-bottom: 14px;
+    }
+    .pr-detail-item label {
+        display: block;
+        font-size: 0.65rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: .06em;
+        color: var(--text-light);
+        margin-bottom: 3px;
+    }
+    .pr-detail-item span {
+        font-size: 0.85rem;
+        color: var(--text);
+        font-weight: 500;
+    }
+    .pr-detail-item span.mono {
+        font-family: monospace;
+    }
+    .pr-detail-actions {
+        display: flex;
+        gap: 8px;
+    }
+    .pr-detail-actions .btn,
+    .pr-detail-actions button {
+        flex: 1;
+        justify-content: center;
+        text-align: center;
+    }
+}
+</style>
+@endsection
+
 @section('content')
 
 <div class="page-header">
@@ -43,11 +252,10 @@
 {{-- ── Filter bar ──────────────────────────────────────────── --}}
 <div class="card mb-3">
     <div class="card-body" style="padding:14px 20px;">
-        <form method="GET" action="{{ route('payroll.index') }}"
-              style="display:flex; gap:12px; flex-wrap:wrap; align-items:flex-end;">
+        <form method="GET" action="{{ route('payroll.index') }}" class="filter-form">
 
-            <div class="form-group" style="margin:0; min-width:120px;">
-                <label for="year" style="margin-bottom:4px;">Year</label>
+            <div class="ff-group" style="min-width:120px;">
+                <label for="year">Year</label>
                 <select name="year" id="year">
                     <option value="">All Years</option>
                     @foreach (range(now()->year, 2020) as $y)
@@ -58,8 +266,8 @@
                 </select>
             </div>
 
-            <div class="form-group" style="margin:0; min-width:140px;">
-                <label for="month" style="margin-bottom:4px;">Month</label>
+            <div class="ff-group" style="min-width:140px;">
+                <label for="month">Month</label>
                 <select name="month" id="month">
                     <option value="">All Months</option>
                     @foreach (['January','February','March','April','May','June',
@@ -72,8 +280,8 @@
                 </select>
             </div>
 
-            <div class="form-group" style="margin:0; min-width:180px;">
-                <label for="status" style="margin-bottom:4px;">Status</label>
+            <div class="ff-group" style="min-width:180px;">
+                <label for="status">Status</label>
                 <select name="status" id="status">
                     <option value="">All Statuses</option>
                     <option value="draft"               {{ request('status') === 'draft'               ? 'selected' : '' }}>Draft</option>
@@ -85,7 +293,7 @@
                 </select>
             </div>
 
-            <div style="display:flex; gap:8px; align-items:flex-end;">
+            <div class="ff-btns">
                 <button type="submit" class="btn btn-primary btn-sm">Filter</button>
                 <a href="{{ route('payroll.index') }}" class="btn btn-outline btn-sm">Reset</a>
             </div>
@@ -98,7 +306,7 @@
 <div class="card">
     <div class="card-body" style="padding:0;">
         <div class="table-wrap">
-            <table>
+            <table class="pr-table">
                 <thead>
                     <tr>
                         <th>Period</th>
@@ -123,8 +331,6 @@
                                 . ' ' . ($batch->cutoff === '1st' ? '1–15' : '16–30/31')
                                 . ', ' . $batch->period_year;
 
-                            // Use withCount / withSum values pre-computed in the controller.
-                            // Falls back gracefully to 0 if aggregates weren't loaded.
                             $entryCount = $batch->entries_count ?? 0;
                             $totalGross = $batch->entries_sum_gross_income ?? 0;
                             $totalDeds  = $batch->entries_sum_total_deductions ?? 0;
@@ -140,7 +346,6 @@
                                 default              => 'badge-draft',
                             };
 
-                            // Human-readable label matching the controller's STATUS_LABELS
                             $statusLabels = [
                                 'draft'               => 'Draft',
                                 'computed'            => 'Computed',
@@ -151,59 +356,125 @@
                             ];
                             $statusLabel = $statusLabels[$batch->status] ?? ucfirst(str_replace('_', ' ', $batch->status));
                         @endphp
-                        <tr>
-                            <td class="fw-bold">{{ $periodLabel }}</td>
 
-                            <td>
+                        {{-- ── Main visible row ── --}}
+                        <tr class="pr-main-row" data-id="{{ $batch->id }}" onclick="togglePrRow(this)">
+
+                            <td class="col-period">
+                                <span class="pr-period-label">{{ $periodLabel }}</span>
+                                <span class="pr-period-sub">{{ $batch->cutoff }} cut-off</span>
+                            </td>
+
+                            <td class="col-cutoff">
                                 <span class="badge {{ $batch->cutoff === '1st' ? 'badge-computed' : 'badge-released' }}">
                                     {{ $batch->cutoff }} Cut-off
                                 </span>
                             </td>
 
-                            <td>
+                            <td class="col-status">
                                 <span class="badge {{ $statusClass }}">{{ $statusLabel }}</span>
                             </td>
 
-                            <td class="text-right">{{ $entryCount }}</td>
+                            <td class="col-employees text-right">{{ $entryCount }}</td>
 
-                            <td class="text-right">
+                            <td class="col-gross text-right">
                                 {{ $entryCount > 0 ? '₱' . number_format($totalGross, 2) : '—' }}
                             </td>
 
-                            <td class="text-right">
+                            <td class="col-deductions text-right">
                                 {{ $entryCount > 0 ? '₱' . number_format($totalDeds, 2) : '—' }}
                             </td>
 
-                            <td class="text-right fw-bold">
+                            <td class="col-netpay text-right fw-bold">
                                 {{ $entryCount > 0 ? '₱' . number_format($totalNet, 2) : '—' }}
                             </td>
 
-                            <td class="text-muted" style="font-size:0.82rem;">
+                            <td class="col-creator text-muted" style="font-size:0.82rem;">
                                 {{ $batch->creator->name ?? '—' }}<br>
                                 <span style="font-size:0.75rem;">
                                     {{ $batch->created_at->format('M d, Y') }}
                                 </span>
                             </td>
 
-                            <td>
+                            <td class="col-actions">
                                 <div class="d-flex gap-2 flex-wrap">
                                     <a href="{{ route('payroll.show', $batch) }}"
-                                       class="btn btn-outline btn-sm">View</a>
-
+                                       class="btn btn-outline btn-sm"
+                                       onclick="event.stopPropagation();">View</a>
                                     @role('payroll_officer|hrmo')
                                         @if ($batch->status === 'draft')
                                             <form method="POST"
                                                   action="{{ route('payroll.destroy', $batch) }}"
+                                                  onsubmit="event.stopPropagation(); return confirm('Delete this draft batch? This cannot be undone.')">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button class="btn btn-danger btn-sm"
+                                                        onclick="event.stopPropagation();">Delete</button>
+                                            </form>
+                                        @endif
+                                    @endrole
+                                </div>
+
+                                {{-- Mobile expand chevron --}}
+                                <span class="pr-expand-btn" aria-label="Expand">▼</span>
+                            </td>
+
+                        </tr>
+
+                        {{-- ── Expandable detail row (mobile only) ── --}}
+                        <tr class="pr-detail-row" id="pr-detail-{{ $batch->id }}">
+                            <td colspan="9">
+                                <div class="pr-detail-grid">
+                                    <div class="pr-detail-item">
+                                        <label>Cut-off</label>
+                                        <span>
+                                            <span class="badge {{ $batch->cutoff === '1st' ? 'badge-computed' : 'badge-released' }}">
+                                                {{ $batch->cutoff }} Cut-off
+                                            </span>
+                                        </span>
+                                    </div>
+                                    <div class="pr-detail-item">
+                                        <label>Employees</label>
+                                        <span>{{ $entryCount }}</span>
+                                    </div>
+                                    <div class="pr-detail-item">
+                                        <label>Total Gross</label>
+                                        <span class="mono">{{ $entryCount > 0 ? '₱' . number_format($totalGross, 2) : '—' }}</span>
+                                    </div>
+                                    <div class="pr-detail-item">
+                                        <label>Total Deductions</label>
+                                        <span class="mono">{{ $entryCount > 0 ? '₱' . number_format($totalDeds, 2) : '—' }}</span>
+                                    </div>
+                                    <div class="pr-detail-item">
+                                        <label>Total Net Pay</label>
+                                        <span class="mono" style="font-weight:700;">{{ $entryCount > 0 ? '₱' . number_format($totalNet, 2) : '—' }}</span>
+                                    </div>
+                                    <div class="pr-detail-item">
+                                        <label>Created By</label>
+                                        <span>{{ $batch->creator->name ?? '—' }}<br>
+                                            <small style="color:var(--text-light);">{{ $batch->created_at->format('M d, Y') }}</small>
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="pr-detail-actions">
+                                    <a href="{{ route('payroll.show', $batch) }}"
+                                       class="btn btn-outline btn-sm">View</a>
+                                    @role('payroll_officer|hrmo')
+                                        @if ($batch->status === 'draft')
+                                            <form method="POST"
+                                                  action="{{ route('payroll.destroy', $batch) }}"
+                                                  style="flex:1;"
                                                   onsubmit="return confirm('Delete this draft batch? This cannot be undone.')">
                                                 @csrf
                                                 @method('DELETE')
-                                                <button class="btn btn-danger btn-sm">Delete</button>
+                                                <button class="btn btn-danger btn-sm" style="width:100%;">Delete</button>
                                             </form>
                                         @endif
                                     @endrole
                                 </div>
                             </td>
                         </tr>
+
                     @empty
                         <tr>
                             <td colspan="9" style="text-align:center; padding:40px; color:var(--text-light);">
@@ -222,4 +493,24 @@
 
 <div style="margin-top:12px;">{{ $batches->links() }}</div>
 
+@endsection
+
+@section('scripts')
+<script>
+function togglePrRow(mainRow) {
+    if (window.innerWidth > 768) return;
+
+    const id     = mainRow.dataset.id;
+    const detail = document.getElementById('pr-detail-' + id);
+    const isOpen = mainRow.classList.contains('open');
+
+    document.querySelectorAll('.pr-main-row.open').forEach(r => r.classList.remove('open'));
+    document.querySelectorAll('.pr-detail-row.open').forEach(r => r.classList.remove('open'));
+
+    if (!isOpen) {
+        mainRow.classList.add('open');
+        detail.classList.add('open');
+    }
+}
+</script>
 @endsection

@@ -148,16 +148,54 @@ Route::middleware(['auth'])->group(function () {
     ->name('special-payroll.differential.destroy')
     ->where('id', '[0-9]+');
 
+
+        // ── Special Payroll — NOSI / NOSA ────────────────────────────
+    Route::get(    '/special-payroll/nosi-nosa',
+                   [SpecialPayrollController::class, 'nosiNosaIndex'])
+        ->name('special-payroll.nosi-nosa.index');
+ 
+    Route::get(    '/special-payroll/nosi-nosa/create',
+                   [SpecialPayrollController::class, 'nosiNosaCreate'])
+        ->name('special-payroll.nosi-nosa.create');
+ 
+    Route::post(   '/special-payroll/nosi-nosa',
+                   [SpecialPayrollController::class, 'nosiNosaStore'])
+        ->name('special-payroll.nosi-nosa.store');
+ 
+    Route::get(    '/special-payroll/nosi-nosa/{id}',
+                   [SpecialPayrollController::class, 'nosiNosaShow'])
+        ->name('special-payroll.nosi-nosa.show')
+        ->where('id', '[0-9]+');
+ 
+    Route::post(   '/special-payroll/nosi-nosa/{id}/approve',
+                   [SpecialPayrollController::class, 'nosiNosaApprove'])
+        ->name('special-payroll.nosi-nosa.approve')
+        ->where('id', '[0-9]+');
+ 
+    Route::delete( '/special-payroll/nosi-nosa/{id}',
+                   [SpecialPayrollController::class, 'nosiNosaDestroy'])
+        ->name('special-payroll.nosi-nosa.destroy')
+        ->where('id', '[0-9]+');
+
     // ── Office Orders ────────────────────────────────────────────
     Route::resource('office-orders', OfficeOrderController::class);
-    Route::post('/office-orders/{officeOrder}/approve',
-                [OfficeOrderController::class, 'approve'])->name('office-orders.approve');
+Route::post('/office-orders/{id}/approve',
+            [OfficeOrderController::class, 'approve'])
+    ->name('office-orders.approve')
+    ->where('id', '[0-9]+');
+
+Route::post('/office-orders/{id}/cancel',
+            [OfficeOrderController::class, 'cancel'])
+    ->name('office-orders.cancel')
+    ->where('id', '[0-9]+');
 
     // ── TEV ──────────────────────────────────────────────────────
     Route::resource('tev', TevController::class);
     Route::post('/tev/{tevRequest}/submit',  [TevController::class, 'submit'])->name('tev.submit');
     Route::post('/tev/{tevRequest}/approve', [TevController::class, 'approve'])->name('tev.approve');
     Route::post('/tev/{tevRequest}/certify', [TevController::class, 'certify'])->name('tev.certify');
+    Route::post('/tev/{tevRequest}/reject',  [TevController::class, 'reject'])->name('tev.reject');
+
 
     Route::post(  '/tev/{tevRequest}/itinerary',
                   [TevItineraryController::class, 'store'])->name('tev.itinerary.store');
@@ -165,6 +203,7 @@ Route::middleware(['auth'])->group(function () {
                   [TevItineraryController::class, 'update'])->name('tev.itinerary.update');
     Route::delete('/tev/{tevRequest}/itinerary/{line}',
                   [TevItineraryController::class, 'destroy'])->name('tev.itinerary.destroy');
+                  
 
     // ── Reports ──────────────────────────────────────────────────
     Route::get('/reports',                    [ReportController::class, 'index'])->name('reports.index');

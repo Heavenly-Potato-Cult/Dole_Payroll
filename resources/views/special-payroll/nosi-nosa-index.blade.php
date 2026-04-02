@@ -1,13 +1,13 @@
-{{-- resources/views/special-payroll/newly-hired-index.blade.php --}}
+{{-- resources/views/special-payroll/nosi-nosa-index.blade.php --}}
 {{--
-    Expects from SpecialPayrollController@newHireIndex:
-      $batches     — paginated SpecialPayrollBatch (with employee), type='newly_hired'
+    Expects from SpecialPayrollController@nosiNosaIndex:
+      $batches     — paginated SpecialPayrollBatch (with employee), type IN [nosi, nosa]
       $currentYear — int
 --}}
 
 @extends('layouts.app')
 
-@section('title', 'Pro-Rated Payroll — Newly Hired')
+@section('title', 'NOSI / NOSA Records')
 @section('page-title', 'Special Payroll')
 
 @section('styles')
@@ -62,17 +62,17 @@
 /* ─────────────────────────────────────────────────────
    RESPONSIVE TABLE
 ───────────────────────────────────────────────────── */
-.nh-detail-row { display: none !important; }
-.nh-expand-btn { display: none !important; }
+.nn-detail-row { display: none !important; }
+.nn-expand-btn { display: none !important; }
 
 /* ── DESKTOP (≥ 769px) ── */
 @media (min-width: 769px) {
-    .nh-table              { display: table; width: 100%; border-collapse: collapse; }
-    .nh-table thead        { display: table-header-group; }
-    .nh-table tbody        { display: table-row-group; }
-    .nh-table tr           { display: table-row; }
-    .nh-table th,
-    .nh-table td           { display: table-cell; }
+    .nn-table              { display: table; width: 100%; border-collapse: collapse; }
+    .nn-table thead        { display: table-header-group; }
+    .nn-table tbody        { display: table-row-group; }
+    .nn-table tr           { display: table-row; }
+    .nn-table th,
+    .nn-table td           { display: table-cell; }
 }
 
 /* ── MOBILE (≤ 768px) ── */
@@ -87,12 +87,12 @@
 
     .table-wrap { overflow: visible; }
 
-    .nh-table        { display: block; }
-    .nh-table thead  { display: none; }
-    .nh-table tbody  { display: block; }
+    .nn-table        { display: block; }
+    .nn-table thead  { display: none; }
+    .nn-table tbody  { display: block; }
 
     /* Card row */
-    .nh-table tr.nh-main-row {
+    .nn-table tr.nn-main-row {
         display: flex;
         align-items: center;
         gap: 0;
@@ -102,22 +102,25 @@
         transition: background .15s;
         min-height: 64px;
     }
-    .nh-table tr.nh-main-row:active { background: var(--bg); }
+    .nn-table tr.nn-main-row:active { background: var(--bg); }
 
     /* Hide columns moved to detail panel */
-    .nh-table tr.nh-main-row td.col-position,
-    .nh-table tr.nh-main-row td.col-effectivity,
-    .nh-table tr.nh-main-row td.col-period,
-    .nh-table tr.nh-main-row td.col-year,
-    .nh-table tr.nh-main-row td.col-gross,
-    .nh-table tr.nh-main-row td.col-deductions,
-    .nh-table tr.nh-main-row td.col-net,
-    .nh-table tr.nh-main-row td.col-actions {
+    .nn-table tr.nn-main-row td.col-type,
+    .nn-table tr.nn-main-row td.col-position,
+    .nn-table tr.nn-main-row td.col-period,
+    .nn-table tr.nn-main-row td.col-old-rate,
+    .nn-table tr.nn-main-row td.col-new-rate,
+    .nn-table tr.nn-main-row td.col-diff,
+    .nn-table tr.nn-main-row td.col-year,
+    .nn-table tr.nn-main-row td.col-gross,
+    .nn-table tr.nn-main-row td.col-deductions,
+    .nn-table tr.nn-main-row td.col-net,
+    .nn-table tr.nn-main-row td.col-actions {
         display: none;
     }
 
     /* Employee name — takes all space */
-    .nh-table tr.nh-main-row td.col-employee {
+    .nn-table tr.nn-main-row td.col-employee {
         flex: 1;
         display: flex;
         flex-direction: column;
@@ -126,14 +129,14 @@
         padding: 0;
         min-width: 0;
     }
-    .nh-table tr.nh-main-row td.col-employee .nh-name-label {
+    .nn-table tr.nn-main-row td.col-employee .nn-name-label {
         font-weight: 700;
         font-size: 0.92rem;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
     }
-    .nh-table tr.nh-main-row td.col-employee .nh-name-sub {
+    .nn-table tr.nn-main-row td.col-employee .nn-name-sub {
         font-size: 0.74rem;
         color: var(--text-mid);
         white-space: nowrap;
@@ -142,7 +145,7 @@
     }
 
     /* Status badge */
-    .nh-table tr.nh-main-row td.col-status {
+    .nn-table tr.nn-main-row td.col-status {
         flex: 0 0 auto;
         display: flex;
         align-items: center;
@@ -150,7 +153,7 @@
     }
 
     /* Expand button */
-    .nh-expand-btn {
+    .nn-expand-btn {
         display: inline-flex !important;
         align-items: center;
         justify-content: center;
@@ -166,7 +169,7 @@
         transition: transform .2s, background .15s, border-color .15s;
         margin-left: 6px;
     }
-    .nh-main-row.open .nh-expand-btn {
+    .nn-main-row.open .nn-expand-btn {
         transform: rotate(180deg);
         background: var(--navy-light, #e8ecf4);
         border-color: var(--navy);
@@ -174,22 +177,22 @@
     }
 
     /* Expanded detail panel */
-    tr.nh-detail-row.open {
+    tr.nn-detail-row.open {
         display: block !important;
         border-bottom: 1px solid var(--border);
         background: var(--bg, #f8f9fb);
     }
-    tr.nh-detail-row.open td {
+    tr.nn-detail-row.open td {
         display: block;
         padding: 12px 16px 16px;
     }
-    .nh-detail-grid {
+    .nn-detail-grid {
         display: grid;
         grid-template-columns: 1fr 1fr;
         gap: 12px 20px;
         margin-bottom: 14px;
     }
-    .nh-detail-item label {
+    .nn-detail-item label {
         display: block;
         font-size: 0.65rem;
         font-weight: 700;
@@ -198,18 +201,18 @@
         color: var(--text-light);
         margin-bottom: 3px;
     }
-    .nh-detail-item span {
+    .nn-detail-item span {
         font-size: 0.85rem;
         color: var(--text);
         font-weight: 500;
     }
-    .nh-detail-item span.mono { font-family: monospace; }
-    .nh-detail-actions {
+    .nn-detail-item span.mono { font-family: monospace; }
+    .nn-detail-actions {
         display: flex;
         gap: 8px;
     }
-    .nh-detail-actions .btn,
-    .nh-detail-actions button {
+    .nn-detail-actions .btn,
+    .nn-detail-actions button {
         flex: 1;
         justify-content: center;
         text-align: center;
@@ -222,31 +225,27 @@
 
 <div class="page-header">
     <div class="page-header-left">
-        <h1>Pro-Rated Payroll — Newly Hired / Transferee</h1>
-        <p>Individual payroll records for employees who started mid-period.</p>
+        <h1>NOSI / NOSA</h1>
+        <p>Notice of Salary Increase and Notice of Salary Adjustment payroll records.</p>
     </div>
     @if (auth()->user()->hasAnyRole(['payroll_officer', 'hrmo']))
-        <a href="{{ route('special-payroll.newly-hired.create') }}" class="btn btn-primary">
+        <a href="{{ route('special-payroll.nosi-nosa.create') }}" class="btn btn-primary">
             + New Entry
         </a>
     @endif
 </div>
 
-{{-- ── Alerts ── --}}
 @if (session('success'))
     <div class="alert alert-success">{{ session('success') }}</div>
 @endif
 @if (session('error'))
     <div class="alert alert-error">{{ session('error') }}</div>
 @endif
-@if (session('warning'))
-    <div class="alert alert-warning">{{ session('warning') }}</div>
-@endif
 
 {{-- ── Filter bar ── --}}
 <div class="card mb-3">
     <div class="card-body" style="padding:14px 20px;">
-        <form method="GET" action="{{ route('special-payroll.newly-hired.index') }}" class="filter-form">
+        <form method="GET" action="{{ route('special-payroll.nosi-nosa.index') }}" class="filter-form">
 
             <div class="ff-group" style="min-width:120px;">
                 <label for="year">Year</label>
@@ -257,6 +256,15 @@
                             {{ $y }}
                         </option>
                     @endforeach
+                </select>
+            </div>
+
+            <div class="ff-group" style="min-width:140px;">
+                <label for="type">Type</label>
+                <select name="type" id="type">
+                    <option value="">All Types</option>
+                    <option value="nosi" {{ request('type') === 'nosi' ? 'selected' : '' }}>NOSI</option>
+                    <option value="nosa" {{ request('type') === 'nosa' ? 'selected' : '' }}>NOSA</option>
                 </select>
             </div>
 
@@ -272,7 +280,7 @@
 
             <div class="ff-btns">
                 <button type="submit" class="btn btn-primary btn-sm">Filter</button>
-                <a href="{{ route('special-payroll.newly-hired.index') }}" class="btn btn-outline btn-sm">Reset</a>
+                <a href="{{ route('special-payroll.nosi-nosa.index') }}" class="btn btn-outline btn-sm">Reset</a>
             </div>
 
         </form>
@@ -283,16 +291,19 @@
 <div class="card">
     <div class="card-body" style="padding:0;">
         <div class="table-wrap">
-            <table class="nh-table">
+            <table class="nn-table">
                 <thead>
                     <tr>
+                        <th>Type</th>
                         <th>Employee</th>
                         <th>Position</th>
-                        <th>Effectivity Date</th>
-                        <th>Period Covered</th>
+                        <th>Effectivity Period</th>
+                        <th class="text-right">Old Rate</th>
+                        <th class="text-right">New Rate</th>
+                        <th class="text-right">Differential</th>
                         <th>Year</th>
                         <th>Status</th>
-                        <th class="text-right">Gross Earned</th>
+                        <th class="text-right">Total Earned</th>
                         <th class="text-right">Deductions</th>
                         <th class="text-right">Net Amount</th>
                         <th>Actions</th>
@@ -302,6 +313,9 @@
                     @forelse ($batches as $batch)
                         @php
                             $emp = $batch->employee;
+
+                            $typeBadgeClass = $batch->type === 'nosi' ? 'badge-released' : 'badge-draft';
+                            $typeLabel      = strtoupper($batch->type);
 
                             $statusClass = match ($batch->status) {
                                 'approved' => 'badge-released',
@@ -314,24 +328,28 @@
                                 'released' => 'Released',
                                 default    => ucfirst($batch->status),
                             };
-
-                            $periodStart = $batch->period_start ? $batch->period_start->format('M d') : '—';
-                            $periodEnd   = $batch->period_end   ? $batch->period_end->format('d, Y')   : '—';
                         @endphp
 
                         {{-- ── Main visible row ── --}}
-                        <tr class="nh-main-row" data-id="{{ $batch->id }}" onclick="toggleNhRow(this)">
+                        <tr class="nn-main-row" data-id="{{ $batch->id }}" onclick="toggleNnRow(this)">
+
+                            <td class="col-type">
+                                <span class="badge {{ $typeBadgeClass }}"
+                                      style="font-size:0.72rem; letter-spacing:0.05em;">
+                                    {{ $typeLabel }}
+                                </span>
+                            </td>
 
                             <td class="col-employee">
-                                <span class="nh-name-label">
+                                <span class="nn-name-label">
                                     {{ optional($emp)->last_name }},
                                     {{ optional($emp)->first_name }}
                                     @if (optional($emp)->middle_name)
                                         {{ substr($emp->middle_name, 0, 1) }}.
                                     @endif
                                 </span>
-                                <span class="nh-name-sub">
-                                    {{ optional($emp)->position_title ?? '—' }}
+                                <span class="nn-name-sub">
+                                    {{ $typeLabel }} · {{ optional($emp)->position_title ?? '—' }}
                                 </span>
                             </td>
 
@@ -339,12 +357,26 @@
                                 {{ optional($emp)->position_title ?? '—' }}
                             </td>
 
-                            <td class="col-effectivity">
-                                {{ $batch->effectivity_date ? $batch->effectivity_date->format('M d, Y') : '—' }}
+                            <td class="col-period text-muted" style="font-size:0.82rem;">
+                                @if ($batch->period_start && $batch->period_end)
+                                    {{ $batch->period_start->format('M d, Y') }}
+                                    –
+                                    {{ $batch->period_end->format('M d, Y') }}
+                                @else
+                                    —
+                                @endif
                             </td>
 
-                            <td class="col-period text-muted" style="font-size:0.82rem;">
-                                {{ $periodStart }}–{{ $periodEnd }}
+                            <td class="col-old-rate text-right">
+                                ₱{{ number_format($batch->old_basic_salary, 2) }}
+                            </td>
+
+                            <td class="col-new-rate text-right">
+                                ₱{{ number_format($batch->new_basic_salary, 2) }}
+                            </td>
+
+                            <td class="col-diff text-right fw-bold" style="color:var(--navy);">
+                                ₱{{ number_format($batch->differential_amount, 2) }}
                             </td>
 
                             <td class="col-year">{{ $batch->year }}</td>
@@ -367,81 +399,103 @@
 
                             <td class="col-actions">
                                 <div class="d-flex gap-2" style="justify-content:center;">
-                                    <a href="{{ route('special-payroll.newly-hired.show', $batch->id) }}"
+                                    <a href="{{ route('special-payroll.nosi-nosa.show', $batch->id) }}"
                                        class="btn btn-outline btn-sm"
                                        onclick="event.stopPropagation();">View</a>
-                                    @if (auth()->user()->hasAnyRole(['payroll_officer', 'hrmo']))
-                                        @if ($batch->status === 'draft')
-                                            <form method="POST"
-                                                  action="{{ route('special-payroll.newly-hired.destroy', $batch->id) }}"
-                                                  onsubmit="event.stopPropagation(); return confirm('Delete this payroll record for {{ addslashes($batch->employee->last_name ?? '') }}? This cannot be undone.')">
-                                                @csrf
-                                                @method('DELETE')
-                                                <button type="submit" class="btn btn-danger btn-sm"
-                                                        title="Delete"
-                                                        onclick="event.stopPropagation();">✕</button>
-                                            </form>
-                                        @endif
+
+                                    @if ($batch->status === 'draft' && auth()->user()->hasAnyRole(['payroll_officer', 'hrmo']))
+                                        <form method="POST"
+                                              action="{{ route('special-payroll.nosi-nosa.destroy', $batch->id) }}"
+                                              onsubmit="event.stopPropagation(); return confirm('Delete this draft record? This cannot be undone.')">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="btn btn-sm"
+                                                    style="background:#B71C1C; color:#fff; border:none; cursor:pointer;"
+                                                    onclick="event.stopPropagation();">
+                                                ✕
+                                            </button>
+                                        </form>
                                     @endif
                                 </div>
 
                                 {{-- Mobile expand chevron --}}
-                                <span class="nh-expand-btn" aria-label="Expand">▼</span>
+                                <span class="nn-expand-btn" aria-label="Expand">▼</span>
                             </td>
 
                         </tr>
 
                         {{-- ── Expandable detail row (mobile only) ── --}}
-                        <tr class="nh-detail-row" id="nh-detail-{{ $batch->id }}">
-                            <td colspan="10">
-                                <div class="nh-detail-grid">
-                                    <div class="nh-detail-item">
+                        <tr class="nn-detail-row" id="nn-detail-{{ $batch->id }}">
+                            <td colspan="13">
+                                <div class="nn-detail-grid">
+                                    <div class="nn-detail-item">
+                                        <label>Type</label>
+                                        <span>
+                                            <span class="badge {{ $typeBadgeClass }}" style="font-size:0.72rem;">{{ $typeLabel }}</span>
+                                        </span>
+                                    </div>
+                                    <div class="nn-detail-item">
                                         <label>Position</label>
                                         <span>{{ optional($emp)->position_title ?? '—' }}</span>
                                     </div>
-                                    <div class="nh-detail-item">
+                                    <div class="nn-detail-item">
+                                        <label>Effectivity Period</label>
+                                        <span>
+                                            @if ($batch->period_start && $batch->period_end)
+                                                {{ $batch->period_start->format('M d, Y') }} – {{ $batch->period_end->format('M d, Y') }}
+                                            @else
+                                                —
+                                            @endif
+                                        </span>
+                                    </div>
+                                    <div class="nn-detail-item">
                                         <label>Year</label>
                                         <span>{{ $batch->year }}</span>
                                     </div>
-                                    <div class="nh-detail-item">
-                                        <label>Effectivity Date</label>
-                                        <span>{{ $batch->effectivity_date ? $batch->effectivity_date->format('M d, Y') : '—' }}</span>
-                                    </div>
-                                    <div class="nh-detail-item">
-                                        <label>Period Covered</label>
-                                        <span>{{ $periodStart }}–{{ $periodEnd }}</span>
-                                    </div>
-                                    <div class="nh-detail-item">
+                                    <div class="nn-detail-item">
                                         <label>Status</label>
                                         <span><span class="badge {{ $statusClass }}">{{ $statusLabel }}</span></span>
                                     </div>
-                                    <div class="nh-detail-item">
-                                        <label>Gross Earned</label>
+                                    <div class="nn-detail-item">
+                                        <label>Old Rate</label>
+                                        <span class="mono">₱{{ number_format($batch->old_basic_salary, 2) }}</span>
+                                    </div>
+                                    <div class="nn-detail-item">
+                                        <label>New Rate</label>
+                                        <span class="mono">₱{{ number_format($batch->new_basic_salary, 2) }}</span>
+                                    </div>
+                                    <div class="nn-detail-item">
+                                        <label>Differential</label>
+                                        <span class="mono" style="color:var(--navy); font-weight:700;">₱{{ number_format($batch->differential_amount, 2) }}</span>
+                                    </div>
+                                    <div class="nn-detail-item">
+                                        <label>Total Earned</label>
                                         <span class="mono">₱{{ number_format($batch->gross_amount, 2) }}</span>
                                     </div>
-                                    <div class="nh-detail-item">
+                                    <div class="nn-detail-item">
                                         <label>Deductions</label>
                                         <span class="mono" style="color:#B71C1C;">₱{{ number_format($batch->deductions_amount, 2) }}</span>
                                     </div>
-                                    <div class="nh-detail-item">
+                                    <div class="nn-detail-item">
                                         <label>Net Amount</label>
                                         <span class="mono" style="color:#1B5E20; font-weight:700;">₱{{ number_format($batch->net_amount, 2) }}</span>
                                     </div>
                                 </div>
-                                <div class="nh-detail-actions">
-                                    <a href="{{ route('special-payroll.newly-hired.show', $batch->id) }}"
+                                <div class="nn-detail-actions">
+                                    <a href="{{ route('special-payroll.nosi-nosa.show', $batch->id) }}"
                                        class="btn btn-outline btn-sm">View</a>
-                                    @if (auth()->user()->hasAnyRole(['payroll_officer', 'hrmo']))
-                                        @if ($batch->status === 'draft')
-                                            <form method="POST"
-                                                  action="{{ route('special-payroll.newly-hired.destroy', $batch->id) }}"
-                                                  style="flex:1;"
-                                                  onsubmit="return confirm('Delete this payroll record for {{ addslashes($batch->employee->last_name ?? '') }}? This cannot be undone.')">
-                                                @csrf
-                                                @method('DELETE')
-                                                <button type="submit" class="btn btn-danger btn-sm" style="width:100%;">✕ Delete</button>
-                                            </form>
-                                        @endif
+                                    @if ($batch->status === 'draft' && auth()->user()->hasAnyRole(['payroll_officer', 'hrmo']))
+                                        <form method="POST"
+                                              action="{{ route('special-payroll.nosi-nosa.destroy', $batch->id) }}"
+                                              style="flex:1;"
+                                              onsubmit="return confirm('Delete this draft record? This cannot be undone.')">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="btn btn-sm"
+                                                    style="background:#B71C1C; color:#fff; border:none; cursor:pointer; width:100%;">
+                                                ✕ Delete
+                                            </button>
+                                        </form>
                                     @endif
                                 </div>
                             </td>
@@ -449,10 +503,10 @@
 
                     @empty
                         <tr>
-                            <td colspan="10" style="text-align:center; padding:40px; color:var(--text-light);">
+                            <td colspan="13" style="text-align:center; padding:40px; color:var(--text-light);">
                                 No records found.
                                 @if (auth()->user()->hasAnyRole(['payroll_officer', 'hrmo']))
-                                    <a href="{{ route('special-payroll.newly-hired.create') }}">
+                                    <a href="{{ route('special-payroll.nosi-nosa.create') }}">
                                         Create one now →
                                     </a>
                                 @endif
@@ -471,15 +525,15 @@
 
 @section('scripts')
 <script>
-function toggleNhRow(mainRow) {
+function toggleNnRow(mainRow) {
     if (window.innerWidth > 768) return;
 
     const id     = mainRow.dataset.id;
-    const detail = document.getElementById('nh-detail-' + id);
+    const detail = document.getElementById('nn-detail-' + id);
     const isOpen = mainRow.classList.contains('open');
 
-    document.querySelectorAll('.nh-main-row.open').forEach(r => r.classList.remove('open'));
-    document.querySelectorAll('.nh-detail-row.open').forEach(r => r.classList.remove('open'));
+    document.querySelectorAll('.nn-main-row.open').forEach(r => r.classList.remove('open'));
+    document.querySelectorAll('.nn-detail-row.open').forEach(r => r.classList.remove('open'));
 
     if (!isOpen) {
         mainRow.classList.add('open');

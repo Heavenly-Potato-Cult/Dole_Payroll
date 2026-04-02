@@ -1,8 +1,56 @@
 <?php
+
 namespace App\Http\Requests;
+
 use Illuminate\Foundation\Http\FormRequest;
-// TODO: implement StoreTevRequest
-class StoreTevRequest extends FormRequest {
-    public function authorize() { return true; }
-    public function rules() { return []; }
+
+class StoreTevRequest extends FormRequest
+{
+    public function authorize(): bool
+    {
+        return true; // Role/ownership checks handled in controller
+    }
+
+    public function rules(): array
+    {
+        return [
+            'office_order_id'            => ['required', 'integer', 'exists:office_orders,id'],
+            'track'                      => ['required', 'in:cash_advance,reimbursement'],
+            'purpose'                    => ['required', 'string', 'max:500'],
+            'destination'                => ['required', 'string', 'max:255'],
+            'travel_type'                => ['required', 'in:local,regional,national'],
+            'travel_date_start'          => ['required', 'date'],
+            'travel_date_end'            => ['required', 'date', 'after_or_equal:travel_date_start'],
+            'remarks'                    => ['nullable', 'string', 'max:1000'],
+
+            // Itinerary lines
+            'lines'                      => ['required', 'array', 'min:1'],
+            'lines.*.travel_date'        => ['required', 'date'],
+            'lines.*.origin'             => ['required', 'string', 'max:255'],
+            'lines.*.destination'        => ['required', 'string', 'max:255'],
+            'lines.*.departure_time'     => ['nullable', 'date_format:H:i'],
+            'lines.*.arrival_time'       => ['nullable', 'date_format:H:i'],
+            'lines.*.mode_of_transport'  => ['required', 'string', 'max:50'],
+            'lines.*.transportation_cost'=> ['required', 'numeric', 'min:0'],
+            'lines.*.per_diem_amount'    => ['required', 'numeric', 'min:0'],
+            'lines.*.is_half_day'        => ['nullable', 'boolean'],
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'track.in'                        => 'Track must be cash_advance or reimbursement.',
+            'travel_type.in'                  => 'Travel type must be local, regional, or national.',
+            'travel_date_end.after_or_equal'  => 'End date must be on or after the start date.',
+            'lines.required'                  => 'At least one itinerary line is required.',
+            'lines.min'                       => 'At least one itinerary line is required.',
+            'lines.*.travel_date.required'    => 'Each line must have a travel date.',
+            'lines.*.origin.required'         => 'Each line must have an origin.',
+            'lines.*.destination.required'    => 'Each line must have a destination.',
+            'lines.*.mode_of_transport.required' => 'Each line must have a mode of transport.',
+            'lines.*.transportation_cost.required' => 'Transportation cost is required for each line.',
+            'lines.*.per_diem_amount.required'    => 'Per diem amount is required for each line.',
+        ];
+    }
 }
