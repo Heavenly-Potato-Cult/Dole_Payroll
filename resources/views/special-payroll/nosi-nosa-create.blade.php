@@ -9,6 +9,57 @@
 @section('title', 'NOSI / NOSA — New Entry')
 @section('page-title', 'Special Payroll')
 
+@section('styles')
+<style>
+/* ── Responsive: Special Payroll Create Pages ── */
+.sp-create-grid {
+    display: grid;
+    grid-template-columns: 1fr 380px;
+    gap: 24px;
+    align-items: start;
+}
+.sp-date-row,
+.sp-salary-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+}
+.sp-nosi-info-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+}
+@media (max-width: 900px) {
+    .sp-create-grid {
+        grid-template-columns: 1fr;
+    }
+}
+@media (max-width: 600px) {
+    .sp-date-row,
+    .sp-salary-row,
+    .sp-nosi-info-grid {
+        grid-template-columns: 1fr;
+        gap: 0;
+    }
+    .sp-nosi-info-grid {
+        gap: 12px;
+    }
+    .page-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+    .sp-action-row {
+        flex-direction: column;
+    }
+    .sp-action-row .btn {
+        width: 100%;
+        text-align: center;
+    }
+}
+</style>
+@endsection
+
 @section('content')
 
 <div class="page-header">
@@ -23,7 +74,7 @@
 
 {{-- Type explanation --}}
 <div class="alert alert-info mb-3">
-    <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+    <div class="sp-nosi-info-grid">
         <div>
             <strong>📋 NOSI — Notice of Salary Increase</strong><br>
             <span style="font-size:0.83rem;">
@@ -58,7 +109,7 @@
     </div>
 @endif
 
-<div style="display:grid; grid-template-columns:1fr 380px; gap:24px; align-items:start;">
+<div class="sp-create-grid">
 
     {{-- ── Main Form ── --}}
     <div class="card">
@@ -117,7 +168,7 @@
                 </div>
 
                 {{-- Effectivity date range --}}
-                <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+                <div class="sp-date-row">
                     <div class="form-group">
                         <label for="effectivity_date_from">
                             Effectivity Date — From <span style="color:var(--red);">*</span>
@@ -146,7 +197,7 @@
                 </div>
 
                 {{-- Old / New salary --}}
-                <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+                <div class="sp-salary-row">
                     <div class="form-group">
                         <label for="old_salary">
                             Old Salary (Monthly Rate) <span style="color:var(--red);">*</span>
@@ -204,7 +255,7 @@
                     @enderror
                 </div>
 
-                <div class="d-flex gap-2" style="margin-top:24px;">
+                <div class="d-flex gap-2 sp-action-row" style="margin-top:24px;">
                     <button type="submit" class="btn btn-primary btn-lg">
                         ⚙ Compute &amp; Save
                     </button>

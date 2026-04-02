@@ -12,20 +12,40 @@
 @section('styles')
 <style>
 .detail-grid {
-    display:grid; grid-template-columns:repeat(auto-fill, minmax(200px, 1fr));
-    gap:10px 24px; margin-bottom:20px; font-size:0.85rem;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 10px 24px;
+    margin-bottom: 20px;
+    font-size: 0.85rem;
 }
-.detail-item { display:flex; flex-direction:column; gap:2px; }
+.detail-item { display: flex; flex-direction: column; gap: 2px; }
 .detail-item .label {
-    font-size:0.70rem; font-weight:700; text-transform:uppercase;
-    letter-spacing:0.05em; color:var(--text-light);
+    font-size: 0.70rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.05em; color: var(--text-light);
 }
-.detail-item .value { font-weight:600; color:var(--text); }
+.detail-item .value { font-weight: 600; color: var(--text); }
+
+/* ── Responsive show grid ── */
+.show-grid {
+    display: grid;
+    grid-template-columns: 1fr 300px;
+    gap: 20px;
+    align-items: start;
+}
+@media (max-width: 900px) {
+    .show-grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 600px) {
+    .page-header { flex-direction: column; align-items: flex-start; gap: 10px; }
+    .page-header .d-flex { flex-wrap: wrap; }
+    .detail-grid { grid-template-columns: 1fr 1fr; }
+}
+
 @media print {
-    .no-print { display:none !important; }
-    .card { box-shadow:none !important; border:1px solid #ccc !important; }
-    body { font-size:9pt; }
-    @page { margin:1.2cm 1cm; }
+    .no-print { display: none !important; }
+    .card { box-shadow: none !important; border: 1px solid #ccc !important; }
+    body { font-size: 9pt; }
+    @page { margin: 1.2cm 1cm; }
 }
 </style>
 @endsection
@@ -86,9 +106,9 @@
     </div>
 </div>
 
-{{-- ── Main detail card ── --}}
-<div style="display:grid; grid-template-columns:1fr 300px; gap:20px; align-items:start;">
+<div class="show-grid">
 
+    {{-- ── Left: main detail card ── --}}
     <div class="card">
         <div class="card-header">
             <h3>📝 Office Order Details</h3>

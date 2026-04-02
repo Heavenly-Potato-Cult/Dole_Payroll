@@ -14,63 +14,100 @@
 
 @section('styles')
 <style>
-/* Approval timeline */
-.tev-timeline { display:flex; gap:0; margin-bottom:24px; overflow:hidden; border-radius:8px; border:1px solid var(--border); }
+/* ── Approval timeline ── */
+.tev-timeline {
+    display: flex; gap: 0; margin-bottom: 24px;
+    overflow-x: auto; border-radius: 8px;
+    border: 1px solid var(--border);
+}
 .tev-step {
-    flex:1; padding:12px 16px; font-size:0.78rem; font-weight:600;
-    display:flex; align-items:center; gap:8px;
-    background:var(--surface); color:var(--text-light);
-    border-right:1px solid var(--border); position:relative;
+    flex: 1; min-width: 90px; padding: 12px 16px;
+    font-size: 0.78rem; font-weight: 600;
+    display: flex; align-items: center; gap: 8px;
+    background: var(--surface); color: var(--text-light);
+    border-right: 1px solid var(--border); position: relative;
 }
-.tev-step:last-child { border-right:none; }
-.tev-step.done     { background:#F1FAF5; color:#1B6B3A; }
-.tev-step.active   { background:#EEF1FA; color:var(--navy); }
-.tev-step.terminal { background:var(--navy); color:#fff; }
-.tev-step.rejected-step { background:#FFF0F0; color:#B71C1C; }
+.tev-step:last-child { border-right: none; }
+.tev-step.done     { background: #F1FAF5; color: #1B6B3A; }
+.tev-step.active   { background: #EEF1FA; color: var(--navy); }
+.tev-step.terminal { background: var(--navy); color: #fff; }
+.tev-step.rejected-step { background: #FFF0F0; color: #B71C1C; }
 .tev-step-dot {
-    width:24px; height:24px; border-radius:50%; border:2px solid currentColor;
-    display:flex; align-items:center; justify-content:center;
-    font-size:0.75rem; font-weight:700; flex-shrink:0; background:#fff; color:inherit;
+    width: 24px; height: 24px; border-radius: 50%;
+    border: 2px solid currentColor;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.75rem; font-weight: 700; flex-shrink: 0;
+    background: #fff; color: inherit;
 }
-.tev-step.done .tev-step-dot    { background:#2E7D52; border-color:#2E7D52; color:#fff; }
-.tev-step.active .tev-step-dot  { background:var(--navy); border-color:var(--navy); color:#fff; }
-.tev-step.terminal .tev-step-dot { background:rgba(255,255,255,.15); color:#fff; border-color:rgba(255,255,255,.5); }
+.tev-step.done .tev-step-dot    { background: #2E7D52; border-color: #2E7D52; color: #fff; }
+.tev-step.active .tev-step-dot  { background: var(--navy); border-color: var(--navy); color: #fff; }
+.tev-step.terminal .tev-step-dot { background: rgba(255,255,255,.15); color: #fff; border-color: rgba(255,255,255,.5); }
 
-/* Detail grid */
-.detail-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(180px,1fr)); gap:10px 20px; }
-.detail-item { display:flex; flex-direction:column; gap:2px; }
-.detail-item .label { font-size:0.70rem; font-weight:700; text-transform:uppercase; letter-spacing:0.05em; color:var(--text-light); }
-.detail-item .value { font-weight:600; color:var(--text); font-size:0.88rem; }
+/* ── Detail grid ── */
+.detail-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px 20px; }
+.detail-item { display: flex; flex-direction: column; gap: 2px; }
+.detail-item .label { font-size: 0.70rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-light); }
+.detail-item .value { font-weight: 600; color: var(--text); font-size: 0.88rem; }
 
-/* Itinerary table */
-.itin-tbl { width:100%; border-collapse:collapse; font-size:0.78rem; white-space:nowrap; }
+/* ── Itinerary table ── */
+.itin-tbl { width: 100%; border-collapse: collapse; font-size: 0.78rem; white-space: nowrap; }
 .itin-tbl thead th {
-    background:var(--navy); color:#fff; padding:7px 10px; text-align:center;
-    font-size:0.70rem; font-weight:600; letter-spacing:0.03em;
-    border:1px solid rgba(255,255,255,0.15);
+    background: var(--navy); color: #fff; padding: 7px 10px; text-align: center;
+    font-size: 0.70rem; font-weight: 600; letter-spacing: 0.03em;
+    border: 1px solid rgba(255,255,255,0.15);
 }
-.itin-tbl tbody td { padding:8px 10px; border:1px solid var(--border); vertical-align:middle; }
-.itin-tbl tfoot td { padding:8px 10px; font-weight:700; background:#f0f2ff; border:1px solid var(--border); }
-.itin-tbl td.text-right { text-align:right; }
-.itin-tbl td.text-center { text-align:center; }
+.itin-tbl tbody td { padding: 8px 10px; border: 1px solid var(--border); vertical-align: middle; }
+.itin-tbl tfoot td { padding: 8px 10px; font-weight: 700; background: #f0f2ff; border: 1px solid var(--border); }
+.itin-tbl td.text-right  { text-align: right; }
+.itin-tbl td.text-center { text-align: center; }
 
-/* Log timeline */
-.log-timeline { display:flex; flex-direction:column; gap:0; }
-.log-item { display:flex; gap:14px; padding:12px 0; border-bottom:1px solid var(--border); }
-.log-item:last-child { border-bottom:none; }
-.log-dot { width:32px; height:32px; border-radius:50%; flex-shrink:0;
-           display:flex; align-items:center; justify-content:center; font-size:0.85rem; }
-.log-dot.approved { background:#E8F5E9; }
-.log-dot.rejected { background:#FFEBEE; }
-.log-dot.returned { background:#FFF3E0; }
-.log-meta { font-size:0.75rem; color:var(--text-light); margin-top:2px; }
+/* ── Log timeline ── */
+.log-timeline { display: flex; flex-direction: column; gap: 0; }
+.log-item { display: flex; gap: 14px; padding: 12px 0; border-bottom: 1px solid var(--border); }
+.log-item:last-child { border-bottom: none; }
+.log-dot {
+    width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center; font-size: 0.85rem;
+}
+.log-dot.approved { background: #E8F5E9; }
+.log-dot.rejected { background: #FFEBEE; }
+.log-dot.returned { background: #FFF3E0; }
+.log-meta { font-size: 0.75rem; color: var(--text-light); margin-top: 2px; }
+
+/* ── Responsive show grid ── */
+.show-grid {
+    display: grid;
+    grid-template-columns: 1fr 300px;
+    gap: 20px;
+    align-items: start;
+}
+.cert-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-top: 28px;
+}
+
+@media (max-width: 900px) {
+    .show-grid { grid-template-columns: 1fr; }
+    /* On mobile right panel appears below — reorder summary to top */
+    .show-grid-right { order: -1; }
+}
+@media (max-width: 600px) {
+    .page-header { flex-direction: column; align-items: flex-start; gap: 10px; }
+    .page-header .d-flex { flex-wrap: wrap; }
+    .tev-timeline { border-radius: 6px; }
+    .tev-step { min-width: 70px; padding: 10px 10px; font-size: 0.72rem; gap: 6px; }
+    .cert-grid { grid-template-columns: 1fr; }
+    .detail-grid { grid-template-columns: 1fr 1fr; }
+}
 
 @media print {
-    .no-print { display:none !important; }
-    .tev-timeline { display:none !important; }
-    .card { box-shadow:none !important; border:1px solid #ccc !important; }
-    body { font-size:9pt; }
-    @page { margin:1.2cm 1cm; }
+    .no-print { display: none !important; }
+    .tev-timeline { display: none !important; }
+    .card { box-shadow: none !important; border: 1px solid #ccc !important; }
+    body { font-size: 9pt; }
+    @page { margin: 1.2cm 1cm; }
 }
 </style>
 @endsection
@@ -103,7 +140,6 @@
     };
     $statusLabel = ucwords(str_replace('_', ' ', $tev->status));
 
-    // Timeline steps
     $caSteps    = ['Draft','Submitted','HR Approved','Acct. Certified','RD Approved','Released'];
     $reimbSteps = ['Draft','Submitted','HR Approved','Acct. Certified','RD Approved','Reimbursed'];
     $steps      = $tev->track === 'cash_advance' ? $caSteps : $reimbSteps;
@@ -112,7 +148,6 @@
     $currentIdx = array_search($tev->status, $stepOrder);
     if ($currentIdx === false) $currentIdx = -1;
 
-    // Action permissions
     $isOwner   = $emp && $emp->user_id === auth()->id();
     $canSubmit = $tev->status === 'draft'
               && ($isOwner || auth()->user()->hasAnyRole(['payroll_officer','hrmo']));
@@ -147,31 +182,30 @@
 <div class="tev-timeline no-print">
     @foreach ($steps as $i => $label)
         @php
-            $isDone   = $i < $currentIdx;
-            $isActive = $i === $currentIdx;
+            $isDone     = $i < $currentIdx;
+            $isActive   = $i === $currentIdx;
             $isTerminal = $isActive && $i === count($steps) - 1;
             $isRejected = $tev->status === 'rejected' && $isActive;
 
-            if ($isRejected) $stepClass = 'rejected-step';
+            if ($isRejected)    $stepClass = 'rejected-step';
             elseif ($isTerminal) $stepClass = 'terminal';
-            elseif ($isDone)   $stepClass = 'done';
-            elseif ($isActive) $stepClass = 'active';
-            else               $stepClass = '';
+            elseif ($isDone)     $stepClass = 'done';
+            elseif ($isActive)   $stepClass = 'active';
+            else                 $stepClass = '';
         @endphp
         <div class="tev-step {{ $stepClass }}">
-            <div class="tev-step-dot">
-                {{ $isDone ? '✓' : ($i + 1) }}
-            </div>
+            <div class="tev-step-dot">{{ $isDone ? '✓' : ($i + 1) }}</div>
             {{ $label }}
         </div>
     @endforeach
 </div>
 
-<div style="display:grid; grid-template-columns:1fr 300px; gap:20px; align-items:start;">
+<div class="show-grid">
 
+    {{-- ── Left: main content ── --}}
     <div style="display:flex; flex-direction:column; gap:20px;">
 
-        {{-- ── TEV Info ── --}}
+        {{-- TEV Info ── --}}
         <div class="card">
             <div class="card-header">
                 <h3>✈ TEV Information</h3>
@@ -281,9 +315,7 @@
                     </thead>
                     <tbody>
                         @forelse ($tev->itineraryLines as $line)
-                            @php
-                                $lineTotal = (float)$line->transportation_cost + (float)$line->per_diem_amount;
-                            @endphp
+                            @php $lineTotal = (float)$line->transportation_cost + (float)$line->per_diem_amount; @endphp
                             <tr>
                                 <td>{{ $line->travel_date->format('M d, Y') }}</td>
                                 <td>{{ $line->origin }}</td>
@@ -427,10 +459,10 @@
 
     </div>
 
-    {{-- ── Right panel: actions ── --}}
-    <div style="display:flex; flex-direction:column; gap:16px;">
+    {{-- ── Right panel: totals + actions ── --}}
+    <div class="show-grid-right" style="display:flex; flex-direction:column; gap:16px;">
 
-        {{-- Totals summary --}}
+        {{-- Totals summary ── --}}
         <div style="background:var(--navy); color:#fff; border-radius:8px; padding:16px 20px;">
             <div style="font-size:0.68rem; font-weight:700; text-transform:uppercase;
                         letter-spacing:0.07em; opacity:0.6; margin-bottom:10px;">Summary</div>
@@ -452,7 +484,7 @@
             </div>
         </div>
 
-        {{-- Submit --}}
+        {{-- Submit ── --}}
         @if ($canSubmit)
         <div class="card no-print">
             <div class="card-header"><h3>📤 Submit TEV</h3></div>
@@ -471,7 +503,7 @@
         </div>
         @endif
 
-        {{-- Approve --}}
+        {{-- Approve ── --}}
         @if ($canApprove)
         <div class="card no-print">
             <div class="card-header"><h3>✓ {{ $nextAction }}</h3></div>
@@ -492,7 +524,7 @@
         </div>
         @endif
 
-        {{-- Reject --}}
+        {{-- Reject ── --}}
         @if ($canReject)
         <div class="card no-print">
             <div class="card-header" style="border-left:3px solid var(--red);">
@@ -521,7 +553,7 @@
         </div>
         @endif
 
-        {{-- Certify --}}
+        {{-- Certify ── --}}
         @if ($canCertify)
         <div class="card no-print">
             <div class="card-header"><h3>📜 Certify Travel</h3></div>
@@ -536,46 +568,39 @@
                             Travel Completed
                         </label>
                     </div>
-
                     <div class="form-group">
                         <label for="date_returned">Date Returned</label>
                         <input type="date" id="date_returned" name="date_returned"
                                value="{{ optional($tev->certification)->date_returned?->toDateString() }}">
                     </div>
-
                     <div class="form-group">
                         <label for="place_reported_back">Place Reported Back</label>
                         <input type="text" id="place_reported_back" name="place_reported_back"
                                value="{{ optional($tev->certification)->place_reported_back }}"
                                placeholder="e.g. DOLE RO9 Office">
                     </div>
-
                     <div class="form-group">
                         <label for="annex_a_amount">Annex A Amount (₱)</label>
                         <input type="number" id="annex_a_amount" name="annex_a_amount"
                                value="{{ optional($tev->certification)->annex_a_amount ?? 0 }}"
                                step="0.01" min="0">
                     </div>
-
                     <div class="form-group">
                         <label for="annex_a_particulars">Annex A Particulars</label>
                         <textarea id="annex_a_particulars" name="annex_a_particulars" rows="2"
                                   placeholder="Details of expenses not requiring receipts...">{{ optional($tev->certification)->annex_a_particulars }}</textarea>
                     </div>
-
                     <div class="form-group">
                         <label for="agency_visited">Agency Visited</label>
                         <input type="text" id="agency_visited" name="agency_visited"
                                value="{{ optional($tev->certification)->agency_visited }}"
                                placeholder="Name of agency...">
                     </div>
-
                     <div class="form-group">
                         <label for="appearance_date">Appearance Date</label>
                         <input type="date" id="appearance_date" name="appearance_date"
                                value="{{ optional($tev->certification)->appearance_date?->toDateString() }}">
                     </div>
-
                     <div class="form-group">
                         <label for="contact_person">Contact Person</label>
                         <input type="text" id="contact_person" name="contact_person"

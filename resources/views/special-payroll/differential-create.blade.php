@@ -9,6 +9,48 @@
 @section('title', 'Salary Differential — New Entry')
 @section('page-title', 'Special Payroll')
 
+@section('styles')
+<style>
+/* ── Responsive: Special Payroll Create Pages ── */
+.sp-create-grid {
+    display: grid;
+    grid-template-columns: 1fr 380px;
+    gap: 24px;
+    align-items: start;
+}
+.sp-date-row,
+.sp-salary-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+}
+@media (max-width: 900px) {
+    .sp-create-grid {
+        grid-template-columns: 1fr;
+    }
+}
+@media (max-width: 600px) {
+    .sp-date-row,
+    .sp-salary-row {
+        grid-template-columns: 1fr;
+        gap: 0;
+    }
+    .page-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+    .sp-action-row {
+        flex-direction: column;
+    }
+    .sp-action-row .btn {
+        width: 100%;
+        text-align: center;
+    }
+}
+</style>
+@endsection
+
 @section('content')
 
 <div class="page-header">
@@ -42,7 +84,7 @@
     </div>
 @endif
 
-<div style="display:grid; grid-template-columns:1fr 380px; gap:24px; align-items:start;">
+<div class="sp-create-grid">
 
     {{-- ── Main Form ── --}}
     <div class="card">
@@ -80,7 +122,7 @@
                 </div>
 
                 {{-- Effectivity date range --}}
-                <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+                <div class="sp-date-row">
                     <div class="form-group">
                         <label for="effectivity_date_from">
                             Effectivity Date — From <span style="color:var(--red);">*</span>
@@ -109,7 +151,7 @@
                 </div>
 
                 {{-- Old / New salary --}}
-                <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+                <div class="sp-salary-row">
                     <div class="form-group">
                         <label for="old_salary">
                             Old Salary (Monthly Rate) <span style="color:var(--red);">*</span>
@@ -128,31 +170,31 @@
                         </div>
                     </div>
 
-<div class="form-group">
-    <label for="new_salary">
-        New Salary (Monthly Rate) <span style="color:var(--red);">*</span>
-    </label>
-    <input type="number" id="new_salary" name="new_salary"
-           value="{{ old('new_salary') }}"
-           step="0.01" min="0"
-           placeholder="e.g. 52864"
-           class="{{ $errors->has('new_salary') ? 'is-invalid' : '' }}"
-           required>
-    @error('new_salary')
-        <div class="invalid-feedback">{{ $message }}</div>
-    @enderror
+                    <div class="form-group">
+                        <label for="new_salary">
+                            New Salary (Monthly Rate) <span style="color:var(--red);">*</span>
+                        </label>
+                        <input type="number" id="new_salary" name="new_salary"
+                               value="{{ old('new_salary') }}"
+                               step="0.01" min="0"
+                               placeholder="e.g. 52864"
+                               class="{{ $errors->has('new_salary') ? 'is-invalid' : '' }}"
+                               required>
+                        @error('new_salary')
+                            <div class="invalid-feedback">{{ $message }}</div>
+                        @enderror
 
-    {{-- Differential badge / inline warning --}}
-    <div id="diff-badge" style="display:none; margin-top:6px; font-size:0.80rem; font-weight:700;">
-        Differential: <span id="diff-val">—</span>
-    </div>
-    <div id="new-salary-warn" style="display:none; margin-top:6px; font-size:0.78rem;
-         color:#B71C1C; background:#FFF5F5; border:1px solid #FFCDD2;
-         border-radius:6px; padding:6px 10px;">
-        ⚠ New salary must be <strong>greater than</strong> the old salary
-        (₱<span id="warn-old-val">0.00</span>). This entry cannot be saved as-is.
-    </div>
-</div>
+                        {{-- Differential badge / inline warning --}}
+                        <div id="diff-badge" style="display:none; margin-top:6px; font-size:0.80rem; font-weight:700;">
+                            Differential: <span id="diff-val">—</span>
+                        </div>
+                        <div id="new-salary-warn" style="display:none; margin-top:6px; font-size:0.78rem;
+                             color:#B71C1C; background:#FFF5F5; border:1px solid #FFCDD2;
+                             border-radius:6px; padding:6px 10px;">
+                            ⚠ New salary must be <strong>greater than</strong> the old salary
+                            (₱<span id="warn-old-val">0.00</span>). This entry cannot be saved as-is.
+                        </div>
+                    </div>
                 </div>
 
                 {{-- Remarks --}}
@@ -167,7 +209,7 @@
                     @enderror
                 </div>
 
-                <div class="d-flex gap-2" style="margin-top:24px;">
+                <div class="d-flex gap-2 sp-action-row" style="margin-top:24px;">
                     <button type="submit" class="btn btn-primary btn-lg">
                         ⚙ Compute &amp; Save
                     </button>
@@ -333,31 +375,29 @@
         var oldSal   = parseFloat(document.getElementById('old_salary').value) || 0;
         var newSal   = parseFloat(document.getElementById('new_salary').value) || 0;
 
-// Differential badge + inline warning
-var diffBadge    = document.getElementById('diff-badge');
-var diffVal      = document.getElementById('diff-val');
-var newSalWarn   = document.getElementById('new-salary-warn');
-var warnOldVal   = document.getElementById('warn-old-val');
+        // Differential badge + inline warning
+        var diffBadge    = document.getElementById('diff-badge');
+        var diffVal      = document.getElementById('diff-val');
+        var newSalWarn   = document.getElementById('new-salary-warn');
+        var warnOldVal   = document.getElementById('warn-old-val');
 
-if (newSal > 0 && oldSal > 0) {
-    var diff = rnd(newSal - oldSal);
-    diffBadge.style.display = 'block';
-    diffVal.textContent     = fmt(diff);
+        if (newSal > 0 && oldSal > 0) {
+            var diff = rnd(newSal - oldSal);
+            diffBadge.style.display = 'block';
+            diffVal.textContent     = fmt(diff);
 
-    if (diff <= 0) {
-        // Negative or zero — show warning, style badge red
-        diffBadge.style.color  = '#B71C1C';
-        newSalWarn.style.display = 'block';
-        warnOldVal.textContent   = Number(oldSal).toLocaleString('en-PH', {minimumFractionDigits:2});
-    } else {
-        // Positive — normal navy, hide warning
-        diffBadge.style.color    = 'var(--navy)';
-        newSalWarn.style.display = 'none';
-    }
-} else {
-    diffBadge.style.display  = 'none';
-    newSalWarn.style.display = 'none';
-}
+            if (diff <= 0) {
+                diffBadge.style.color  = '#B71C1C';
+                newSalWarn.style.display = 'block';
+                warnOldVal.textContent   = Number(oldSal).toLocaleString('en-PH', {minimumFractionDigits:2});
+            } else {
+                diffBadge.style.color    = 'var(--navy)';
+                newSalWarn.style.display = 'none';
+            }
+        } else {
+            diffBadge.style.display  = 'none';
+            newSalWarn.style.display = 'none';
+        }
 
         if (!fromVal || !toVal || oldSal <= 0 || newSal <= 0 || newSal <= oldSal) {
             document.getElementById('previewEmpty').style.display = 'block';

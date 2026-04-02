@@ -27,32 +27,36 @@
     border-right: 1px solid var(--border); transition: background 0.2s;
 }
 .approval-step:last-child { border-right: none; }
-.approval-step.done     { background: #F1FAF5; color: #1B6B3A; }
-.approval-step.active   { background: #EEF1FA; color: var(--navy); }
+.approval-step.done          { background: #F1FAF5; color: #1B6B3A; }
+.approval-step.active        { background: #EEF1FA; color: var(--navy); }
 .approval-step.released-step { background: var(--navy); color: #ffffff; }
 .approval-step-dot {
-    width:30px; height:30px; border-radius:50%; border:2px solid currentColor;
-    display:flex; align-items:center; justify-content:center;
-    font-size:0.9rem; font-weight:700; flex-shrink:0;
-    background:#ffffff; color:inherit;
+    width: 30px; height: 30px; border-radius: 50%; border: 2px solid currentColor;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.9rem; font-weight: 700; flex-shrink: 0;
+    background: #ffffff; color: inherit;
 }
-.approval-step.done .approval-step-dot        { background:#2E7D52; border-color:#2E7D52; color:#fff; }
-.approval-step.active .approval-step-dot      { background:var(--navy); border-color:var(--navy); color:#fff; }
-.approval-step.released-step .approval-step-dot { background:rgba(255,255,255,.15); border-color:rgba(255,255,255,.6); color:#fff; }
-.approval-step-label { line-height:1.3; min-width:0; }
-.approval-step-label small { display:block; font-weight:400; font-size:0.70rem; opacity:0.72; margin-top:2px; }
+.approval-step.done .approval-step-dot        { background: #2E7D52; border-color: #2E7D52; color: #fff; }
+.approval-step.active .approval-step-dot      { background: var(--navy); border-color: var(--navy); color: #fff; }
+.approval-step.released-step .approval-step-dot { background: rgba(255,255,255,.15); border-color: rgba(255,255,255,.6); color: #fff; }
+.approval-step-label { line-height: 1.3; min-width: 0; }
+.approval-step-label small {
+    display: block; font-weight: 400; font-size: 0.70rem;
+    opacity: 0.72; margin-top: 2px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
 
-/* ── Document header (matches Excel layout) ── */
+/* ── Document header ── */
 .doc-header {
     text-align: center; padding: 10px 0 20px;
     border-bottom: 2px solid var(--navy); margin-bottom: 20px;
 }
-.doc-header .doc-agency   { font-size:0.80rem; color:var(--text-mid); margin:0 0 2px; }
+.doc-header .doc-agency { font-size: 0.80rem; color: var(--text-mid); margin: 0 0 2px; }
 .doc-header h2 {
     font-size: 0.96rem; font-weight: 700; text-transform: uppercase;
     letter-spacing: 0.04em; color: var(--navy); margin: 0 0 4px;
 }
-.doc-header .doc-period   { font-size: 0.82rem; color: var(--text-mid); margin: 0; }
+.doc-header .doc-period { font-size: 0.82rem; color: var(--text-mid); margin: 0; }
 
 /* ── Document meta ── */
 .doc-meta {
@@ -82,33 +86,50 @@
     border: 1px solid rgba(255,255,255,0.12);
 }
 .comp-table tbody td {
-    padding: 9px 10px; border: 1px solid var(--border);
-    vertical-align: middle;
+    padding: 9px 10px; border: 1px solid var(--border); vertical-align: middle;
 }
-.comp-table tbody td.text-right { text-align: right; }
+.comp-table tbody td.text-right  { text-align: right; }
 .comp-table tbody td.text-center { text-align: center; }
 .comp-table tfoot td {
     padding: 9px 10px; font-weight: 700; font-size: 0.82rem;
     background: var(--navy); color: #fff; border: 1px solid rgba(255,255,255,0.15);
 }
-.comp-table tfoot td.text-right  { text-align: right; }
-.comp-table tfoot td.gold-text   { color: var(--gold); }
-.comp-table tfoot td.green-text  { color: #69F0AE; }
-.comp-table tfoot td.red-text    { color: #FF8A80; }
+.comp-table tfoot td.text-right { text-align: right; }
+.comp-table tfoot td.gold-text  { color: var(--gold); }
+.comp-table tfoot td.green-text { color: #69F0AE; }
+.comp-table tfoot td.red-text   { color: #FF8A80; }
 
-/* ── Per-month sub-table ── */
-.month-sub { font-size: 0.72rem; }
-.month-sub td { padding: 2px 4px; border-bottom: 1px dotted var(--border); }
-.month-sub td:last-child { text-align: right; }
+/* ── Mobile summary card (replaces scrollable table on small screens) ── */
+.mobile-summary {
+    display: none;
+    border: 1px solid var(--border); border-radius: var(--radius);
+    overflow: hidden; margin-bottom: 20px; font-size: 0.84rem;
+}
+.mobile-summary-header {
+    background: var(--navy); color: #fff;
+    padding: 10px 14px; font-weight: 700; font-size: 0.80rem;
+}
+.mobile-summary-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 9px 14px; border-bottom: 1px solid var(--border);
+}
+.mobile-summary-row:last-child { border-bottom: none; }
+.mobile-summary-row .ms-label {
+    font-size: 0.72rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.04em; color: var(--text-light);
+}
+.mobile-summary-row .ms-value { font-weight: 600; color: var(--text); }
+.mobile-summary-section {
+    background: var(--surface-alt, #f8f9ff); padding: 6px 14px;
+    font-size: 0.70rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.05em; color: var(--text-light);
+    border-bottom: 1px solid var(--border);
+}
 
-/* ── Certification blocks — matches Excel A/B/C/D blocks ── */
-.cert-grid {
-    display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 28px;
-}
-.cert-block {
-    border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 18px 22px;
-}
-.cert-block-ref  {
+/* ── Cert blocks ── */
+.cert-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 28px; }
+.cert-block { border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 18px 22px; }
+.cert-block-ref {
     display: inline-block; width: 22px; height: 22px; border-radius: 50%;
     background: var(--navy); color: #fff; font-size: 0.75rem; font-weight: 700;
     text-align: center; line-height: 22px; margin-bottom: 6px;
@@ -117,8 +138,6 @@
 .cert-sig-line { border-bottom: 1px solid var(--text-mid); margin-bottom: 6px; height: 24px; width: 80%; }
 .cert-sig-name { font-weight: 700; font-size: 0.83rem; }
 .cert-sig-role { font-size: 0.73rem; color: var(--text-light); }
-
-/* Release block extras */
 .cert-block-meta { font-size: 0.73rem; color: var(--text-mid); margin-top: 10px; }
 .cert-block-meta span { display: block; padding: 2px 0; border-bottom: 1px solid var(--border); min-width: 160px; margin-bottom: 4px; }
 
@@ -128,10 +147,30 @@
     .approval-bar { display: none !important; }
     .card { box-shadow: none !important; border: 1px solid #ccc !important; }
     .cert-grid { page-break-inside: avoid; }
+    .mobile-summary { display: none !important; }
+    .comp-wrap { display: block !important; }
     .comp-table { font-size: 7.5pt; }
     .doc-header h2 { font-size: 11pt; }
     body { font-size: 9pt; }
     @page { margin: 1.2cm 1cm; size: landscape; }
+}
+
+/* ── Mobile overrides ── */
+@media (max-width: 768px) {
+    .approval-bar { flex-direction: column; }
+    .approval-step { border-right: none; border-bottom: 1px solid var(--border); }
+    .approval-step:last-child { border-bottom: none; }
+
+    .doc-meta { grid-template-columns: 1fr 1fr; }
+
+    .comp-wrap { display: none; }
+    .mobile-summary { display: block; }
+
+    .cert-grid { grid-template-columns: 1fr; }
+
+    .page-header { flex-direction: column; align-items: flex-start; gap: 10px; }
+    .page-header .d-flex { width: 100%; }
+    .page-header .d-flex .btn { flex: 1; justify-content: center; }
 }
 </style>
 @endsection
@@ -296,33 +335,80 @@
             @endif
         </div>
 
-        {{-- ── "We acknowledge receipt…" line (matches Excel) ── --}}
         <p style="font-size:0.78rem; font-style:italic; color:var(--text-mid); margin-bottom:16px;">
             We acknowledge receipt of cash shown opposite our name as full compensation
             for services rendered for the period covered.
         </p>
 
-        {{-- ── Main Payroll Table (matches SI Payroll sheet columns) ── --}}
+        {{-- ── Mobile summary card ── --}}
+        <div class="mobile-summary">
+            <div class="mobile-summary-header">Earned for the Period</div>
+            <div class="mobile-summary-row">
+                <span class="ms-label">New Rate</span>
+                <span class="ms-value">₱{{ number_format($batch->new_basic_salary, 2) }}</span>
+            </div>
+            <div class="mobile-summary-row">
+                <span class="ms-label">Old Rate</span>
+                <span class="ms-value">₱{{ number_format($batch->old_basic_salary, 2) }}</span>
+            </div>
+            <div class="mobile-summary-row">
+                <span class="ms-label">Differential / mo.</span>
+                <span class="ms-value" style="color:var(--navy); font-weight:700;">₱{{ number_format($result['differential'], 2) }}</span>
+            </div>
+            @foreach ($result['per_month'] as $mo)
+            <div class="mobile-summary-row">
+                <span class="ms-label">{{ $mo['month_label'] }} ({{ $mo['days'] }}d)</span>
+                <span class="ms-value">₱{{ number_format($mo['earned'], 2) }}</span>
+            </div>
+            @endforeach
+            <div class="mobile-summary-row" style="background:var(--surface-alt, #f0f2fa);">
+                <span class="ms-label">Total Earned</span>
+                <span class="ms-value" style="color:var(--navy); font-weight:700;">₱{{ number_format($result['total_earned'], 2) }}</span>
+            </div>
+            <div class="mobile-summary-section">Deductions</div>
+            <div class="mobile-summary-row">
+                <span class="ms-label">PhilHealth</span>
+                <span class="ms-value" style="color:#B71C1C;">₱{{ number_format($result['total_phic'], 2) }}</span>
+            </div>
+            <div class="mobile-summary-row">
+                <span class="ms-label">GSIS Life / Ret.</span>
+                <span class="ms-value" style="color:#B71C1C;">₱{{ number_format($result['total_gsis'], 2) }}</span>
+            </div>
+            <div class="mobile-summary-row">
+                <span class="ms-label">Pag-IBIG</span>
+                <span class="ms-value" style="color:#B71C1C;">₱{{ number_format($result['total_pagibig'], 2) }}</span>
+            </div>
+            <div class="mobile-summary-row">
+                <span class="ms-label">Withholding Tax</span>
+                <span class="ms-value" style="color:#B71C1C;">₱{{ number_format($result['total_wht'], 2) }}</span>
+            </div>
+            <div class="mobile-summary-row" style="background:var(--surface-alt, #f0f2fa);">
+                <span class="ms-label">Total Deductions</span>
+                <span class="ms-value" style="color:#B71C1C; font-weight:700;">₱{{ number_format($result['total_deductions'], 2) }}</span>
+            </div>
+            <div class="mobile-summary-row" style="background:#F1FAF5;">
+                <span class="ms-label">Net Amount</span>
+                <span class="ms-value" style="color:#1B5E20; font-weight:700; font-size:1rem;">₱{{ number_format($result['net_amount'], 2) }}</span>
+            </div>
+        </div>
+
+        {{-- ── Desktop payroll table ── --}}
         <div class="comp-wrap">
             <table class="comp-table">
                 <thead>
-                    {{-- Row 1: group headers --}}
                     <tr>
                         <th rowspan="2" style="text-align:center; vertical-align:middle;">No.</th>
                         <th rowspan="2" style="text-align:left; vertical-align:middle;">Name</th>
                         <th rowspan="2" style="text-align:left; vertical-align:middle;">Position</th>
                         <th rowspan="2" style="text-align:center; vertical-align:middle;">Effectivity Date</th>
-                        {{-- EARNED FOR THE PERIOD --}}
                         <th colspan="{{ 3 + count($result['per_month']) }}"
                             style="text-align:center; background:#1e3a8a;">
                             EARNED FOR THE PERIOD
                         </th>
-                        {{-- DEDUCTIONS --}}
                         <th colspan="5" style="text-align:center; background:#7c1a1a;">DEDUCTIONS</th>
                         <th rowspan="2" style="text-align:right; vertical-align:middle;">NET AMOUNT</th>
                         <th rowspan="2" style="text-align:center; vertical-align:middle; min-width:80px;">SIGNATURE</th>
                     </tr>
-                    {{-- Row 2: sub-headers --}}
                     <tr>
                         <th style="text-align:right;">NEW RATE</th>
                         <th style="text-align:right;">OLD RATE</th>
@@ -359,15 +445,12 @@
                             to<br>
                             {{ $batch->period_end->format('m/d/Y') }}
                         </td>
-                        {{-- New/Old/Differential --}}
                         <td class="text-right">{{ number_format($batch->new_basic_salary, 2) }}</td>
                         <td class="text-right">{{ number_format($batch->old_basic_salary, 2) }}</td>
                         <td class="text-right fw-bold">{{ number_format($result['differential'], 2) }}</td>
-                        {{-- Per-month earned --}}
                         @foreach ($result['per_month'] as $mo)
                             <td class="text-right">{{ number_format($mo['earned'], 2) }}</td>
                         @endforeach
-                        {{-- Deductions --}}
                         <td class="text-right fw-bold">{{ number_format($result['total_earned'], 2) }}</td>
                         <td class="text-right" style="color:#B71C1C;">{{ number_format($result['total_phic'], 2) }}</td>
                         <td class="text-right" style="color:#B71C1C;">{{ number_format($result['total_gsis'], 2) }}</td>
@@ -400,7 +483,7 @@
             </table>
         </div>
 
-        {{-- ── Summary amount in words ── --}}
+        {{-- ── Net amount in words ── --}}
         <div style="font-size:0.80rem; margin-bottom:24px;">
             <strong>Net Amount in Words:</strong>
             <em style="color:var(--navy);">
@@ -416,22 +499,18 @@
         </div>
         @endif
 
-        {{-- ── Certification Blocks (A / B / C / D — matches Excel) ── --}}
+        {{-- ── Certification Blocks ── --}}
         <div class="cert-grid">
 
-            {{-- A: Certified — Services rendered --}}
             <div class="cert-block">
                 <div class="cert-block-ref">A</div>
-                <div class="cert-block-title">
-                    CERTIFIED: Services duly rendered as stated.
-                </div>
+                <div class="cert-block-title">CERTIFIED: Services duly rendered as stated.</div>
                 <div class="cert-sig-line"></div>
                 <div class="cert-sig-name">NAME</div>
                 <div class="cert-sig-role">Position, HRMO / HRMO Designate</div>
                 <div class="cert-sig-role">Authorized Official</div>
             </div>
 
-            {{-- C: Approved for Payment --}}
             <div class="cert-block">
                 <div class="cert-block-ref">C</div>
                 <div class="cert-block-title">
@@ -445,12 +524,10 @@
                 <div class="cert-sig-role">Head of Agency / Authorized Representative</div>
             </div>
 
-            {{-- B: Certified — Funds available --}}
             <div class="cert-block">
                 <div class="cert-block-ref">B</div>
                 <div class="cert-block-title">
-                    CERTIFIED: Funds available, cash available, supporting documents
-                    complete and proper.
+                    CERTIFIED: Funds available, cash available, supporting documents complete and proper.
                 </div>
                 <div class="cert-sig-line"></div>
                 <div class="cert-sig-name">NAME</div>
@@ -463,7 +540,6 @@
                 </div>
             </div>
 
-            {{-- D: Certified — Each employee paid --}}
             <div class="cert-block">
                 <div class="cert-block-ref">D</div>
                 <div class="cert-block-title">
@@ -479,25 +555,19 @@
             </div>
 
         </div>
-        {{-- /cert-grid --}}
 
     </div>
-    {{-- /card-body --}}
 </div>
 
 @endsection
 
 @php
-/**
- * Simple amount-to-words helper for the certification block.
- * Inline here to avoid a separate helper class dependency.
- */
 function amountToWords(float $amount): string
 {
-    $ones   = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine',
-               'Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen',
-               'Seventeen', 'Eighteen', 'Nineteen'];
-    $tens   = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
+    $ones = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine',
+             'Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen',
+             'Seventeen', 'Eighteen', 'Nineteen'];
+    $tens = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
 
     $int  = (int) floor($amount);
     $cent = (int) round(($amount - $int) * 100);

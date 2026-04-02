@@ -13,44 +13,31 @@
 
 @section('styles')
 <style>
-/* ── Approval bar (mirrors payroll/_approval_bar styles) ── */
+/* ── Approval bar ── */
 .approval-bar {
-    display: flex;
-    align-items: stretch;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    overflow: hidden;
-    box-shadow: var(--shadow);
-    margin-bottom: 24px;
+    display: flex; align-items: stretch;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); overflow: hidden;
+    box-shadow: var(--shadow); margin-bottom: 24px;
 }
 .approval-step {
-    flex: 1;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 14px 18px;
-    font-size: 0.80rem;
-    font-weight: 600;
-    color: var(--text-light);
-    background: var(--surface);
-    border-right: 1px solid var(--border);
-    transition: background 0.2s;
+    flex: 1; display: flex; align-items: center; gap: 10px;
+    padding: 14px 18px; font-size: 0.80rem; font-weight: 600;
+    color: var(--text-light); background: var(--surface);
+    border-right: 1px solid var(--border); transition: background 0.2s;
 }
 .approval-step:last-child { border-right: none; }
-.approval-step.done   { background: #F1FAF5; color: #1B6B3A; }
-.approval-step.active { background: #EEF1FA; color: var(--navy); }
+.approval-step.done          { background: #F1FAF5; color: #1B6B3A; }
+.approval-step.active        { background: #EEF1FA; color: var(--navy); }
 .approval-step.released-step { background: var(--navy); color: #ffffff; }
 .approval-step-dot {
-    width: 30px; height: 30px;
-    border-radius: 50%;
-    border: 2px solid currentColor;
+    width: 30px; height: 30px; border-radius: 50%; border: 2px solid currentColor;
     display: flex; align-items: center; justify-content: center;
     font-size: 0.9rem; font-weight: 700; flex-shrink: 0;
     background: #ffffff; color: inherit;
 }
-.approval-step.done .approval-step-dot     { background: #2E7D52; border-color: #2E7D52; color: #fff; }
-.approval-step.active .approval-step-dot   { background: var(--navy); border-color: var(--navy); color: #fff; }
+.approval-step.done .approval-step-dot        { background: #2E7D52; border-color: #2E7D52; color: #fff; }
+.approval-step.active .approval-step-dot      { background: var(--navy); border-color: var(--navy); color: #fff; }
 .approval-step.released-step .approval-step-dot { background: rgba(255,255,255,.15); border-color: rgba(255,255,255,.6); color: #fff; }
 .approval-step-label { line-height: 1.3; min-width: 0; }
 .approval-step-label small {
@@ -59,12 +46,10 @@
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 
-/* ── Payroll document header ── */
+/* ── Document header ── */
 .doc-header {
-    text-align: center;
-    padding: 8px 0 20px;
-    border-bottom: 2px solid var(--navy);
-    margin-bottom: 20px;
+    text-align: center; padding: 8px 0 20px;
+    border-bottom: 2px solid var(--navy); margin-bottom: 20px;
 }
 .doc-header h2 {
     font-size: 1rem; font-weight: 700;
@@ -75,11 +60,8 @@
 
 /* ── Meta grid ── */
 .doc-meta {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: 10px 24px;
-    margin-bottom: 20px;
-    font-size: 0.85rem;
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 10px 24px; margin-bottom: 20px; font-size: 0.85rem;
 }
 .doc-meta-item { display: flex; flex-direction: column; gap: 2px; }
 .doc-meta-item .label {
@@ -88,7 +70,7 @@
 }
 .doc-meta-item .value { font-weight: 600; color: var(--text); }
 
-/* ── Computation table ── */
+/* ── Computation table (desktop) ── */
 .comp-wrap { overflow-x: auto; margin-bottom: 20px; }
 .comp-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; white-space: nowrap; }
 .comp-table thead th {
@@ -104,9 +86,36 @@
     background: var(--navy); color: white;
 }
 .comp-table tfoot td.text-right { text-align: right; }
-.comp-table tfoot td.gold-text   { color: var(--gold); }
-.comp-table tfoot td.green-text  { color: #69F0AE; }
-.comp-table tfoot td.red-text    { color: #FF8A80; }
+.comp-table tfoot td.gold-text  { color: var(--gold); }
+.comp-table tfoot td.green-text { color: #69F0AE; }
+.comp-table tfoot td.red-text   { color: #FF8A80; }
+
+/* ── Mobile summary card ── */
+.mobile-summary {
+    display: none;
+    border: 1px solid var(--border); border-radius: var(--radius);
+    overflow: hidden; margin-bottom: 20px; font-size: 0.84rem;
+}
+.mobile-summary-header {
+    background: var(--navy); color: #fff;
+    padding: 10px 14px; font-weight: 700; font-size: 0.80rem;
+}
+.mobile-summary-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 9px 14px; border-bottom: 1px solid var(--border);
+}
+.mobile-summary-row:last-child { border-bottom: none; }
+.mobile-summary-row .ms-label {
+    font-size: 0.72rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.04em; color: var(--text-light);
+}
+.mobile-summary-row .ms-value { font-weight: 600; color: var(--text); }
+.mobile-summary-section {
+    background: var(--surface-alt, #f8f9ff); padding: 6px 14px;
+    font-size: 0.70rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.05em; color: var(--text-light);
+    border-bottom: 1px solid var(--border);
+}
 
 /* ── Govt share note ── */
 .govtshare-note {
@@ -116,9 +125,7 @@
 }
 
 /* ── Certification blocks ── */
-.cert-grid {
-    display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 28px;
-}
+.cert-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 28px; }
 .cert-block {
     border: 1px solid var(--border); border-radius: var(--radius);
     padding: 16px 20px 22px;
@@ -139,10 +146,34 @@
     .card { box-shadow: none !important; border: 1px solid #ccc !important; }
     .approval-bar { display: none !important; }
     .cert-grid { page-break-inside: avoid; }
+    .mobile-summary { display: none !important; }
+    .comp-wrap { display: block !important; }
     .comp-table { font-size: 9pt; }
     .doc-header h2 { font-size: 12pt; }
     body { font-size: 10pt; }
     @page { margin: 1.5cm 1.2cm; }
+}
+
+/* ── Mobile overrides ── */
+@media (max-width: 768px) {
+    .approval-bar { flex-direction: column; }
+    .approval-step { border-right: none; border-bottom: 1px solid var(--border); }
+    .approval-step:last-child { border-bottom: none; }
+
+    .doc-meta { grid-template-columns: 1fr 1fr; }
+
+    .comp-wrap { display: none; }
+    .mobile-summary { display: block; }
+
+    .cert-grid { grid-template-columns: 1fr; }
+
+    .govtshare-note { font-size: 0.76rem; }
+
+    .page-header { flex-direction: column; align-items: flex-start; gap: 10px; }
+    .page-header .d-flex { width: 100%; flex-wrap: wrap; }
+    .page-header .d-flex .btn { flex: 1; justify-content: center; }
+    .page-header .d-flex form { flex: 1; }
+    .page-header .d-flex form .btn { width: 100%; }
 }
 </style>
 @endsection
@@ -165,12 +196,9 @@
     $periodLabel      = $batch->period_start->format('M d') . '–' . $batch->period_end->format('d, Y');
     $effectivityFmt   = $batch->effectivity_date->format('M d, Y');
 
-    $canApprove = auth()->user()->hasRole('accountant')
-               && $batch->status === 'draft';
-    $canRelease = auth()->user()->hasAnyRole(['ard', 'chief_admin_officer'])
-               && $batch->status === 'approved';
+    $canApprove = auth()->user()->hasRole('accountant') && $batch->status === 'draft';
+    $canRelease = auth()->user()->hasAnyRole(['ard', 'chief_admin_officer']) && $batch->status === 'approved';
 
-    // Build approval step state (3-step: Draft → Approved → Released)
     $spSteps = [
         ['label' => 'HR Prepared',  'sub' => 'Payroll Officer / HRMO', 'icon' => '✏'],
         ['label' => 'Accountant',   'sub' => 'Certify Funds',           'icon' => '💼'],
@@ -184,7 +212,7 @@
     };
 @endphp
 
-{{-- ═══════════════ PAGE HEADER ═══════════════ --}}
+{{-- ═══ PAGE HEADER ═══ --}}
 <div class="page-header no-print">
     <div class="page-header-left">
         <h1>Pro-Rated Payroll</h1>
@@ -234,7 +262,7 @@
     <div class="alert alert-error no-print">{{ session('error') }}</div>
 @endif
 
-{{-- ═══════════════ APPROVAL STEP BAR ═══════════════ --}}
+{{-- ═══ APPROVAL STEP BAR ═══ --}}
 <div class="approval-bar no-print">
     @foreach ($spSteps as $i => $step)
         @php
@@ -259,7 +287,7 @@
     @endforeach
 </div>
 
-{{-- ═══════════════ PRINTABLE DOCUMENT ═══════════════ --}}
+{{-- ═══ PRINTABLE DOCUMENT ═══ --}}
 <div class="card">
     <div class="card-body">
 
@@ -309,7 +337,57 @@
             </div>
         </div>
 
-        {{-- Computation table --}}
+        {{-- ── Mobile summary card ── --}}
+        <div class="mobile-summary">
+            <div class="mobile-summary-header">Computation Summary</div>
+            <div class="mobile-summary-row">
+                <span class="ms-label">Basic Salary</span>
+                <span class="ms-value">₱{{ number_format($result['basic_salary'], 2) }}</span>
+            </div>
+            <div class="mobile-summary-row">
+                <span class="ms-label">Salary Earned</span>
+                <span class="ms-value">₱{{ number_format($result['salary_earned'], 2) }}</span>
+            </div>
+            <div class="mobile-summary-row">
+                <span class="ms-label">PERA Allowance</span>
+                <span class="ms-value">₱{{ number_format($result['pera'], 2) }}</span>
+            </div>
+            <div class="mobile-summary-row">
+                <span class="ms-label">PERA Earned</span>
+                <span class="ms-value">₱{{ number_format($result['pera_earned'], 2) }}</span>
+            </div>
+            <div class="mobile-summary-row" style="background:var(--surface-alt, #f0f2fa);">
+                <span class="ms-label">Total Earned</span>
+                <span class="ms-value" style="color:var(--navy); font-weight:700;">₱{{ number_format($result['net_earned'], 2) }}</span>
+            </div>
+            <div class="mobile-summary-section">Deductions</div>
+            <div class="mobile-summary-row">
+                <span class="ms-label">GSIS Personal Share</span>
+                <span class="ms-value" style="color:#B71C1C;">₱{{ number_format($result['gsis_ps'], 2) }}</span>
+            </div>
+            <div class="mobile-summary-row">
+                <span class="ms-label">PhilHealth</span>
+                <span class="ms-value" style="color:#B71C1C;">₱{{ number_format($result['phic'], 2) }}</span>
+            </div>
+            <div class="mobile-summary-row">
+                <span class="ms-label">Pag-IBIG</span>
+                <span class="ms-value" style="color:#B71C1C;">₱{{ number_format($result['pagibig'], 2) }}</span>
+            </div>
+            <div class="mobile-summary-row">
+                <span class="ms-label">Withholding Tax</span>
+                <span class="ms-value" style="color:#B71C1C;">₱{{ number_format($result['wht'], 2) }}</span>
+            </div>
+            <div class="mobile-summary-row" style="background:var(--surface-alt, #f0f2fa);">
+                <span class="ms-label">Total Deductions</span>
+                <span class="ms-value" style="color:#B71C1C; font-weight:700;">₱{{ number_format($result['total_deductions'], 2) }}</span>
+            </div>
+            <div class="mobile-summary-row" style="background:#F1FAF5;">
+                <span class="ms-label">Net Amount</span>
+                <span class="ms-value" style="color:#1B5E20; font-weight:700; font-size:1rem;">₱{{ number_format($result['net_amount'], 2) }}</span>
+            </div>
+        </div>
+
+        {{-- ── Desktop computation table ── --}}
         <div class="comp-wrap">
             <table class="comp-table">
                 <thead>
@@ -345,35 +423,19 @@
                         <td class="text-right">₱{{ number_format($result['salary_earned'],   2) }}</td>
                         <td class="text-right">₱{{ number_format($result['pera'],            2) }}</td>
                         <td class="text-right">₱{{ number_format($result['pera_earned'],     2) }}</td>
-                        <td class="text-right fw-bold">
-                            ₱{{ number_format($result['net_earned'], 2) }}
-                        </td>
-                        <td class="text-right" style="color:#B71C1C;">
-                            ₱{{ number_format($result['gsis_ps'], 2) }}
-                        </td>
-                        <td class="text-right text-muted">
-                            ₱{{ number_format($result['phic'],   2) }}
-                        </td>
-                        <td class="text-right text-muted">
-                            ₱{{ number_format($result['pagibig'], 2) }}
-                        </td>
-                        <td class="text-right text-muted">
-                            ₱{{ number_format($result['wht'],    2) }}
-                        </td>
-                        <td class="text-right fw-bold" style="color:#B71C1C;">
-                            ₱{{ number_format($result['total_deductions'], 2) }}
-                        </td>
-                        <td class="text-right fw-bold" style="color:#1B5E20; font-size:0.90rem;">
-                            ₱{{ number_format($result['net_amount'], 2) }}
-                        </td>
+                        <td class="text-right fw-bold">₱{{ number_format($result['net_earned'], 2) }}</td>
+                        <td class="text-right" style="color:#B71C1C;">₱{{ number_format($result['gsis_ps'], 2) }}</td>
+                        <td class="text-right text-muted">₱{{ number_format($result['phic'],   2) }}</td>
+                        <td class="text-right text-muted">₱{{ number_format($result['pagibig'], 2) }}</td>
+                        <td class="text-right text-muted">₱{{ number_format($result['wht'],    2) }}</td>
+                        <td class="text-right fw-bold" style="color:#B71C1C;">₱{{ number_format($result['total_deductions'], 2) }}</td>
+                        <td class="text-right fw-bold" style="color:#1B5E20; font-size:0.90rem;">₱{{ number_format($result['net_amount'], 2) }}</td>
                         <td style="text-align:center; border-bottom:1px solid var(--text-mid);">&nbsp;</td>
                     </tr>
                 </tbody>
                 <tfoot>
                     <tr>
-                        <td colspan="4" style="color:rgba(255,255,255,0.6); font-size:0.78rem;">
-                            TOTALS — 1 employee
-                        </td>
+                        <td colspan="4" style="color:rgba(255,255,255,0.6); font-size:0.78rem;">TOTALS — 1 employee</td>
                         <td class="text-right">₱{{ number_format($result['basic_salary'],    2) }}</td>
                         <td class="text-right gold-text">₱{{ number_format($result['salary_earned'],   2) }}</td>
                         <td class="text-right">₱{{ number_format($result['pera'],            2) }}</td>
@@ -384,9 +446,7 @@
                         <td class="text-right">₱{{ number_format($result['pagibig'], 2) }}</td>
                         <td class="text-right">₱{{ number_format($result['wht'],    2) }}</td>
                         <td class="text-right red-text">₱{{ number_format($result['total_deductions'], 2) }}</td>
-                        <td class="text-right green-text" style="font-size:0.95rem;">
-                            ₱{{ number_format($result['net_amount'], 2) }}
-                        </td>
+                        <td class="text-right green-text" style="font-size:0.95rem;">₱{{ number_format($result['net_amount'], 2) }}</td>
                         <td></td>
                     </tr>
                 </tfoot>
@@ -403,26 +463,19 @@
         </div>
 
         {{-- Amount in words / ALOBS area --}}
-        <div class="d-flex" style="justify-content:space-between; align-items:flex-end;
-             font-size:0.82rem; color:var(--text-mid); margin-bottom:28px;">
-            <div></div>
-            <div style="text-align:right;">
-                <span style="font-weight:700; color:var(--navy);">=P=</span>
-                &nbsp; ₱{{ number_format($result['net_amount'], 2) }}
-                &emsp; ALOBS No.: ______________
-                &emsp; Date: ______________
-            </div>
+        <div style="font-size:0.82rem; color:var(--text-mid); margin-bottom:28px; text-align:right;">
+            <span style="font-weight:700; color:var(--navy);">=P=</span>
+            &nbsp; ₱{{ number_format($result['net_amount'], 2) }}
+            &emsp; ALOBS No.: ______________
+            &emsp; Date: ______________
         </div>
 
-        {{-- ═══════════════ CERTIFICATION BLOCKS ═══════════════ --}}
+        {{-- ═══ CERTIFICATION BLOCKS ═══ --}}
         <div class="cert-grid">
 
-            {{-- [ A ] HR / HRMO --}}
             <div class="cert-block">
                 <div class="cert-block-tag">[ A ]</div>
-                <div class="cert-block-title">
-                    Certified: Services duly rendered as stated.
-                </div>
+                <div class="cert-block-title">Certified: Services duly rendered as stated.</div>
                 <div class="cert-sig-line"></div>
                 <div class="cert-sig-name">________________________________</div>
                 <div class="cert-sig-role">Administrative Officer V / HRMO Designate</div>
@@ -430,7 +483,6 @@
                 <div class="cert-date">Date: ________________________</div>
             </div>
 
-            {{-- [ B ] Accountant --}}
             <div class="cert-block">
                 <div class="cert-block-tag">[ B ]</div>
                 <div class="cert-block-title">
@@ -451,7 +503,6 @@
                 @endif
             </div>
 
-            {{-- [ C ] Regional Director --}}
             <div class="cert-block">
                 <div class="cert-block-tag">[ C ]</div>
                 <div class="cert-block-title">Approved for Payment:</div>
@@ -466,7 +517,6 @@
                 <div class="cert-date">Date: ________________________</div>
             </div>
 
-            {{-- [ D ] Cashier --}}
             <div class="cert-block">
                 <div class="cert-block-tag">[ D ]</div>
                 <div class="cert-block-title">
