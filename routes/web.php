@@ -57,6 +57,10 @@ Route::middleware(['auth'])->group(function () {
     Route::delete('/employees/{employee}/promotions/{promotion}',
                   [EmployeePromotionController::class, 'destroy'])->name('employees.promotions.destroy');
 
+    // Employee TEV History
+    Route::get('/employees/{employee}/tev-history',
+               [ReportController::class, 'employeeTevHistory'])->name('employees.tev-history');
+
     // ── Divisions ────────────────────────────────────────────────
     Route::resource('divisions', DivisionController::class);
 
@@ -135,35 +139,34 @@ Route::middleware(['auth'])->group(function () {
         ->name('special-payroll.differential.approve')
         ->where('id', '[0-9]+');
 
-        Route::delete('/special-payroll/differential/{id}',
+    Route::delete('/special-payroll/differential/{id}',
               [SpecialPayrollController::class, 'differentialDestroy'])
-    ->name('special-payroll.differential.destroy')
-    ->where('id', '[0-9]+');
+        ->name('special-payroll.differential.destroy')
+        ->where('id', '[0-9]+');
 
-
-        // ── Special Payroll — NOSI / NOSA ────────────────────────────
+    // ── Special Payroll — NOSI / NOSA ────────────────────────────
     Route::get(    '/special-payroll/nosi-nosa',
                    [SpecialPayrollController::class, 'nosiNosaIndex'])
         ->name('special-payroll.nosi-nosa.index');
- 
+
     Route::get(    '/special-payroll/nosi-nosa/create',
                    [SpecialPayrollController::class, 'nosiNosaCreate'])
         ->name('special-payroll.nosi-nosa.create');
- 
+
     Route::post(   '/special-payroll/nosi-nosa',
                    [SpecialPayrollController::class, 'nosiNosaStore'])
         ->name('special-payroll.nosi-nosa.store');
- 
+
     Route::get(    '/special-payroll/nosi-nosa/{id}',
                    [SpecialPayrollController::class, 'nosiNosaShow'])
         ->name('special-payroll.nosi-nosa.show')
         ->where('id', '[0-9]+');
- 
+
     Route::post(   '/special-payroll/nosi-nosa/{id}/approve',
                    [SpecialPayrollController::class, 'nosiNosaApprove'])
         ->name('special-payroll.nosi-nosa.approve')
         ->where('id', '[0-9]+');
- 
+
     Route::delete( '/special-payroll/nosi-nosa/{id}',
                    [SpecialPayrollController::class, 'nosiNosaDestroy'])
         ->name('special-payroll.nosi-nosa.destroy')
@@ -171,15 +174,16 @@ Route::middleware(['auth'])->group(function () {
 
     // ── Office Orders ────────────────────────────────────────────
     Route::resource('office-orders', OfficeOrderController::class);
-Route::post('/office-orders/{id}/approve',
-            [OfficeOrderController::class, 'approve'])
-    ->name('office-orders.approve')
-    ->where('id', '[0-9]+');
 
-Route::post('/office-orders/{id}/cancel',
-            [OfficeOrderController::class, 'cancel'])
-    ->name('office-orders.cancel')
-    ->where('id', '[0-9]+');
+    Route::post('/office-orders/{id}/approve',
+                [OfficeOrderController::class, 'approve'])
+        ->name('office-orders.approve')
+        ->where('id', '[0-9]+');
+
+    Route::post('/office-orders/{id}/cancel',
+                [OfficeOrderController::class, 'cancel'])
+        ->name('office-orders.cancel')
+        ->where('id', '[0-9]+');
 
     // ── TEV ──────────────────────────────────────────────────────
     Route::resource('tev', TevController::class);
@@ -188,14 +192,23 @@ Route::post('/office-orders/{id}/cancel',
     Route::post('/tev/{tevRequest}/certify', [TevController::class, 'certify'])->name('tev.certify');
     Route::post('/tev/{tevRequest}/reject',  [TevController::class, 'reject'])->name('tev.reject');
 
-
     Route::post(  '/tev/{tevRequest}/itinerary',
                   [TevItineraryController::class, 'store'])->name('tev.itinerary.store');
     Route::put(   '/tev/{tevRequest}/itinerary/{line}',
                   [TevItineraryController::class, 'update'])->name('tev.itinerary.update');
     Route::delete('/tev/{tevRequest}/itinerary/{line}',
                   [TevItineraryController::class, 'destroy'])->name('tev.itinerary.destroy');
-                  
+
+                  // TEV Liquidation workflow (Phase 2B Step 3)
+    Route::post('/tev/{tevRequest}/liquidate',
+                [TevController::class, 'fileLiquidation'])->name('tev.liquidate');
+    
+    Route::post('/tev/{tevRequest}/liquidation/approve',
+                [TevController::class, 'approveLiquidation'])->name('tev.liquidation.approve');
+    
+    // Liquidation DV PDF (add alongside the other TEV report routes)
+    Route::get('/reports/tev/{tevRequest}/liquidation-dv',
+            [ReportController::class, 'tevLiquidationDv'])->name('reports.tev-liquidation-dv');
 
     // ── Reports ──────────────────────────────────────────────────
     Route::get('/reports',                    [ReportController::class, 'index'])->name('reports.index');
@@ -215,12 +228,20 @@ Route::post('/office-orders/{id}/cancel',
     Route::get('/reports/provident-fund',     [ReportController::class, 'providentFund'])->name('reports.provident-fund');
     Route::get('/reports/btr-refund',         [ReportController::class, 'btrRefund'])->name('reports.btr-refund');
 
+    // TEV PDF reports (Phase 2B Step 1)
     Route::get('/reports/tev/{tevRequest}/itinerary',
                [ReportController::class, 'tevItinerary'])->name('reports.tev-itinerary');
     Route::get('/reports/tev/{tevRequest}/travel-completed',
                [ReportController::class, 'tevTravelCompleted'])->name('reports.tev-travel-completed');
     Route::get('/reports/tev/{tevRequest}/annex-a',
                [ReportController::class, 'tevAnnexA'])->name('reports.tev-annex-a');
+
+    // TEV Register report + export (Phase 2B Step 2)
+    // ⚠ /export must be registered BEFORE /{tevRequest} to avoid route collision
+    Route::get('/reports/tev-register/export',
+               [ReportController::class, 'tevRegisterExport'])->name('reports.tev-register.export');
+    Route::get('/reports/tev-register',
+               [ReportController::class, 'tevRegister'])->name('reports.tev-register');
 
     // ── Users ────────────────────────────────────────────────────
     Route::resource('users', UserController::class);
