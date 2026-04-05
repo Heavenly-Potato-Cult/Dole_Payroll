@@ -3,6 +3,28 @@
 @section('title', 'Edit Employee')
 @section('page-title', 'Edit Employee')
 
+@section('styles')
+<style>
+.form-layout   { display: grid; grid-template-columns: 1fr 340px; gap: 20px; align-items: start; }
+.name-grid     { display: grid; grid-template-columns: 1fr 1fr 1fr 80px; gap: 14px; }
+.salary-grid   { display: grid; grid-template-columns: 120px 100px 140px 1fr; gap: 14px; align-items: end; }
+.position-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.form-col      { display: flex; flex-direction: column; gap: 20px; }
+
+@media (max-width: 900px) {
+    .form-layout { grid-template-columns: 1fr; }
+}
+@media (max-width: 700px) {
+    .name-grid     { grid-template-columns: 1fr 1fr; }
+    .salary-grid   { grid-template-columns: 1fr 1fr; }
+    .position-grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 420px) {
+    .name-grid { grid-template-columns: 1fr; }
+}
+</style>
+@endsection
+
 @section('content')
 
 <div class="page-header">
@@ -10,9 +32,9 @@
         <h1>Edit Employee</h1>
         <p>{{ $employee->full_name }}</p>
     </div>
-    <div class="d-flex gap-2">
-        <a href="{{ route('employees.show', $employee) }}" class="btn btn-outline">← View Profile</a>
-        <a href="{{ route('employees.index') }}" class="btn btn-outline">← All Employees</a>
+    <div class="d-flex gap-2 flex-wrap">
+        <a href="{{ route('employees.show', $employee) }}" class="btn btn-outline">← Profile</a>
+        <a href="{{ route('employees.index') }}" class="btn btn-outline">← All</a>
     </div>
 </div>
 
@@ -20,16 +42,15 @@
 @csrf
 @method('PUT')
 
-<div style="display:grid;grid-template-columns:1fr 360px;gap:20px;align-items:start;">
+<div class="form-layout">
 
     {{-- ── Left column ──────────────────────────────────────── --}}
-    <div style="display:flex;flex-direction:column;gap:20px;">
+    <div class="form-col">
 
-        {{-- Personal Information --}}
         <div class="card">
             <div class="card-header"><h3>Personal Information</h3></div>
             <div class="card-body">
-                <div style="display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:14px;">
+                <div class="name-grid">
                     <div class="form-group" style="margin-bottom:0;">
                         <label for="last_name">Last Name <span style="color:var(--red)">*</span></label>
                         <input type="text" id="last_name" name="last_name"
@@ -51,7 +72,7 @@
                         <input type="text" id="middle_name" name="middle_name"
                                value="{{ old('middle_name', $employee->middle_name) }}" maxlength="100">
                     </div>
-                    <div class="form-group" style="margin-bottom:0;min-width:80px;">
+                    <div class="form-group" style="margin-bottom:0;">
                         <label for="suffix">Suffix</label>
                         <input type="text" id="suffix" name="suffix"
                                value="{{ old('suffix', $employee->suffix) }}" maxlength="20">
@@ -60,7 +81,6 @@
             </div>
         </div>
 
-        {{-- Position & Assignment --}}
         <div class="card">
             <div class="card-header"><h3>Position & Assignment</h3></div>
             <div class="card-body">
@@ -72,7 +92,7 @@
                            required maxlength="100">
                     @error('plantilla_item_no')<div class="invalid-feedback">{{ $message }}</div>@enderror
                 </div>
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+                <div class="position-grid">
                     <div class="form-group" style="margin-bottom:0;">
                         <label for="position_title">Position Title <span style="color:var(--red)">*</span></label>
                         <input type="text" id="position_title" name="position_title"
@@ -99,14 +119,13 @@
             </div>
         </div>
 
-        {{-- Salary --}}
         <div class="card">
             <div class="card-header">
                 <h3>Salary</h3>
                 <span class="text-muted" style="font-size:0.80rem;">Change SG/Step to re-lookup from SIT</span>
             </div>
             <div class="card-body">
-                <div style="display:grid;grid-template-columns:120px 100px 140px 1fr;gap:14px;align-items:end;">
+                <div class="salary-grid">
                     <div class="form-group" style="margin-bottom:0;">
                         <label for="salary_grade">Salary Grade <span style="color:var(--red)">*</span></label>
                         <select id="salary_grade" name="salary_grade" required>
@@ -153,8 +172,7 @@
                                value="{{ old('basic_salary', number_format($employee->basic_salary, 2)) }}"
                                data-raw-amount="{{ old('basic_salary', $employee->basic_salary) }}"
                                class="{{ $errors->has('basic_salary') ? 'is-invalid' : '' }}"
-                               readonly
-                               style="background:var(--bg);font-family:monospace;">
+                               readonly style="background:var(--bg);font-family:monospace;">
                         @error('basic_salary')<div class="invalid-feedback">{{ $message }}</div>@enderror
                     </div>
                 </div>
@@ -166,28 +184,20 @@
                            min="0" step="0.01" style="max-width:180px;">
                 </div>
 
-                {{-- Rate breakdown (read-only info) --}}
                 <div style="margin-top:14px;background:var(--bg);border-radius:6px;
                              padding:12px 16px;font-size:0.80rem;color:var(--text-mid);
-                             display:flex;gap:24px;flex-wrap:wrap;">
-                    <span><strong>Daily:</strong>
-                        ₱{{ number_format($employee->daily_rate, 4) }}
-                    </span>
-                    <span><strong>Hourly:</strong>
-                        ₱{{ number_format($employee->hourly_rate, 4) }}
-                    </span>
-                    <span><strong>Semi-monthly gross:</strong>
-                        ₱{{ number_format($employee->semi_monthly_gross, 2) }}
-                    </span>
+                             display:flex;gap:16px;flex-wrap:wrap;">
+                    <span><strong>Daily:</strong> ₱{{ number_format($employee->daily_rate, 4) }}</span>
+                    <span><strong>Hourly:</strong> ₱{{ number_format($employee->hourly_rate, 4) }}</span>
+                    <span><strong>Semi-monthly gross:</strong> ₱{{ number_format($employee->semi_monthly_gross, 2) }}</span>
                 </div>
-
             </div>
         </div>
 
     </div>{{-- end left --}}
 
     {{-- ── Right column ─────────────────────────────────────── --}}
-    <div style="display:flex;flex-direction:column;gap:20px;">
+    <div class="form-col">
 
         <div class="card">
             <div class="card-header"><h3>Employment</h3></div>
@@ -217,9 +227,9 @@
                            value="{{ old('tin', $employee->tin) }}" maxlength="50">
                 </div>
                 <div class="form-group">
-                    <label for="gsis_no">GSIS Number</label>
-                    <input type="text" id="gsis_no" name="gsis_no"
-                           value="{{ old('gsis_no', $employee->gsis_no) }}" maxlength="50">
+                    <label for="gsis_bp_no">GSIS Number</label>
+                    <input type="text" id="gsis_bp_no" name="gsis_bp_no"
+                           value="{{ old('gsis_bp_no', $employee->gsis_bp_no) }}" maxlength="50">
                 </div>
                 <div class="form-group">
                     <label for="pagibig_no">Pag-IBIG Number</label>
@@ -250,13 +260,12 @@
 
         <div style="display:flex;flex-direction:column;gap:10px;">
             <button type="submit" class="btn btn-primary btn-lg w-100">✓ Save Changes</button>
-            <a href="{{ route('employees.index') }}" class="btn btn-outline w-100">Cancel</a>
+            <a href="{{ route('employees.show', $employee) }}" class="btn btn-outline w-100">Cancel</a>
         </div>
 
     </div>
 
 </div>
-
 </form>
 
 @endsection
