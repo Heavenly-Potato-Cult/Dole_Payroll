@@ -21,25 +21,17 @@ class TevController extends Controller
     public function __construct(private TevComputationService $tevService) {}
 
     // ─────────────────────────────────────────────────────────────────────
-    //  Index
-    //  GET /tev
+    //  Index  GET /tev
     // ─────────────────────────────────────────────────────────────────────
     public function index(Request $request)
     {
         $this->authorizeRole(['payroll_officer', 'hrmo', 'accountant', 'ard', 'cashier']);
 
-        $query = TevRequest::with(['employee', 'officeOrder'])
-            ->orderByDesc('id');
+        $query = TevRequest::with(['employee', 'officeOrder'])->orderByDesc('id');
 
-        if ($request->filled('track')) {
-            $query->where('track', $request->track);
-        }
-        if ($request->filled('status')) {
-            $query->where('status', $request->status);
-        }
-        if ($request->filled('year')) {
-            $query->whereYear('travel_date_start', $request->year);
-        }
+        if ($request->filled('track'))  $query->where('track', $request->track);
+        if ($request->filled('status')) $query->where('status', $request->status);
+        if ($request->filled('year'))   $query->whereYear('travel_date_start', $request->year);
 
         $tevRequests = $query->paginate(20)->withQueryString();
         $currentYear = now()->year;
@@ -48,8 +40,7 @@ class TevController extends Controller
     }
 
     // ─────────────────────────────────────────────────────────────────────
-    //  Create Form
-    //  GET /tev/create
+    //  Create  GET /tev/create
     // ─────────────────────────────────────────────────────────────────────
     public function create()
     {
@@ -66,8 +57,7 @@ class TevController extends Controller
     }
 
     // ─────────────────────────────────────────────────────────────────────
-    //  Store
-    //  POST /tev
+    //  Store  POST /tev
     // ─────────────────────────────────────────────────────────────────────
     public function store(StoreTevRequest $request)
     {
@@ -117,7 +107,6 @@ class TevController extends Controller
                 'ip_address' => $request->ip(),
             ]);
 
-            // Store $tev->id for redirect outside closure
             $this->lastCreatedId = $tev->id;
         });
 
@@ -125,12 +114,10 @@ class TevController extends Controller
             ->with('success', 'TEV created successfully.');
     }
 
-    // Temporary holder for ID created inside transaction closure
     private int $lastCreatedId;
 
     // ─────────────────────────────────────────────────────────────────────
-    //  Show
-    //  GET /tev/{id}
+    //  Show  GET /tev/{id}
     // ─────────────────────────────────────────────────────────────────────
     public function show(int $id)
     {
@@ -150,26 +137,21 @@ class TevController extends Controller
     }
 
     // ─────────────────────────────────────────────────────────────────────
-    //  Submit (employee submits their own draft)
-    //  POST /tev/{tevRequest}/submit
+    //  Submit  POST /tev/{tevRequest}/submit
     // ─────────────────────────────────────────────────────────────────────
     public function submit(Request $request, int $tevRequest)
     {
-        $tev = TevRequest::findOrFail($tevRequest);
-
-        // Only the employee who owns the TEV (or hrmo/payroll_officer) may submit
+        $tev  = TevRequest::findOrFail($tevRequest);
         $user = Auth::user();
+
         $isOwner = $tev->employee && $tev->employee->user_id === $user->id;
         $isStaff = $user->hasAnyRole(['payroll_officer', 'hrmo']);
 
-        if (!$isOwner && !$isStaff) {
-            abort(403);
-        }
+        if (!$isOwner && !$isStaff) abort(403);
 
         if ($tev->status !== 'draft') {
             return back()->with('error', 'Only draft TEV requests can be submitted.');
         }
-
         if ($tev->itineraryLines()->count() === 0) {
             return back()->with('error', 'Add at least one itinerary line before submitting.');
         }
@@ -202,17 +184,14 @@ class TevController extends Controller
     }
 
     // ─────────────────────────────────────────────────────────────────────
-    //  Approve (role-based status transition)
-    //  POST /tev/{tevRequest}/approve
+    //  Approve (generic role-based transition)  POST /tev/{tevRequest}/approve
     // ─────────────────────────────────────────────────────────────────────
     public function approve(Request $request, int $tevRequest)
     {
         $tev = TevRequest::findOrFail($tevRequest);
-
         $request->validate(['remarks' => ['nullable', 'string', 'max:500']]);
 
         [$newStatus, $stepLabel] = $this->resolveTransition($tev);
-
         $old = $tev->status;
 
         $tev->update(['status' => $newStatus]);
@@ -239,29 +218,25 @@ class TevController extends Controller
     }
 
     // ─────────────────────────────────────────────────────────────────────
-    //  Reject
-    //  POST /tev/{tevRequest}/reject
+    //  Reject  POST /tev/{tevRequest}/reject
     // ─────────────────────────────────────────────────────────────────────
     public function reject(Request $request, int $tevRequest)
     {
         $tev = TevRequest::findOrFail($tevRequest);
 
-        $request->validate([
-            'remarks' => ['required', 'string', 'max:500'],
-        ], [
-            'remarks.required' => 'A reason is required when rejecting a TEV.',
-        ]);
+        $request->validate(
+            ['remarks' => ['required', 'string', 'max:500']],
+            ['remarks.required' => 'A reason is required when rejecting a TEV.']
+        );
 
-        // Any current approver may reject; validate they have a relevant role
         $this->authorizeRole(['payroll_officer', 'hrmo', 'accountant', 'ard', 'chief_admin_officer', 'cashier']);
 
-        $terminal = ['draft', 'rejected', 'cashier_released', 'reimbursed'];
+        $terminal = ['draft', 'rejected', 'cashier_released', 'reimbursed', 'liquidation_filed', 'liquidated'];
         if (in_array($tev->status, $terminal)) {
             return back()->with('error', 'This TEV cannot be rejected at its current status.');
         }
 
         $old = $tev->status;
-
         $tev->update(['status' => 'rejected']);
 
         TevApprovalLog::create([
@@ -286,8 +261,7 @@ class TevController extends Controller
     }
 
     // ─────────────────────────────────────────────────────────────────────
-    //  Certify (post-travel certification)
-    //  POST /tev/{tevRequest}/certify
+    //  Certify (post-travel certification)  POST /tev/{tevRequest}/certify
     // ─────────────────────────────────────────────────────────────────────
     public function certify(Request $request, int $tevRequest)
     {
@@ -295,27 +269,27 @@ class TevController extends Controller
 
         $tev = TevRequest::findOrFail($tevRequest);
 
-        $certifiableStatuses = ['rd_approved', 'cashier_released', 'reimbursed'];
+        $certifiableStatuses = ['rd_approved', 'cashier_released', 'reimbursed', 'liquidation_filed', 'liquidated'];
         if (!in_array($tev->status, $certifiableStatuses)) {
             return back()->with('error', 'TEV must be at rd_approved or later to certify.');
         }
 
         $data = $request->validate([
-            'travel_completed'     => ['nullable', 'boolean'],
-            'date_returned'        => ['nullable', 'date'],
-            'place_reported_back'  => ['nullable', 'string', 'max:100'],
-            'annex_a_amount'       => ['nullable', 'numeric', 'min:0'],
-            'annex_a_particulars'  => ['nullable', 'string'],
-            'agency_visited'       => ['nullable', 'string', 'max:255'],
-            'appearance_date'      => ['nullable', 'date'],
-            'contact_person'       => ['nullable', 'string', 'max:255'],
+            'travel_completed'    => ['nullable', 'boolean'],
+            'date_returned'       => ['nullable', 'date'],
+            'place_reported_back' => ['nullable', 'string', 'max:100'],
+            'annex_a_amount'      => ['nullable', 'numeric', 'min:0'],
+            'annex_a_particulars' => ['nullable', 'string'],
+            'agency_visited'      => ['nullable', 'string', 'max:255'],
+            'appearance_date'     => ['nullable', 'date'],
+            'contact_person'      => ['nullable', 'string', 'max:255'],
         ]);
 
         TevCertification::updateOrCreate(
             ['tev_request_id' => $tev->id],
             array_merge($data, [
-                'certified_by' => Auth::id(),
-                'certified_at' => now(),
+                'certified_by'     => Auth::id(),
+                'certified_at'     => now(),
                 'travel_completed' => !empty($data['travel_completed']),
             ])
         );
@@ -333,6 +307,118 @@ class TevController extends Controller
     }
 
     // ─────────────────────────────────────────────────────────────────────
+    //  File Liquidation  POST /tev/{tevRequest}/liquidate
+    //  Employee/payroll officer files actual expenses after CA release
+    // ─────────────────────────────────────────────────────────────────────
+    public function fileLiquidation(Request $request, int $tevRequest)
+    {
+        $tev  = TevRequest::findOrFail($tevRequest);
+        $user = Auth::user();
+
+        if ($tev->track !== 'cash_advance') {
+            return back()->with('error', 'Liquidation only applies to Cash Advance TEVs.');
+        }
+
+        if ($tev->status !== 'cashier_released') {
+            return back()->with('error', 'Liquidation can only be filed after the cash advance is released.');
+        }
+
+        $isOwner = $tev->employee && $tev->employee->user_id === $user->id;
+        $isStaff = $user->hasAnyRole(['payroll_officer', 'hrmo']);
+
+        if (!$isOwner && !$isStaff) {
+            abort(403, 'You are not authorized to file liquidation for this TEV.');
+        }
+
+        $data = $request->validate([
+            'actual_amount' => ['required', 'numeric', 'min:0'],
+            'remarks'       => ['nullable', 'string', 'max:500'],
+        ], [
+            'actual_amount.required' => 'Actual amount spent is required.',
+            'actual_amount.numeric'  => 'Actual amount must be a valid number.',
+            'actual_amount.min'      => 'Actual amount cannot be negative.',
+        ]);
+
+        $actualAmount  = (float) $data['actual_amount'];
+        $advanceAmount = (float) ($tev->cash_advance_amount ?? $tev->grand_total);
+
+        // Positive = employee owes a refund; Negative = DOLE owes employee additional payment
+        $balanceDue = round($advanceAmount - $actualAmount, 2);
+
+        $tev->update([
+            'status'              => 'liquidation_filed',
+            'cash_advance_amount' => $advanceAmount,
+            'balance_due'         => $balanceDue,
+        ]);
+
+        TevApprovalLog::create([
+            'tev_request_id' => $tev->id,
+            'user_id'        => Auth::id(),
+            'step'           => 'liquidation_filed',
+            'action'         => 'approved',
+            'remarks'        => $data['remarks']
+                ?? 'Liquidation filed. Actual amount: ₱' . number_format($actualAmount, 2)
+                . '. Balance due: ₱' . number_format(abs($balanceDue), 2)
+                . ($balanceDue > 0 ? ' (to refund)' : ($balanceDue < 0 ? ' (to claim)' : ' (settled)')),
+            'ip_address'     => $request->ip(),
+        ]);
+
+        PayrollAuditLog::create([
+            'user_id'    => Auth::id(),
+            'action'     => 'Filed Liquidation for TEV: ' . $tev->tev_no,
+            'old_value'  => 'cashier_released',
+            'new_value'  => 'liquidation_filed',
+            'ip_address' => $request->ip(),
+        ]);
+
+        return redirect()->route('tev.show', $tev->id)
+            ->with('success', 'Liquidation filed successfully. Awaiting cashier approval.');
+    }
+
+    // ─────────────────────────────────────────────────────────────────────
+    //  Approve Liquidation  POST /tev/{tevRequest}/liquidation/approve
+    //  Cashier finalises the liquidation
+    // ─────────────────────────────────────────────────────────────────────
+    public function approveLiquidation(Request $request, int $tevRequest)
+    {
+        $this->authorizeRole(['cashier']);
+
+        $tev = TevRequest::findOrFail($tevRequest);
+
+        if ($tev->track !== 'cash_advance') {
+            return back()->with('error', 'Liquidation only applies to Cash Advance TEVs.');
+        }
+
+        if ($tev->status !== 'liquidation_filed') {
+            return back()->with('error', 'TEV must be in liquidation_filed status to approve.');
+        }
+
+        $data = $request->validate(['remarks' => ['nullable', 'string', 'max:500']]);
+
+        $tev->update(['status' => 'liquidated']);
+
+        TevApprovalLog::create([
+            'tev_request_id' => $tev->id,
+            'user_id'        => Auth::id(),
+            'step'           => 'liquidated',
+            'action'         => 'approved',
+            'remarks'        => $data['remarks'] ?? null,
+            'ip_address'     => $request->ip(),
+        ]);
+
+        PayrollAuditLog::create([
+            'user_id'    => Auth::id(),
+            'action'     => 'Approved Liquidation for TEV: ' . $tev->tev_no,
+            'old_value'  => 'liquidation_filed',
+            'new_value'  => 'liquidated',
+            'ip_address' => $request->ip(),
+        ]);
+
+        return redirect()->route('tev.show', $tev->id)
+            ->with('success', 'Liquidation approved. TEV is now fully liquidated.');
+    }
+
+    // ─────────────────────────────────────────────────────────────────────
     //  destroy() — not permitted
     // ─────────────────────────────────────────────────────────────────────
     public function destroy(int $id)
@@ -344,10 +430,6 @@ class TevController extends Controller
     //  Private helpers
     // ─────────────────────────────────────────────────────────────────────
 
-    /**
-     * Determine whether the current user can approve and what the next action label is.
-     * Returns [bool $canApprove, string $nextAction].
-     */
     private function resolveApproval(TevRequest $tev): array
     {
         $user   = Auth::user();
@@ -358,6 +440,7 @@ class TevController extends Controller
             'hr_approved'          => [['accountant'],                 'Certify (Accountant)'],
             'accountant_certified' => [['ard', 'chief_admin_officer'], 'RD Approve'],
             'rd_approved'          => [['cashier'],                    $tev->track === 'cash_advance' ? 'Release Cash Advance' : 'Mark Reimbursed'],
+            'liquidation_filed'    => [['cashier'],                    'Approve Liquidation'],
         ];
 
         if (!isset($map[$status])) {
@@ -369,10 +452,6 @@ class TevController extends Controller
         return [$user->hasAnyRole($roles), $label];
     }
 
-    /**
-     * Validate the current user's role matches the required transition,
-     * then return [newStatus, actionLabel].
-     */
     private function resolveTransition(TevRequest $tev): array
     {
         $user   = Auth::user();
@@ -381,21 +460,19 @@ class TevController extends Controller
         if ($status === 'submitted' && $user->hasAnyRole(['hrmo', 'payroll_officer'])) {
             return ['hr_approved', 'HR Approved'];
         }
-
         if ($status === 'hr_approved' && $user->hasAnyRole(['accountant'])) {
             return ['accountant_certified', 'Accountant Certified'];
         }
-
         if ($status === 'accountant_certified' && $user->hasAnyRole(['ard', 'chief_admin_officer'])) {
             return ['rd_approved', 'RD Approved'];
         }
-
         if ($status === 'rd_approved' && $user->hasAnyRole(['cashier'])) {
             $newStatus = $tev->track === 'cash_advance' ? 'cashier_released' : 'reimbursed';
             $label     = $tev->track === 'cash_advance' ? 'Cash Advance Released' : 'Reimbursed';
             return [$newStatus, $label];
         }
 
+        // liquidation_filed → liquidated is handled by approveLiquidation(), not this method
         abort(403, 'You are not authorized to approve this TEV at its current status.');
     }
 

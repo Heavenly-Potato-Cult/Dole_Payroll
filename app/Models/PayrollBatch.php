@@ -39,14 +39,28 @@ class PayrollBatch extends Model
 
     // ── Relationships ─────────────────────────────────────────────────
 
+    /** HR/Payroll Officer who submitted the batch */
     public function creator()
     {
         return $this->belongsTo(User::class, 'created_by');
     }
 
+    /** Accountant who certified funds (certify step) */
+    public function reviewer()
+    {
+        return $this->belongsTo(User::class, 'reviewed_by');
+    }
+
+    /** RD/ARD who approved and released (approve step) */
     public function approver()
     {
         return $this->belongsTo(User::class, 'approved_by');
+    }
+
+    /** Cashier who locked after disbursement (lock step) */
+    public function releaser()
+    {
+        return $this->belongsTo(User::class, 'released_by');
     }
 
     public function entries()

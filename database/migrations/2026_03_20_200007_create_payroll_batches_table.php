@@ -21,9 +21,14 @@ public function up(): void
         $table->string('status', 30)->default('draft');
 
         // Approval chain tracking
-        $table->foreignId('created_by')->nullable()->constrained('users')->nullOnDelete();
-        $table->foreignId('approved_by')->nullable()->constrained('users')->nullOnDelete();
-        $table->timestamp('released_at')->nullable();
+$table->foreignId('created_by')->nullable()->constrained('users')->nullOnDelete();
+$table->timestamp('prepared_at')->nullable();        // submit()
+$table->foreignId('reviewed_by')->nullable()->constrained('users')->nullOnDelete();
+$table->timestamp('reviewed_at')->nullable();        // certify()
+$table->foreignId('approved_by')->nullable()->constrained('users')->nullOnDelete();
+$table->timestamp('approved_at')->nullable();        // approve()
+$table->timestamp('released_at')->nullable();        // approve()
+$table->foreignId('released_by')->nullable()->constrained('users')->nullOnDelete();
 
         $table->string('remarks')->nullable();
 

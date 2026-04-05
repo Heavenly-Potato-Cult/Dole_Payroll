@@ -1,8 +1,18 @@
-{{-- TODO: implement views/employees/deductions.blade.php --}}
 @extends('layouts.app')
 
 @section('title', 'Deductions — ' . $employee->full_name)
 @section('page-title', 'Employee Deductions')
+
+@section('styles')
+<style>
+.deductions-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start; }
+.deductions-col    { display: flex; flex-direction: column; gap: 20px; }
+
+@media (max-width: 800px) {
+    .deductions-layout { grid-template-columns: 1fr; }
+}
+</style>
+@endsection
 
 @section('content')
 
@@ -17,19 +27,18 @@
             @endif
         </p>
     </div>
-    <div class="d-flex gap-2">
+    <div class="d-flex gap-2 flex-wrap">
         <a href="{{ route('employees.show', $employee) }}" class="btn btn-outline">← Profile</a>
         <a href="{{ route('employees.index') }}" class="btn btn-outline">← All Employees</a>
     </div>
 </div>
 
-{{-- ── Info banner ──────────────────────────────────────────── --}}
 <div class="alert alert-info" style="margin-bottom:20px;">
     <div>
         <strong>How this works:</strong>
         Tick the checkbox to enroll an employee in a deduction and enter the monthly amount.
         <strong>Computed deductions</strong> (PhilHealth, GSIS Life/Ret, PAG-IBIG I, W/Holding Tax)
-        are calculated automatically by the payroll engine — you cannot set amounts for those here.
+        are calculated automatically — you cannot set amounts for those here.
         All amounts are <strong>monthly totals</strong>; the payroll engine halves them per cut-off.
     </div>
 </div>
@@ -37,10 +46,9 @@
 <form method="POST" action="{{ route('employees.deductions.update', $employee) }}">
 @csrf
 
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start;">
+<div class="deductions-layout">
 
     @php
-        // Group deduction types by category for display
         $grouped = $deductionTypes->groupBy('category');
         $categoryLabels = [
             'pagibig'    => 'PAG-IBIG / HDMF',
@@ -56,28 +64,28 @@
     @endphp
 
     {{-- Left column --}}
-    <div style="display:flex;flex-direction:column;gap:20px;">
+    <div class="deductions-col">
         @foreach ($leftCategories as $cat)
             @if (isset($grouped[$cat]))
                 @include('employees._deduction_category', [
-                    'label'    => $categoryLabels[$cat],
-                    'types'    => $grouped[$cat],
+                    'label'       => $categoryLabels[$cat],
+                    'types'       => $grouped[$cat],
                     'enrollments' => $enrollments,
-                    'employee' => $employee,
+                    'employee'    => $employee,
                 ])
             @endif
         @endforeach
     </div>
 
     {{-- Right column --}}
-    <div style="display:flex;flex-direction:column;gap:20px;">
+    <div class="deductions-col">
         @foreach ($rightCategories as $cat)
             @if (isset($grouped[$cat]))
                 @include('employees._deduction_category', [
-                    'label'    => $categoryLabels[$cat],
-                    'types'    => $grouped[$cat],
+                    'label'       => $categoryLabels[$cat],
+                    'types'       => $grouped[$cat],
                     'enrollments' => $enrollments,
-                    'employee' => $employee,
+                    'employee'    => $employee,
                 ])
             @endif
         @endforeach
@@ -101,12 +109,8 @@
 
         {{-- Actions --}}
         <div style="display:flex;flex-direction:column;gap:10px;">
-            <button type="submit" class="btn btn-primary btn-lg w-100">
-                ✓ Save Deductions
-            </button>
-            <a href="{{ route('employees.show', $employee) }}" class="btn btn-outline w-100">
-                Cancel
-            </a>
+            <button type="submit" class="btn btn-primary btn-lg w-100">✓ Save Deductions</button>
+            <a href="{{ route('employees.show', $employee) }}" class="btn btn-outline w-100">Cancel</a>
         </div>
     </div>
 
@@ -117,9 +121,6 @@
 
 @section('scripts')
 <script>
-/**
- * Live total — sum all checked manual deduction amounts as user types.
- */
 function recalcTotal() {
     let total = 0;
     document.querySelectorAll('.deduction-row').forEach(function (row) {
@@ -135,14 +136,11 @@ function recalcTotal() {
 }
 
 document.addEventListener('DOMContentLoaded', function () {
-    // Wire all checkboxes and amount inputs
     document.querySelectorAll('.deduction-checkbox').forEach(function (cb) {
         cb.addEventListener('change', function () {
             const row    = this.closest('.deduction-row');
             const amtRow = row.querySelector('.deduction-amount-row');
-            if (amtRow) {
-                amtRow.style.display = this.checked ? 'block' : 'none';
-            }
+            if (amtRow) amtRow.style.display = this.checked ? 'block' : 'none';
             recalcTotal();
         });
     });
