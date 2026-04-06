@@ -1,12 +1,4 @@
 {{-- resources/views/tev/show.blade.php --}}
-{{--
-    Expects from TevController@show:
-      $tev         — TevRequest with employee, officeOrder, itineraryLines,
-                     approvalLogs (with user), certification.certifier
-      $canApprove  — bool
-      $nextAction  — string label for the approve button
---}}
-
 @extends('layouts.app')
 
 @section('title', 'TEV — ' . $tev->tev_no)
@@ -16,41 +8,41 @@
 <style>
 /* ── Approval timeline ── */
 .tev-timeline {
-    display: flex; gap: 0; margin-bottom: 24px;
-    overflow-x: auto; border-radius: 8px;
-    border: 1px solid var(--border);
+    display: flex; margin-bottom: 24px; overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    border-radius: 8px; border: 1px solid var(--border); max-width: 100%;
 }
 .tev-step {
-    flex: 1; min-width: 90px; padding: 12px 16px;
-    font-size: 0.78rem; font-weight: 600;
-    display: flex; align-items: center; gap: 8px;
+    flex: 1; min-width: 80px; padding: 10px 12px;
+    font-size: 0.74rem; font-weight: 600; white-space: nowrap;
+    display: flex; align-items: center; gap: 6px;
     background: var(--surface); color: var(--text-light);
-    border-right: 1px solid var(--border); position: relative;
+    border-right: 1px solid var(--border);
 }
 .tev-step:last-child { border-right: none; }
-.tev-step.done      { background: #F1FAF5; color: #1B6B3A; }
-.tev-step.active    { background: #EEF1FA; color: var(--navy); }
-.tev-step.terminal  { background: var(--navy); color: #fff; }
-.tev-step.rejected-step { background: #FFF0F0; color: #B71C1C; }
+.tev-step.done         { background: #F1FAF5; color: #1B6B3A; }
+.tev-step.active       { background: #EEF1FA; color: var(--navy); }
+.tev-step.terminal     { background: var(--navy); color: #fff; }
+.tev-step.rejected-step{ background: #FFF0F0; color: #B71C1C; }
 .tev-step-dot {
-    width: 24px; height: 24px; border-radius: 50%;
+    width: 22px; height: 22px; border-radius: 50%; flex-shrink: 0;
     border: 2px solid currentColor;
     display: flex; align-items: center; justify-content: center;
-    font-size: 0.75rem; font-weight: 700; flex-shrink: 0;
-    background: #fff; color: inherit;
+    font-size: 0.70rem; font-weight: 700; background: #fff; color: inherit;
 }
-.tev-step.done .tev-step-dot    { background: #2E7D52; border-color: #2E7D52; color: #fff; }
-.tev-step.active .tev-step-dot  { background: var(--navy); border-color: var(--navy); color: #fff; }
+.tev-step.done .tev-step-dot     { background: #2E7D52; border-color: #2E7D52; color: #fff; }
+.tev-step.active .tev-step-dot   { background: var(--navy); border-color: var(--navy); color: #fff; }
 .tev-step.terminal .tev-step-dot { background: rgba(255,255,255,.15); color: #fff; border-color: rgba(255,255,255,.5); }
 
 /* ── Detail grid ── */
-.detail-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px 20px; }
+.detail-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 10px 16px; }
 .detail-item { display: flex; flex-direction: column; gap: 2px; }
-.detail-item .label { font-size: 0.70rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-light); }
-.detail-item .value { font-weight: 600; color: var(--text); font-size: 0.88rem; }
+.detail-item .label { font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-light); }
+.detail-item .value { font-weight: 600; color: var(--text); font-size: 0.86rem; }
 
-/* ── Itinerary table ── */
-.itin-tbl { width: 100%; border-collapse: collapse; font-size: 0.78rem; white-space: nowrap; }
+/* ── Itinerary table — always scrollable, never forces page scroll ── */
+.itin-tbl-wrap { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.itin-tbl { width: 100%; border-collapse: collapse; font-size: 0.78rem; white-space: nowrap; min-width: 650px; }
 .itin-tbl thead th {
     background: var(--navy); color: #fff; padding: 7px 10px; text-align: center;
     font-size: 0.70rem; font-weight: 600; letter-spacing: 0.03em;
@@ -61,14 +53,11 @@
 .itin-tbl td.text-right  { text-align: right; }
 .itin-tbl td.text-center { text-align: center; }
 
-/* ── Log timeline ── */
-.log-timeline { display: flex; flex-direction: column; gap: 0; }
+/* ── Approval log ── */
+.log-timeline { display: flex; flex-direction: column; }
 .log-item { display: flex; gap: 14px; padding: 12px 0; border-bottom: 1px solid var(--border); }
 .log-item:last-child { border-bottom: none; }
-.log-dot {
-    width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0;
-    display: flex; align-items: center; justify-content: center; font-size: 0.85rem;
-}
+.log-dot { width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 0.85rem; }
 .log-dot.approved { background: #E8F5E9; }
 .log-dot.rejected { background: #FFEBEE; }
 .log-dot.returned { background: #FFF3E0; }
@@ -76,35 +65,69 @@
 
 /* ── Balance widget ── */
 .balance-widget { border-radius: 8px; padding: 14px 16px; background: #FAFAFA; border: 1px solid var(--border); }
-.bw-row {
-    display: flex; justify-content: space-between; align-items: center;
-    padding: 5px 0; border-bottom: 1px solid rgba(0,0,0,0.06); font-size: 0.82rem;
-}
+.bw-row { display: flex; justify-content: space-between; align-items: center; padding: 5px 0; border-bottom: 1px solid rgba(0,0,0,0.06); font-size: 0.82rem; flex-wrap: wrap; gap: 4px; }
 .bw-row:last-of-type { border-bottom: none; }
-.bw-total {
-    display: flex; justify-content: space-between; align-items: center;
-    padding: 10px 0 0; font-size: 0.95rem; font-weight: 700;
-    border-top: 2px solid var(--border); margin-top: 6px;
-}
+.bw-total { display: flex; justify-content: space-between; align-items: center; padding: 10px 0 0; font-size: 0.95rem; font-weight: 700; border-top: 2px solid var(--border); margin-top: 6px; flex-wrap: wrap; gap: 4px; }
 .bw-refund  { color: #B71C1C; }
 .bw-claim   { color: #1B5E20; }
 .bw-settled { color: var(--navy); }
 
-/* ── Responsive show grid ── */
-.show-grid { display: grid; grid-template-columns: 1fr 300px; gap: 20px; align-items: start; }
-.cert-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 28px; }
+/* ── Layout ── */
+.show-grid { display: grid; grid-template-columns: 1fr 300px; gap: 20px; align-items: start; max-width: 100%; }
+.show-left { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
+.show-right { display: flex; flex-direction: column; gap: 16px; position: sticky; top: 20px; min-width: 0; }
 
+/* ── Cert grid ── */
+.cert-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px; }
+
+/* ════════════════════════════════════════
+   RESPONSIVE
+════════════════════════════════════════ */
 @media (max-width: 900px) {
-    .show-grid { grid-template-columns: 1fr; }
-    .show-grid-right { order: -1; }
+    .show-grid  { grid-template-columns: 1fr; }
+    .show-right { position: static; order: -1; }
 }
+
+@media (max-width: 768px) {
+    .cert-grid  { grid-template-columns: 1fr; }
+    .detail-grid{ grid-template-columns: 1fr 1fr; }
+    .tev-step   { min-width: 70px; padding: 8px 10px; font-size: 0.70rem; }
+}
+
 @media (max-width: 600px) {
+    body { overflow-x: hidden; }
+    .show-grid, .show-left, .show-right,
+    .card, .card-body, .card-header,
+    .balance-widget, .bw-row, .bw-total,
+    .detail-grid, .itin-tbl-wrap { max-width: 100%; overflow-x: hidden; }
+
+    .card-body   { padding: 12px; }
+    .card-header { padding: 12px 14px; }
+
     .page-header { flex-direction: column; align-items: flex-start; gap: 10px; }
-    .page-header .d-flex { flex-wrap: wrap; }
-    .tev-timeline { border-radius: 6px; }
-    .tev-step { min-width: 70px; padding: 10px; font-size: 0.72rem; gap: 6px; }
+    .page-header .d-flex { flex-wrap: wrap; gap: 6px; }
+
+    .tev-step     { min-width: 64px; padding: 8px; font-size: 0.66rem; gap: 4px; }
+    .tev-step-dot { width: 18px; height: 18px; font-size: 0.62rem; }
+
+    .detail-grid { grid-template-columns: 1fr 1fr; gap: 8px 12px; }
+    .detail-item .value { font-size: 0.83rem; }
+
     .cert-grid { grid-template-columns: 1fr; }
-    .detail-grid { grid-template-columns: 1fr 1fr; }
+
+    /* Let itinerary table scroll inside its wrapper, not the page */
+    .itin-tbl-wrap { overflow-x: auto; }
+
+    .show-right { order: -1; position: static !important; }
+    .show-right .btn { width: 100%; }
+    .show-right .card-body form button { width: 100%; }
+
+    .bw-row, .bw-total { font-size: 0.78rem; }
+}
+
+@media (max-width: 480px) {
+    .detail-grid { grid-template-columns: 1fr; }
+    .page-header h1 { font-size: 1.1rem; }
 }
 
 @media print {
@@ -147,7 +170,6 @@
     };
     $statusLabel = ucwords(str_replace('_', ' ', $tev->status));
 
-    // Timeline steps — CA gets 2 extra steps after release
     if ($tev->track === 'cash_advance') {
         $steps     = ['Draft','Submitted','HR Approved','Acct. Certified','RD Approved','Released','Liq. Filed','Liquidated'];
         $stepOrder = ['draft','submitted','hr_approved','accountant_certified','rd_approved','cashier_released','liquidation_filed','liquidated'];
@@ -167,24 +189,20 @@
     $canCertify = in_array($tev->status, ['rd_approved','cashier_released','reimbursed','liquidation_filed','liquidated'])
                && auth()->user()->hasAnyRole(['payroll_officer','hrmo','accountant']);
 
-    // Liquidation-specific flags
-    $canFileLiquidation     = $tev->track === 'cash_advance'
-                           && $tev->status === 'cashier_released'
-                           && ($isOwner || auth()->user()->hasAnyRole(['payroll_officer','hrmo']));
-    $canApproveLiquidation  = $tev->status === 'liquidation_filed'
-                           && auth()->user()->hasAnyRole(['cashier']);
+    $canFileLiquidation    = $tev->track === 'cash_advance'
+                          && $tev->status === 'cashier_released'
+                          && ($isOwner || auth()->user()->hasAnyRole(['payroll_officer','hrmo']));
+    $canApproveLiquidation = $tev->status === 'liquidation_filed'
+                          && auth()->user()->hasAnyRole(['cashier']);
 
-    // Balance widget — show for CA track once released or beyond
     $showBalanceWidget = $tev->track === 'cash_advance'
                       && in_array($tev->status, ['cashier_released','liquidation_filed','liquidated']);
     $advanceAmount = (float) ($tev->cash_advance_amount ?? $tev->grand_total);
     $balanceDue    = (float) ($tev->balance_due ?? 0);
     $actualAmount  = in_array($tev->status, ['liquidation_filed','liquidated'])
-                   ? $advanceAmount - $balanceDue
-                   : 0;
+                   ? $advanceAmount - $balanceDue : 0;
 
-    // PDF doc visibility
-    $showDocs = in_array($tev->status, ['rd_approved','cashier_released','reimbursed','liquidation_filed','liquidated']);
+    $showDocs  = in_array($tev->status, ['rd_approved','cashier_released','reimbursed','liquidation_filed','liquidated']);
     $showDvPdf = in_array($tev->status, ['liquidation_filed','liquidated']);
 @endphp
 
@@ -194,13 +212,9 @@
         <p>
             <span class="badge {{ $statusClass }}">{{ $statusLabel }}</span>
             &nbsp;
-            <span style="font-size:0.73rem; font-weight:700; padding:3px 10px; border-radius:12px; {{ $trackStyle }}">
-                {{ $trackLabel }}
-            </span>
+            <span style="font-size:0.73rem; font-weight:700; padding:3px 10px; border-radius:12px; {{ $trackStyle }}">{{ $trackLabel }}</span>
             &nbsp;
-            <span style="font-size:0.73rem; font-weight:700; padding:3px 10px; border-radius:12px; {{ $typeStyle }}">
-                {{ ucfirst($tev->travel_type) }}
-            </span>
+            <span style="font-size:0.73rem; font-weight:700; padding:3px 10px; border-radius:12px; {{ $typeStyle }}">{{ ucfirst($tev->travel_type) }}</span>
         </p>
     </div>
     <div class="d-flex gap-2 no-print">
@@ -209,7 +223,7 @@
     </div>
 </div>
 
-{{-- ── Approval timeline ── --}}
+{{-- Approval timeline ── --}}
 <div class="tev-timeline no-print">
     @foreach ($steps as $i => $label)
         @php
@@ -217,7 +231,6 @@
             $isActive   = $i === $currentIdx;
             $isTerminal = $isActive && $i === count($steps) - 1;
             $isRejected = $tev->status === 'rejected' && $isActive;
-
             if ($isRejected)     $stepClass = 'rejected-step';
             elseif ($isTerminal) $stepClass = 'terminal';
             elseif ($isDone)     $stepClass = 'done';
@@ -233,18 +246,14 @@
 
 <div class="show-grid">
 
-    {{-- ────────────────────────────────────────────────────────
-         LEFT: main content
-    ──────────────────────────────────────────────────────── --}}
-    <div style="display:flex; flex-direction:column; gap:20px;">
+    {{-- ── LEFT ── --}}
+    <div class="show-left">
 
         {{-- TEV Info ── --}}
         <div class="card">
             <div class="card-header">
                 <h3>✈ TEV Information</h3>
-                <span style="font-size:0.78rem; color:var(--text-light);">
-                    Filed: {{ $tev->created_at->format('M d, Y') }}
-                </span>
+                <span style="font-size:0.78rem; color:var(--text-light);">Filed: {{ $tev->created_at->format('M d, Y') }}</span>
             </div>
             <div class="card-body">
                 <div class="detail-grid" style="margin-bottom:16px;">
@@ -255,24 +264,19 @@
                     <div class="detail-item">
                         <span class="label">Track</span>
                         <span class="value">
-                            <span style="font-size:0.73rem; font-weight:700; padding:3px 8px; border-radius:12px; {{ $trackStyle }}">
-                                {{ $trackLabel }}
-                            </span>
+                            <span style="font-size:0.73rem; font-weight:700; padding:3px 8px; border-radius:12px; {{ $trackStyle }}">{{ $trackLabel }}</span>
                         </span>
                     </div>
                     <div class="detail-item">
                         <span class="label">Travel Type</span>
                         <span class="value">
-                            <span style="font-size:0.73rem; font-weight:700; padding:3px 8px; border-radius:12px; {{ $typeStyle }}">
-                                {{ ucfirst($tev->travel_type) }}
-                            </span>
+                            <span style="font-size:0.73rem; font-weight:700; padding:3px 8px; border-radius:12px; {{ $typeStyle }}">{{ ucfirst($tev->travel_type) }}</span>
                         </span>
                     </div>
                     <div class="detail-item">
                         <span class="label">Office Order</span>
                         <span class="value">
-                            <a href="{{ route('office-orders.show', $tev->office_order_id) }}"
-                               style="color:var(--navy);">
+                            <a href="{{ route('office-orders.show', $tev->office_order_id) }}" style="color:var(--navy);">
                                 {{ optional($tev->officeOrder)->office_order_no ?? '—' }}
                             </a>
                         </span>
@@ -302,9 +306,7 @@
                     </div>
                     <div class="detail-item">
                         <span class="label">Status</span>
-                        <span class="value">
-                            <span class="badge {{ $statusClass }}">{{ $statusLabel }}</span>
-                        </span>
+                        <span class="value"><span class="badge {{ $statusClass }}">{{ $statusLabel }}</span></span>
                     </div>
                 </div>
                 <div class="detail-item" style="margin-bottom:12px;">
@@ -316,68 +318,68 @@
                     <span class="value" style="font-weight:400; line-height:1.5;">{{ $tev->purpose }}</span>
                 </div>
                 @if ($tev->remarks)
-                <div style="padding:10px 14px; background:#f8f9ff; border-left:3px solid var(--navy);
-                            border-radius:4px; font-size:0.82rem;">
+                <div style="padding:10px 14px; background:#f8f9ff; border-left:3px solid var(--navy); border-radius:4px; font-size:0.82rem;">
                     <strong>Remarks:</strong> {{ $tev->remarks }}
                 </div>
                 @endif
             </div>
         </div>
 
-        {{-- Itinerary Table ── --}}
+        {{-- Itinerary ── --}}
         <div class="card">
             <div class="card-header"><h3>🗓 Itinerary of Travel</h3></div>
-            <div class="card-body" style="padding:0; overflow-x:auto;">
-                <table class="itin-tbl">
-                    <thead>
-                        <tr>
-                            <th>Date</th><th>From</th><th>To</th>
-                            <th>Departure</th><th>Arrival</th><th>Mode</th>
-                            <th>Transport (₱)</th><th>Half Day</th>
-                            <th>Per Diem (₱)</th><th>Total (₱)</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @forelse ($tev->itineraryLines as $line)
-                            @php $lineTotal = (float)$line->transportation_cost + (float)$line->per_diem_amount; @endphp
+            {{-- padding:0 so the scrollable wrapper goes edge-to-edge ── --}}
+            <div class="card-body" style="padding:0;">
+                <div class="itin-tbl-wrap">
+                    <table class="itin-tbl">
+                        <thead>
                             <tr>
-                                <td>{{ $line->travel_date->format('M d, Y') }}</td>
-                                <td>{{ $line->origin }}</td>
-                                <td>{{ $line->destination }}</td>
-                                <td class="text-center">
-                                    {{ $line->departure_time ? \Carbon\Carbon::parse($line->departure_time)->format('h:iA') : '—' }}
-                                </td>
-                                <td class="text-center">
-                                    {{ $line->arrival_time ? \Carbon\Carbon::parse($line->arrival_time)->format('h:iA') : '—' }}
-                                </td>
-                                <td class="text-center">{{ ucfirst($line->mode_of_transport ?? '—') }}</td>
-                                <td class="text-right">{{ number_format($line->transportation_cost, 2) }}</td>
-                                <td class="text-center">{{ $line->is_half_day ? 'Yes' : '—' }}</td>
-                                <td class="text-right">{{ number_format($line->per_diem_amount, 2) }}</td>
-                                <td class="text-right fw-bold">{{ number_format($lineTotal, 2) }}</td>
+                                <th>Date</th><th>From</th><th>To</th>
+                                <th>Departure</th><th>Arrival</th><th>Mode</th>
+                                <th>Transport (₱)</th><th>Half Day</th>
+                                <th>Per Diem (₱)</th><th>Total (₱)</th>
                             </tr>
-                        @empty
+                        </thead>
+                        <tbody>
+                            @forelse ($tev->itineraryLines as $line)
+                                @php $lineTotal = (float)$line->transportation_cost + (float)$line->per_diem_amount; @endphp
+                                <tr>
+                                    <td>{{ $line->travel_date->format('M d, Y') }}</td>
+                                    <td>{{ $line->origin }}</td>
+                                    <td>{{ $line->destination }}</td>
+                                    <td class="text-center">
+                                        {{ $line->departure_time ? \Carbon\Carbon::parse($line->departure_time)->format('h:iA') : '—' }}
+                                    </td>
+                                    <td class="text-center">
+                                        {{ $line->arrival_time ? \Carbon\Carbon::parse($line->arrival_time)->format('h:iA') : '—' }}
+                                    </td>
+                                    <td class="text-center">{{ ucfirst($line->mode_of_transport ?? '—') }}</td>
+                                    <td class="text-right">{{ number_format($line->transportation_cost, 2) }}</td>
+                                    <td class="text-center">{{ $line->is_half_day ? 'Yes' : '—' }}</td>
+                                    <td class="text-right">{{ number_format($line->per_diem_amount, 2) }}</td>
+                                    <td class="text-right fw-bold">{{ number_format($lineTotal, 2) }}</td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="10" style="text-align:center; padding:24px; color:var(--text-light);">No itinerary lines added yet.</td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                        <tfoot>
                             <tr>
-                                <td colspan="10" style="text-align:center; padding:24px; color:var(--text-light);">
-                                    No itinerary lines added yet.
-                                </td>
+                                <td colspan="6" style="text-align:right;">TOTALS</td>
+                                <td class="text-right" style="color:var(--navy);">₱{{ number_format($tev->total_transportation, 2) }}</td>
+                                <td></td>
+                                <td class="text-right" style="color:var(--navy);">₱{{ number_format($tev->total_per_diem, 2) }}</td>
+                                <td class="text-right" style="color:var(--navy); font-size:0.9rem;">₱{{ number_format($tev->grand_total, 2) }}</td>
                             </tr>
-                        @endforelse
-                    </tbody>
-                    <tfoot>
-                        <tr>
-                            <td colspan="6" style="text-align:right;">TOTALS</td>
-                            <td class="text-right" style="color:var(--navy);">₱{{ number_format($tev->total_transportation, 2) }}</td>
-                            <td></td>
-                            <td class="text-right" style="color:var(--navy);">₱{{ number_format($tev->total_per_diem, 2) }}</td>
-                            <td class="text-right" style="color:var(--navy); font-size:0.9rem;">₱{{ number_format($tev->grand_total, 2) }}</td>
-                        </tr>
-                    </tfoot>
-                </table>
+                        </tfoot>
+                    </table>
+                </div>
             </div>
         </div>
 
-        {{-- Approval Log ── --}}
+        {{-- Approval log ── --}}
         @if ($tev->approvalLogs->count() > 0)
         <div class="card">
             <div class="card-header"><h3>📋 Approval Timeline</h3></div>
@@ -385,29 +387,21 @@
                 <div class="log-timeline">
                     @foreach ($tev->approvalLogs as $log)
                         @php
-                            $logIcon = match($log->action) {
-                                'rejected' => '✕',
-                                'returned' => '↩',
-                                default    => '✓',
-                            };
+                            $logIcon = match($log->action) { 'rejected' => '✕', 'returned' => '↩', default => '✓' };
                         @endphp
                         <div class="log-item">
                             <div class="log-dot {{ $log->action }}">{{ $logIcon }}</div>
                             <div>
                                 <div style="font-weight:600; font-size:0.85rem;">
                                     {{ ucwords(str_replace('_', ' ', $log->step)) }}
-                                    <span style="font-size:0.75rem; color:var(--text-light); font-weight:400;">
-                                        — {{ strtoupper($log->action) }}
-                                    </span>
+                                    <span style="font-size:0.75rem; color:var(--text-light); font-weight:400;">— {{ strtoupper($log->action) }}</span>
                                 </div>
                                 <div class="log-meta">
-                                    {{ optional($log->user)->name ?? 'System' }}
-                                    &nbsp;·&nbsp;
+                                    {{ optional($log->user)->name ?? 'System' }} &nbsp;·&nbsp;
                                     {{ $log->performed_at ? $log->performed_at->format('M d, Y h:i A') : '—' }}
                                 </div>
                                 @if ($log->remarks)
-                                <div style="font-size:0.78rem; color:var(--text-mid); margin-top:4px;
-                                            padding:4px 8px; background:#f8f9ff; border-radius:4px;">
+                                <div style="font-size:0.78rem; color:var(--text-mid); margin-top:4px; padding:4px 8px; background:#f8f9ff; border-radius:4px;">
                                     {{ $log->remarks }}
                                 </div>
                                 @endif
@@ -419,49 +413,24 @@
         </div>
         @endif
 
-        {{-- Certification Block ── --}}
+        {{-- Certification ── --}}
         @if ($tev->certification)
         <div class="card">
             <div class="card-header"><h3>📜 Certification of Travel Completed</h3></div>
             <div class="card-body">
                 @php $cert = $tev->certification; @endphp
                 <div class="detail-grid" style="margin-bottom:12px;">
-                    <div class="detail-item">
-                        <span class="label">Travel Completed</span>
-                        <span class="value">{{ $cert->travel_completed ? 'Yes' : 'No' }}</span>
-                    </div>
-                    <div class="detail-item">
-                        <span class="label">Date Returned</span>
-                        <span class="value">{{ $cert->date_returned ? $cert->date_returned->format('M d, Y') : '—' }}</span>
-                    </div>
-                    <div class="detail-item">
-                        <span class="label">Place Reported Back</span>
-                        <span class="value">{{ $cert->place_reported_back ?? '—' }}</span>
-                    </div>
-                    <div class="detail-item">
-                        <span class="label">Agency Visited</span>
-                        <span class="value">{{ $cert->agency_visited ?? '—' }}</span>
-                    </div>
-                    <div class="detail-item">
-                        <span class="label">Appearance Date</span>
-                        <span class="value">{{ $cert->appearance_date ? $cert->appearance_date->format('M d, Y') : '—' }}</span>
-                    </div>
-                    <div class="detail-item">
-                        <span class="label">Annex A Amount</span>
-                        <span class="value">₱{{ number_format($cert->annex_a_amount ?? 0, 2) }}</span>
-                    </div>
-                    <div class="detail-item">
-                        <span class="label">Certified By</span>
-                        <span class="value">{{ optional($cert->certifier)->name ?? '—' }}</span>
-                    </div>
-                    <div class="detail-item">
-                        <span class="label">Certified On</span>
-                        <span class="value">{{ $cert->certified_at ? $cert->certified_at->format('M d, Y') : '—' }}</span>
-                    </div>
+                    <div class="detail-item"><span class="label">Travel Completed</span><span class="value">{{ $cert->travel_completed ? 'Yes' : 'No' }}</span></div>
+                    <div class="detail-item"><span class="label">Date Returned</span><span class="value">{{ $cert->date_returned ? $cert->date_returned->format('M d, Y') : '—' }}</span></div>
+                    <div class="detail-item"><span class="label">Place Reported Back</span><span class="value">{{ $cert->place_reported_back ?? '—' }}</span></div>
+                    <div class="detail-item"><span class="label">Agency Visited</span><span class="value">{{ $cert->agency_visited ?? '—' }}</span></div>
+                    <div class="detail-item"><span class="label">Appearance Date</span><span class="value">{{ $cert->appearance_date ? $cert->appearance_date->format('M d, Y') : '—' }}</span></div>
+                    <div class="detail-item"><span class="label">Annex A Amount</span><span class="value">₱{{ number_format($cert->annex_a_amount ?? 0, 2) }}</span></div>
+                    <div class="detail-item"><span class="label">Certified By</span><span class="value">{{ optional($cert->certifier)->name ?? '—' }}</span></div>
+                    <div class="detail-item"><span class="label">Certified On</span><span class="value">{{ $cert->certified_at ? $cert->certified_at->format('M d, Y') : '—' }}</span></div>
                 </div>
                 @if ($cert->annex_a_particulars)
-                <div style="font-size:0.82rem; padding:8px 12px; background:#f8f9ff;
-                            border-radius:4px; border-left:3px solid var(--navy);">
+                <div style="font-size:0.82rem; padding:8px 12px; background:#f8f9ff; border-radius:4px; border-left:3px solid var(--navy);">
                     <strong>Annex A Particulars:</strong> {{ $cert->annex_a_particulars }}
                 </div>
                 @endif
@@ -469,36 +438,25 @@
         </div>
         @endif
 
-    </div>
+    </div>{{-- end left --}}
 
-    {{-- ────────────────────────────────────────────────────────
-         RIGHT PANEL: totals + widgets + action cards
-    ──────────────────────────────────────────────────────── --}}
-    <div class="show-grid-right" style="display:flex; flex-direction:column; gap:16px;">
+    {{-- ── RIGHT PANEL ── --}}
+    <div class="show-right">
 
-        {{-- Totals summary ── --}}
+        {{-- Summary ── --}}
         <div style="background:var(--navy); color:#fff; border-radius:8px; padding:16px 20px;">
-            <div style="font-size:0.68rem; font-weight:700; text-transform:uppercase;
-                        letter-spacing:0.07em; opacity:0.6; margin-bottom:10px;">Summary</div>
-            @foreach ([
-                'Transportation' => $tev->total_transportation,
-                'Per Diem'       => $tev->total_per_diem,
-                'Other Expenses' => $tev->total_other_expenses,
-            ] as $label => $val)
-            <div style="display:flex; justify-content:space-between; padding:5px 0;
-                        border-bottom:1px solid rgba(255,255,255,0.1); font-size:0.82rem;">
-                <span>{{ $label }}</span>
-                <span>₱{{ number_format($val, 2) }}</span>
+            <div style="font-size:0.68rem; font-weight:700; text-transform:uppercase; letter-spacing:0.07em; opacity:0.6; margin-bottom:10px;">Summary</div>
+            @foreach (['Transportation' => $tev->total_transportation, 'Per Diem' => $tev->total_per_diem, 'Other Expenses' => $tev->total_other_expenses] as $lbl => $val)
+            <div style="display:flex; justify-content:space-between; padding:5px 0; border-bottom:1px solid rgba(255,255,255,0.1); font-size:0.82rem;">
+                <span>{{ $lbl }}</span><span>₱{{ number_format($val, 2) }}</span>
             </div>
             @endforeach
-            <div style="display:flex; justify-content:space-between; padding:8px 0 0;
-                        font-size:1rem; font-weight:700; color:var(--gold);">
-                <span>Grand Total</span>
-                <span>₱{{ number_format($tev->grand_total, 2) }}</span>
+            <div style="display:flex; justify-content:space-between; padding:8px 0 0; font-size:1rem; font-weight:700; color:var(--gold);">
+                <span>Grand Total</span><span>₱{{ number_format($tev->grand_total, 2) }}</span>
             </div>
         </div>
 
-        {{-- Cash Advance Reconciliation Widget ── --}}
+        {{-- Cash Advance Reconciliation ── --}}
         @if ($showBalanceWidget)
         <div class="card">
             <div class="card-header"><h3>💰 Cash Advance Reconciliation</h3></div>
@@ -508,39 +466,27 @@
                         <span class="text-muted">Cash Advance Released</span>
                         <span class="fw-bold">₱{{ number_format($advanceAmount, 2) }}</span>
                     </div>
-
                     @if (in_array($tev->status, ['liquidation_filed','liquidated']))
                     <div class="bw-row">
                         <span class="text-muted">Actual Expenses Filed</span>
                         <span class="fw-bold">₱{{ number_format($actualAmount, 2) }}</span>
                     </div>
-
                     @php
-                        $bwClass = $balanceDue > 0
-                            ? 'bw-refund'
-                            : ($balanceDue < 0 ? 'bw-claim' : 'bw-settled');
+                        $bwClass = $balanceDue > 0 ? 'bw-refund' : ($balanceDue < 0 ? 'bw-claim' : 'bw-settled');
                         $bwLabel = $balanceDue > 0
                             ? 'To Refund (Employee Owes)'
-                            : ($balanceDue < 0
-                                ? 'To Claim (DOLE Owes Employee)'
-                                : 'Settled — No Balance');
+                            : ($balanceDue < 0 ? 'To Claim (DOLE Owes Employee)' : 'Settled — No Balance');
                     @endphp
                     <div class="bw-total {{ $bwClass }}">
                         <span>{{ $bwLabel }}</span>
                         <span>₱{{ number_format(abs($balanceDue), 2) }}</span>
                     </div>
-
                     @else
-                    {{-- cashier_released but not yet filed --}}
-                    <div style="padding:8px 0; font-size:0.80rem; color:var(--text-light); font-style:italic;">
-                        Awaiting liquidation filing.
-                    </div>
+                    <div style="padding:8px 0; font-size:0.80rem; color:var(--text-light); font-style:italic;">Awaiting liquidation filing.</div>
                     @endif
                 </div>
-
                 @if ($tev->status === 'liquidated')
-                <div style="margin-top:10px; padding:8px 12px; background:#E8F5E9;
-                            border-radius:6px; font-size:0.80rem; color:#1B5E20; font-weight:600;">
+                <div style="margin-top:10px; padding:8px 12px; background:#E8F5E9; border-radius:6px; font-size:0.80rem; color:#1B5E20; font-weight:600;">
                     ✓ Liquidation fully approved and settled.
                 </div>
                 @endif
@@ -553,23 +499,11 @@
         <div class="card no-print">
             <div class="card-header"><h3>📁 Documents</h3></div>
             <div class="card-body" style="display:flex; flex-direction:column; gap:8px;">
-                <a href="{{ route('reports.tev-itinerary', $tev->id) }}" target="_blank"
-                   class="btn btn-outline" style="justify-content:flex-start; gap:8px; text-align:left;">
-                    📄 Itinerary of Travel (Appendix A)
-                </a>
-                <a href="{{ route('reports.tev-travel-completed', $tev->id) }}" target="_blank"
-                   class="btn btn-outline" style="justify-content:flex-start; gap:8px; text-align:left;">
-                    📄 Certification of Travel Completed
-                </a>
-                <a href="{{ route('reports.tev-annex-a', $tev->id) }}" target="_blank"
-                   class="btn btn-outline" style="justify-content:flex-start; gap:8px; text-align:left;">
-                    📄 Annex A — Expenses Not Requiring Receipts
-                </a>
+                <a href="{{ route('reports.tev-itinerary', $tev->id) }}" target="_blank" class="btn btn-outline" style="justify-content:flex-start; gap:8px; text-align:left;">📄 Itinerary of Travel (Appendix A)</a>
+                <a href="{{ route('reports.tev-travel-completed', $tev->id) }}" target="_blank" class="btn btn-outline" style="justify-content:flex-start; gap:8px; text-align:left;">📄 Certification of Travel Completed</a>
+                <a href="{{ route('reports.tev-annex-a', $tev->id) }}" target="_blank" class="btn btn-outline" style="justify-content:flex-start; gap:8px; text-align:left;">📄 Annex A — Expenses Not Requiring Receipts</a>
                 @if ($showDvPdf)
-                <a href="{{ route('reports.tev-liquidation-dv', $tev->id) }}" target="_blank"
-                   class="btn btn-outline" style="justify-content:flex-start; gap:8px; text-align:left;">
-                    📄 Liquidation / Disbursement Voucher
-                </a>
+                <a href="{{ route('reports.tev-liquidation-dv', $tev->id) }}" target="_blank" class="btn btn-outline" style="justify-content:flex-start; gap:8px; text-align:left;">📄 Liquidation / Disbursement Voucher</a>
                 @endif
             </div>
         </div>
@@ -580,21 +514,16 @@
         <div class="card no-print">
             <div class="card-header"><h3>📤 Submit TEV</h3></div>
             <div class="card-body">
-                <p style="font-size:0.82rem; color:var(--text-mid); margin-bottom:12px;">
-                    Submit this TEV for HR review. Make sure all itinerary lines are complete.
-                </p>
+                <p style="font-size:0.82rem; color:var(--text-mid); margin-bottom:12px;">Submit this TEV for HR review. Make sure all itinerary lines are complete.</p>
                 <form method="POST" action="{{ route('tev.submit', $tev->id) }}">
                     @csrf
-                    <button type="submit" class="btn btn-primary"
-                            onclick="return confirm('Submit this TEV for approval?')">
-                        📤 Submit for Approval
-                    </button>
+                    <button type="submit" class="btn btn-primary" onclick="return confirm('Submit this TEV for approval?')">📤 Submit for Approval</button>
                 </form>
             </div>
         </div>
         @endif
 
-        {{-- Generic Approve (not used for liquidation step) ── --}}
+        {{-- Generic Approve ── --}}
         @if ($canApprove && $tev->status !== 'liquidation_filed')
         <div class="card no-print">
             <div class="card-header"><h3>✓ {{ $nextAction }}</h3></div>
@@ -603,105 +532,70 @@
                     @csrf
                     <div class="form-group">
                         <label for="approve_remarks">Remarks (optional)</label>
-                        <textarea id="approve_remarks" name="remarks" rows="2"
-                                  placeholder="Add remarks..."></textarea>
+                        <textarea id="approve_remarks" name="remarks" rows="2" placeholder="Add remarks..."></textarea>
                     </div>
-                    <button type="submit" class="btn btn-primary"
-                            onclick="return confirm('Proceed with: {{ $nextAction }}?')">
-                        ✓ {{ $nextAction }}
-                    </button>
+                    <button type="submit" class="btn btn-primary" onclick="return confirm('Proceed with: {{ $nextAction }}?')">✓ {{ $nextAction }}</button>
                 </form>
             </div>
         </div>
         @endif
 
-        {{-- File Liquidation (employee / payroll staff) ── --}}
+        {{-- File Liquidation ── --}}
         @if ($canFileLiquidation)
         <div class="card no-print">
-            <div class="card-header" style="border-left:3px solid #F9A825;">
-                <h3 style="color:#7B5800;">💸 File Liquidation</h3>
-            </div>
+            <div class="card-header" style="border-left:3px solid #F9A825;"><h3 style="color:#7B5800;">💸 File Liquidation</h3></div>
             <div class="card-body">
-                <p style="font-size:0.82rem; color:var(--text-mid); margin-bottom:14px;">
-                    Enter the <strong>actual total expenses</strong> incurred during travel.
-                    The system will compute the balance to refund or claim.
-                </p>
-                <div style="padding:10px 12px; background:#FFF8E1; border-radius:6px;
-                            font-size:0.80rem; margin-bottom:14px; color:#7B5800;">
-                    Cash advance released:
-                    <strong>₱{{ number_format($tev->cash_advance_amount ?? $tev->grand_total, 2) }}</strong>
+                <p style="font-size:0.82rem; color:var(--text-mid); margin-bottom:14px;">Enter the <strong>actual total expenses</strong> incurred during travel. The system will compute the balance to refund or claim.</p>
+                <div style="padding:10px 12px; background:#FFF8E1; border-radius:6px; font-size:0.80rem; margin-bottom:14px; color:#7B5800;">
+                    Cash advance released: <strong>₱{{ number_format($tev->cash_advance_amount ?? $tev->grand_total, 2) }}</strong>
                 </div>
                 <form method="POST" action="{{ route('tev.liquidate', $tev->id) }}">
                     @csrf
                     <div class="form-group">
-                        <label for="actual_amount">
-                            Actual Amount Spent (₱) <span style="color:var(--red);">*</span>
-                        </label>
-                        <input type="number" id="actual_amount" name="actual_amount"
-                               step="0.01" min="0" value="{{ old('actual_amount') }}"
-                               placeholder="0.00" required>
-                        @error('actual_amount')
-                            <div class="invalid-feedback" style="display:block;">{{ $message }}</div>
-                        @enderror
+                        <label for="actual_amount">Actual Amount Spent (₱) <span style="color:var(--red);">*</span></label>
+                        <input type="number" id="actual_amount" name="actual_amount" step="0.01" min="0" value="{{ old('actual_amount') }}" placeholder="0.00" required>
+                        @error('actual_amount')<div class="invalid-feedback" style="display:block;">{{ $message }}</div>@enderror
                     </div>
                     <div class="form-group">
                         <label for="liquidation_remarks">Remarks (optional)</label>
-                        <textarea id="liquidation_remarks" name="remarks" rows="2"
-                                  placeholder="Add notes about the liquidation..."></textarea>
+                        <textarea id="liquidation_remarks" name="remarks" rows="2" placeholder="Add notes about the liquidation..."></textarea>
                     </div>
-                    <button type="submit" class="btn btn-gold"
-                            onclick="return confirm('File liquidation with this actual amount?')">
-                        💸 File Liquidation
-                    </button>
+                    <button type="submit" class="btn btn-gold" onclick="return confirm('File liquidation with this actual amount?')">💸 File Liquidation</button>
                 </form>
             </div>
         </div>
         @endif
 
-        {{-- Approve Liquidation (cashier) ── --}}
+        {{-- Approve Liquidation ── --}}
         @if ($canApproveLiquidation)
         <div class="card no-print">
-            <div class="card-header" style="border-left:3px solid #2E7D52;">
-                <h3 style="color:#1B5E20;">✓ Approve Liquidation</h3>
-            </div>
+            <div class="card-header" style="border-left:3px solid #2E7D52;"><h3 style="color:#1B5E20;">✓ Approve Liquidation</h3></div>
             <div class="card-body">
                 @php
                     $liqActual = $advanceAmount - $balanceDue;
                     $liqClass  = $balanceDue > 0 ? 'bw-refund' : ($balanceDue < 0 ? 'bw-claim' : 'bw-settled');
                     $liqNote   = $balanceDue > 0
                         ? 'Employee must refund ₱' . number_format($balanceDue, 2)
-                        : ($balanceDue < 0
-                            ? 'DOLE owes employee ₱' . number_format(abs($balanceDue), 2)
-                            : 'Fully settled — no balance due.');
+                        : ($balanceDue < 0 ? 'DOLE owes employee ₱' . number_format(abs($balanceDue), 2) : 'Fully settled — no balance due.');
                 @endphp
-                <div style="padding:12px 14px; background:#F1FAF5; border-radius:6px;
-                            font-size:0.82rem; margin-bottom:14px;">
-                    <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
-                        <span class="text-muted">Cash Advance Released</span>
-                        <strong>₱{{ number_format($advanceAmount, 2) }}</strong>
+                <div style="padding:12px 14px; background:#F1FAF5; border-radius:6px; font-size:0.82rem; margin-bottom:14px;">
+                    <div style="display:flex; justify-content:space-between; margin-bottom:5px; flex-wrap:wrap; gap:4px;">
+                        <span class="text-muted">Cash Advance Released</span><strong>₱{{ number_format($advanceAmount, 2) }}</strong>
                     </div>
-                    <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
-                        <span class="text-muted">Actual Expenses Filed</span>
-                        <strong>₱{{ number_format($liqActual, 2) }}</strong>
+                    <div style="display:flex; justify-content:space-between; margin-bottom:5px; flex-wrap:wrap; gap:4px;">
+                        <span class="text-muted">Actual Expenses Filed</span><strong>₱{{ number_format($liqActual, 2) }}</strong>
                     </div>
-                    <div style="display:flex; justify-content:space-between; font-weight:700;
-                                padding-top:8px; border-top:1px solid rgba(0,0,0,0.08);"
-                         class="{{ $liqClass }}">
-                        <span>Balance</span>
-                        <span>{{ $liqNote }}</span>
+                    <div style="display:flex; justify-content:space-between; font-weight:700; padding-top:8px; border-top:1px solid rgba(0,0,0,0.08); flex-wrap:wrap; gap:4px;" class="{{ $liqClass }}">
+                        <span>Balance</span><span>{{ $liqNote }}</span>
                     </div>
                 </div>
                 <form method="POST" action="{{ route('tev.liquidation.approve', $tev->id) }}">
                     @csrf
                     <div class="form-group">
                         <label for="liq_approve_remarks">Remarks (optional)</label>
-                        <textarea id="liq_approve_remarks" name="remarks" rows="2"
-                                  placeholder="Add remarks..."></textarea>
+                        <textarea id="liq_approve_remarks" name="remarks" rows="2" placeholder="Add remarks..."></textarea>
                     </div>
-                    <button type="submit" class="btn btn-primary"
-                            onclick="return confirm('Approve this liquidation and mark TEV as liquidated?')">
-                        ✓ Approve Liquidation
-                    </button>
+                    <button type="submit" class="btn btn-primary" onclick="return confirm('Approve this liquidation and mark TEV as liquidated?')">✓ Approve Liquidation</button>
                 </form>
             </div>
         </div>
@@ -710,27 +604,16 @@
         {{-- Reject ── --}}
         @if ($canReject)
         <div class="card no-print">
-            <div class="card-header" style="border-left:3px solid var(--red);">
-                <h3 style="color:var(--red);">✕ Reject</h3>
-            </div>
+            <div class="card-header" style="border-left:3px solid var(--red);"><h3 style="color:var(--red);">✕ Reject</h3></div>
             <div class="card-body">
                 <form method="POST" action="{{ route('tev.reject', $tev->id) }}">
                     @csrf
                     <div class="form-group">
-                        <label for="reject_remarks">
-                            Reason for Rejection <span style="color:var(--red);">*</span>
-                        </label>
-                        <textarea id="reject_remarks" name="remarks" rows="3"
-                                  placeholder="State the reason for rejection (required)..."
-                                  required></textarea>
-                        @error('remarks')
-                            <div class="invalid-feedback" style="display:block;">{{ $message }}</div>
-                        @enderror
+                        <label for="reject_remarks">Reason for Rejection <span style="color:var(--red);">*</span></label>
+                        <textarea id="reject_remarks" name="remarks" rows="3" placeholder="State the reason for rejection (required)..." required></textarea>
+                        @error('remarks')<div class="invalid-feedback" style="display:block;">{{ $message }}</div>@enderror
                     </div>
-                    <button type="submit" class="btn btn-danger"
-                            onclick="return confirm('Reject this TEV? This action will be logged.')">
-                        ✕ Reject TEV
-                    </button>
+                    <button type="submit" class="btn btn-danger" onclick="return confirm('Reject this TEV? This action will be logged.')">✕ Reject TEV</button>
                 </form>
             </div>
         </div>
@@ -744,60 +627,46 @@
                 <form method="POST" action="{{ route('tev.certify', $tev->id) }}">
                     @csrf
                     <div class="form-group">
-                        <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
-                            <input type="checkbox" name="travel_completed" value="1"
-                                   {{ optional($tev->certification)->travel_completed ? 'checked' : '' }}>
+                        <label style="display:flex; align-items:center; gap:8px; cursor:pointer; text-transform:none; font-size:0.875rem; font-weight:500; letter-spacing:0; color:var(--text);">
+                            <input type="checkbox" name="travel_completed" value="1" {{ optional($tev->certification)->travel_completed ? 'checked' : '' }}>
                             Travel Completed
                         </label>
                     </div>
                     <div class="form-group">
                         <label for="date_returned">Date Returned</label>
-                        <input type="date" id="date_returned" name="date_returned"
-                               value="{{ optional($tev->certification)->date_returned?->toDateString() }}">
+                        <input type="date" id="date_returned" name="date_returned" value="{{ optional($tev->certification)->date_returned?->toDateString() }}">
                     </div>
                     <div class="form-group">
                         <label for="place_reported_back">Place Reported Back</label>
-                        <input type="text" id="place_reported_back" name="place_reported_back"
-                               value="{{ optional($tev->certification)->place_reported_back }}"
-                               placeholder="e.g. DOLE RO9 Office">
+                        <input type="text" id="place_reported_back" name="place_reported_back" value="{{ optional($tev->certification)->place_reported_back }}" placeholder="e.g. DOLE RO9 Office">
                     </div>
                     <div class="form-group">
                         <label for="annex_a_amount">Annex A Amount (₱)</label>
-                        <input type="number" id="annex_a_amount" name="annex_a_amount"
-                               value="{{ optional($tev->certification)->annex_a_amount ?? 0 }}"
-                               step="0.01" min="0">
+                        <input type="number" id="annex_a_amount" name="annex_a_amount" value="{{ optional($tev->certification)->annex_a_amount ?? 0 }}" step="0.01" min="0">
                     </div>
                     <div class="form-group">
                         <label for="annex_a_particulars">Annex A Particulars</label>
-                        <textarea id="annex_a_particulars" name="annex_a_particulars" rows="2"
-                                  placeholder="Details of expenses not requiring receipts...">{{ optional($tev->certification)->annex_a_particulars }}</textarea>
+                        <textarea id="annex_a_particulars" name="annex_a_particulars" rows="2" placeholder="Details of expenses not requiring receipts...">{{ optional($tev->certification)->annex_a_particulars }}</textarea>
                     </div>
                     <div class="form-group">
                         <label for="agency_visited">Agency Visited</label>
-                        <input type="text" id="agency_visited" name="agency_visited"
-                               value="{{ optional($tev->certification)->agency_visited }}"
-                               placeholder="Name of agency...">
+                        <input type="text" id="agency_visited" name="agency_visited" value="{{ optional($tev->certification)->agency_visited }}" placeholder="Name of agency...">
                     </div>
                     <div class="form-group">
                         <label for="appearance_date">Appearance Date</label>
-                        <input type="date" id="appearance_date" name="appearance_date"
-                               value="{{ optional($tev->certification)->appearance_date?->toDateString() }}">
+                        <input type="date" id="appearance_date" name="appearance_date" value="{{ optional($tev->certification)->appearance_date?->toDateString() }}">
                     </div>
                     <div class="form-group">
                         <label for="contact_person">Contact Person</label>
-                        <input type="text" id="contact_person" name="contact_person"
-                               value="{{ optional($tev->certification)->contact_person }}"
-                               placeholder="Name of contact person...">
+                        <input type="text" id="contact_person" name="contact_person" value="{{ optional($tev->certification)->contact_person }}" placeholder="Name of contact person...">
                     </div>
-                    <button type="submit" class="btn btn-primary">
-                        📜 Save Certification
-                    </button>
+                    <button type="submit" class="btn btn-primary">📜 Save Certification</button>
                 </form>
             </div>
         </div>
         @endif
 
-    </div>{{-- end right panel --}}
+    </div>{{-- end right --}}
 
 </div>{{-- end show-grid --}}
 
