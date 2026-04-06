@@ -14,6 +14,7 @@ class DatabaseSeeder extends Seeder
         $this->call(RoleSeeder::class);
         $this->call(SalaryIndexTableSeeder::class);
         $this->call(DeductionTypeSeeder::class);
+        $this->call(PerDiemRateSeeder::class);   // ← ADDED
         $this->call(EmployeeSeeder::class);
 
         // ── Production Admin ─────────────────────────────────────────────────
@@ -31,9 +32,6 @@ class DatabaseSeeder extends Seeder
         $this->command->warn('⚠️  Change the admin password immediately after first login!');
 
         // ── Test / Development Accounts ───────────────────────────────────────
-        // These are safe dummy accounts for local + staging testing.
-        // All use the same password: Test@DOLE9!
-        // firstOrCreate ensures re-running the seeder won't duplicate them.
         $testUsers = [
             [
                 'name'  => 'Test HRMO',
