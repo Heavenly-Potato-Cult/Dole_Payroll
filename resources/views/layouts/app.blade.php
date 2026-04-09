@@ -35,6 +35,7 @@
                 <span class="nav-icon">⊞</span> Dashboard
             </a>
 
+            {{-- ── Employees ─────────────────────────────────────────── --}}
             @role('payroll_officer|hrmo|accountant|chief_admin_officer')
             <div class="nav-section-label">Employees</div>
             <a href="{{ route('employees.index') }}"
@@ -49,13 +50,16 @@
             @endrole
             @endrole
 
+            {{-- ── Payroll ────────────────────────────────────────────── --}}
             @role('payroll_officer|hrmo|accountant|ard|cashier|chief_admin_officer')
             <div class="nav-section-label">Payroll</div>
             <a href="{{ route('payroll.index') }}"
                class="nav-item {{ request()->routeIs('payroll.*') ? 'active' : '' }}">
                 <span class="nav-icon">💰</span> Regular Payroll
             </a>
-            @role('payroll_officer|hrmo')
+
+            {{-- Special Payroll: HR creates, Accountant certifies, ARD/CAO approves --}}
+            @role('payroll_officer|hrmo|accountant|ard|chief_admin_officer')
             <div class="nav-section-label" style="padding-left:12px; font-size:0.65rem;">Special Payroll</div>
             <a href="{{ route('special-payroll.newly-hired.index') }}"
                class="nav-item {{ request()->routeIs('special-payroll.newly-hired.*') ? 'active' : '' }}"
@@ -67,15 +71,16 @@
                style="padding-left:28px;">
                 <span class="nav-icon">📈</span> Salary Differential
             </a>
-
-             <a href="{{ route('special-payroll.nosi-nosa.index') }}"
+            <a href="{{ route('special-payroll.nosi-nosa.index') }}"
                class="nav-item {{ request()->routeIs('special-payroll.nosi-nosa.*') ? 'active' : '' }}"
                style="padding-left:28px;">
                 <span class="nav-icon">📑</span> NOSI / NOSA
             </a>
             @endrole
+
             @endrole
 
+            {{-- ── Travel (TEV) ───────────────────────────────────────── --}}
             @role('payroll_officer|hrmo|accountant|budget_officer|ard|cashier|chief_admin_officer')
             <div class="nav-section-label">Travel (TEV)</div>
             <a href="{{ route('office-orders.index') }}"
@@ -88,6 +93,7 @@
             </a>
             @endrole
 
+            {{-- ── Reports ─────────────────────────────────────────────── --}}
             @role('payroll_officer|hrmo|accountant|budget_officer|chief_admin_officer')
             <div class="nav-section-label">Reports</div>
             <a href="{{ route('reports.index') }}"
@@ -96,6 +102,7 @@
             </a>
             @endrole
 
+            {{-- ── Administration ─────────────────────────────────────── --}}
             @role('payroll_officer')
             <div class="nav-section-label">Administration</div>
             <a href="{{ route('users.index') }}"
