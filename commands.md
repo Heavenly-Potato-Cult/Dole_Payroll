@@ -22,3 +22,11 @@ docker compose exec app php artisan key:generate --force
 
 Adminer: http://localhost:8080
 Login: Server=db, Username=root, Password=root, Database=dole_payroll
+
+
+## for index issues
+docker-compose exec app php artisan optimize:clear
+
+## pull update from other branch
+1. git fetch origin  
+2. git merge origin/main
