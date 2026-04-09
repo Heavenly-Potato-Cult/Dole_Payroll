@@ -20,3 +20,5 @@ yarn-error.log
 /.laravel_initialized
 certs/
 backups/
+gdrive-credentials.json
+rclone.exe

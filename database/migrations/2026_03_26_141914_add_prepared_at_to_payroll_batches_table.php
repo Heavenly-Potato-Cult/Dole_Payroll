@@ -9,7 +9,9 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('payroll_batches', function (Blueprint $table) {
-            $table->timestamp('prepared_at')->nullable()->after('status');
+            if (!Schema::hasColumn('payroll_batches', 'prepared_at')) {
+                $table->timestamp('prepared_at')->nullable()->after('status');
+            }
         });
     }
 
