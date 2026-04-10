@@ -174,69 +174,75 @@
 
     <div class="role-card">
         <div class="role-card-name">Payroll Officer</div>
-        <div class="role-card-desc">Full system access including user management</div>
+        <div class="role-card-desc">Manages payroll processing and employee records. No access to TEV.</div>
         <div class="access-tags">
             <span class="access-tag">Employees</span>
             <span class="access-tag">Payroll</span>
-            <span class="access-tag">TEV</span>
-            <span class="access-tag">Reports</span>
+            <span class="access-tag">Special Payroll</span>
+            <span class="access-tag">Payroll Reports</span>
             <span class="access-tag">Users</span>
         </div>
     </div>
 
     <div class="role-card">
         <div class="role-card-name">HRMO</div>
-        <div class="role-card-desc">Manages employees, payroll processing, and TEV</div>
+        <div class="role-card-desc">Manages employee records, views payroll, creates Office Orders, and files TEV requests on behalf of traveling employees.</div>
         <div class="access-tags">
             <span class="access-tag">Employees</span>
-            <span class="access-tag">Payroll</span>
-            <span class="access-tag">TEV</span>
+            <span class="access-tag">View Payroll</span>
+            <span class="access-tag">Office Orders</span>
+            <span class="access-tag">TEV (create & submit)</span>
         </div>
     </div>
 
     <div class="role-card">
         <div class="role-card-name">Accountant</div>
-        <div class="role-card-desc">Views payroll entries and certifies them</div>
+        <div class="role-card-desc">First approver in the TEV workflow after submission. Certifies fund availability, generates remittance reports, and views payroll entries.</div>
         <div class="access-tags">
-            <span class="access-tag">View payroll</span>
-            <span class="access-tag">Certify</span>
-            <span class="access-tag">Reports</span>
+            <span class="access-tag">View Payroll</span>
+            <span class="access-tag">Payroll Reports</span>
+            <span class="access-tag">TEV (1st approval)</span>
+            <span class="access-tag">TEV Reports</span>
         </div>
     </div>
 
     <div class="role-card">
         <div class="role-card-name">Budget Officer</div>
-        <div class="role-card-desc">Reviews reports and TEV requests</div>
+        <div class="role-card-desc">Views TEV spending and Office Orders for budget monitoring purposes. No approval actions in any workflow.</div>
         <div class="access-tags">
-            <span class="access-tag">Reports</span>
-            <span class="access-tag">TEV</span>
+            <span class="access-tag">View Office Orders</span>
+            <span class="access-tag">View TEV</span>
+            <span class="access-tag">TEV Reports</span>
         </div>
     </div>
 
     <div class="role-card">
         <div class="role-card-name">Chief Admin Officer</div>
-        <div class="role-card-desc">Read-only across all modules, approves payroll</div>
+        <div class="role-card-desc">Division-level approver for both payroll and TEV.</div>
         <div class="access-tags">
-            <span class="access-tag">View all</span>
-            <span class="access-tag">Approve payroll</span>
+            <span class="access-tag">View Payroll</span>
+            <span class="access-tag">Approve Payroll</span>
+            <span class="access-tag">TEV (division approval)</span>
         </div>
     </div>
 
     <div class="role-card">
         <div class="role-card-name">ARD</div>
-        <div class="role-card-desc">Final approver for payroll and TEV</div>
+        <div class="role-card-desc">Final approver for both payroll and TEV. Can generate payroll release.</div>
         <div class="access-tags">
-            <span class="access-tag">Approve payroll</span>
-            <span class="access-tag">Approve TEV</span>
+            <span class="access-tag">Final Payroll Approval</span>
+            <span class="access-tag">Payroll Reports</span>
+            <span class="access-tag">Final TEV Approval</span>
+            <span class="access-tag">TEV Reports</span>
         </div>
     </div>
 
     <div class="role-card">
         <div class="role-card-name">Cashier</div>
-        <div class="role-card-desc">Views payroll disbursements and TEV cash</div>
+        <div class="role-card-desc">Marks payroll and TEV as released or paid. Final step in both workflows.</div>
         <div class="access-tags">
-            <span class="access-tag">View payroll</span>
-            <span class="access-tag">TEV cash</span>
+            <span class="access-tag">Release Payroll</span>
+            <span class="access-tag">TEV (release/reimburse)</span>
         </div>
     </div>
 

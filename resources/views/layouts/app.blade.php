@@ -81,7 +81,8 @@
             @endrole
 
             {{-- ── Travel (TEV) ───────────────────────────────────────── --}}
-            @role('payroll_officer|hrmo|accountant|budget_officer|ard|cashier|chief_admin_officer')
+            {{-- payroll_officer intentionally excluded: TEV is a separate department --}}
+            @role('hrmo|accountant|budget_officer|ard|cashier|chief_admin_officer')
             <div class="nav-section-label">Travel (TEV)</div>
             <a href="{{ route('office-orders.index') }}"
                class="nav-item {{ request()->routeIs('office-orders.*') ? 'active' : '' }}">
@@ -94,12 +95,23 @@
             @endrole
 
             {{-- ── Reports ─────────────────────────────────────────────── --}}
-            @role('payroll_officer|hrmo|accountant|budget_officer|chief_admin_officer')
+            {{-- Payroll reports: payroll_officer + approving/certifying roles --}}
+            @role('payroll_officer|accountant|ard|chief_admin_officer')
             <div class="nav-section-label">Reports</div>
             <a href="{{ route('reports.index') }}"
                class="nav-item {{ request()->routeIs('reports.*') ? 'active' : '' }}">
-                <span class="nav-icon">📊</span> All Reports
+                <span class="nav-icon">📊</span> Reports
             </a>
+            @endrole
+            {{-- TEV reports: budget_officer + TEV chain roles (no payroll_officer) --}}
+            @role('budget_officer|hrmo|cashier')
+            @if(!auth()->user()->hasAnyRole(['accountant','ard','chief_admin_officer']))
+            <div class="nav-section-label">Reports</div>
+            <a href="{{ route('reports.index') }}"
+               class="nav-item {{ request()->routeIs('reports.*') ? 'active' : '' }}">
+                <span class="nav-icon">📊</span> Reports
+            </a>
+            @endif
             @endrole
 
             {{-- ── Administration ─────────────────────────────────────── --}}

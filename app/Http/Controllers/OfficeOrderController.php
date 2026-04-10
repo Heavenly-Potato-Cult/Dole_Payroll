@@ -17,7 +17,7 @@ class OfficeOrderController extends Controller
     // ─────────────────────────────────────────────────────────────────────
     public function index(Request $request)
     {
-        $this->authorizeRole(['payroll_officer', 'hrmo', 'accountant', 'ard', 'cashier']);
+        $this->authorizeRole(['hrmo', 'accountant', 'budget_officer', 'ard', 'chief_admin_officer', 'cashier']); // index
 
         $query = OfficeOrder::with('employee')
             ->orderByDesc('id');
@@ -42,7 +42,7 @@ class OfficeOrderController extends Controller
     // ─────────────────────────────────────────────────────────────────────
     public function create()
     {
-        $this->authorizeRole(['payroll_officer', 'hrmo']);
+        $this->authorizeRole(['hrmo']); // create - hrmo only
 
         $employees = Employee::where('status', 'active')
             ->orderBy('last_name')
@@ -58,7 +58,7 @@ class OfficeOrderController extends Controller
     // ─────────────────────────────────────────────────────────────────────
     public function store(StoreOfficeOrderRequest $request)
     {
-        $this->authorizeRole(['payroll_officer', 'hrmo']);
+        $this->authorizeRole(['hrmo']); // store - hrmo only
 
         $order = OfficeOrder::create(array_merge(
             $request->validated(),
@@ -83,7 +83,7 @@ class OfficeOrderController extends Controller
     // ─────────────────────────────────────────────────────────────────────
     public function show(int $id)
     {
-        $this->authorizeRole(['payroll_officer', 'hrmo', 'accountant', 'ard', 'cashier']);
+        $this->authorizeRole(['hrmo', 'accountant', 'budget_officer', 'ard', 'chief_admin_officer', 'cashier']); // show
 
         $order = OfficeOrder::with(['employee', 'approver', 'tevRequests.employee'])
             ->findOrFail($id);
@@ -97,7 +97,7 @@ class OfficeOrderController extends Controller
     // ─────────────────────────────────────────────────────────────────────
     public function edit(int $id)
     {
-        $this->authorizeRole(['payroll_officer', 'hrmo']);
+        $this->authorizeRole(['hrmo']); // edit - hrmo only
 
         $order = OfficeOrder::where('status', 'draft')->findOrFail($id);
 
@@ -115,7 +115,7 @@ class OfficeOrderController extends Controller
     // ─────────────────────────────────────────────────────────────────────
     public function update(StoreOfficeOrderRequest $request, int $id)
     {
-        $this->authorizeRole(['payroll_officer', 'hrmo']);
+        $this->authorizeRole(['hrmo']); // update - hrmo only
 
         $order = OfficeOrder::where('status', 'draft')->findOrFail($id);
 

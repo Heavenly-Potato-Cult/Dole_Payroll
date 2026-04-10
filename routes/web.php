@@ -173,42 +173,50 @@ Route::middleware(['auth'])->group(function () {
         ->where('id', '[0-9]+');
 
     // ── Office Orders ────────────────────────────────────────────
-    Route::resource('office-orders', OfficeOrderController::class);
+    // payroll_officer excluded: TEV is a separate department
+    Route::middleware(['role:hrmo|accountant|budget_officer|ard|cashier|chief_admin_officer'])
+        ->group(function () {
+            Route::resource('office-orders', OfficeOrderController::class);
 
-    Route::post('/office-orders/{id}/approve',
-                [OfficeOrderController::class, 'approve'])
-        ->name('office-orders.approve')
-        ->where('id', '[0-9]+');
+            Route::post('/office-orders/{id}/approve',
+                        [OfficeOrderController::class, 'approve'])
+                ->name('office-orders.approve')
+                ->where('id', '[0-9]+');
 
-    Route::post('/office-orders/{id}/cancel',
-                [OfficeOrderController::class, 'cancel'])
-        ->name('office-orders.cancel')
-        ->where('id', '[0-9]+');
+            Route::post('/office-orders/{id}/cancel',
+                        [OfficeOrderController::class, 'cancel'])
+                ->name('office-orders.cancel')
+                ->where('id', '[0-9]+');
+        });
 
     // ── TEV ──────────────────────────────────────────────────────
-    Route::resource('tev', TevController::class);
-    Route::post('/tev/{tevRequest}/submit',  [TevController::class, 'submit'])->name('tev.submit');
-    Route::post('/tev/{tevRequest}/approve', [TevController::class, 'approve'])->name('tev.approve');
-    Route::post('/tev/{tevRequest}/certify', [TevController::class, 'certify'])->name('tev.certify');
-    Route::post('/tev/{tevRequest}/reject',  [TevController::class, 'reject'])->name('tev.reject');
+    // payroll_officer excluded: TEV is a separate department
+    Route::middleware(['role:hrmo|accountant|budget_officer|ard|cashier|chief_admin_officer'])
+        ->group(function () {
+            Route::resource('tev', TevController::class);
+            Route::post('/tev/{tevRequest}/submit',  [TevController::class, 'submit'])->name('tev.submit');
+            Route::post('/tev/{tevRequest}/approve', [TevController::class, 'approve'])->name('tev.approve');
+            Route::post('/tev/{tevRequest}/certify', [TevController::class, 'certify'])->name('tev.certify');
+            Route::post('/tev/{tevRequest}/reject',  [TevController::class, 'reject'])->name('tev.reject');
 
-    Route::post(  '/tev/{tevRequest}/itinerary',
-                  [TevItineraryController::class, 'store'])->name('tev.itinerary.store');
-    Route::put(   '/tev/{tevRequest}/itinerary/{line}',
-                  [TevItineraryController::class, 'update'])->name('tev.itinerary.update');
-    Route::delete('/tev/{tevRequest}/itinerary/{line}',
-                  [TevItineraryController::class, 'destroy'])->name('tev.itinerary.destroy');
+            Route::post(  '/tev/{tevRequest}/itinerary',
+                          [TevItineraryController::class, 'store'])->name('tev.itinerary.store');
+            Route::put(   '/tev/{tevRequest}/itinerary/{line}',
+                          [TevItineraryController::class, 'update'])->name('tev.itinerary.update');
+            Route::delete('/tev/{tevRequest}/itinerary/{line}',
+                          [TevItineraryController::class, 'destroy'])->name('tev.itinerary.destroy');
 
-                  // TEV Liquidation workflow (Phase 2B Step 3)
-    Route::post('/tev/{tevRequest}/liquidate',
-                [TevController::class, 'fileLiquidation'])->name('tev.liquidate');
-    
-    Route::post('/tev/{tevRequest}/liquidation/approve',
-                [TevController::class, 'approveLiquidation'])->name('tev.liquidation.approve');
-    
-    // Liquidation DV PDF (add alongside the other TEV report routes)
-    Route::get('/reports/tev/{tevRequest}/liquidation-dv',
-            [ReportController::class, 'tevLiquidationDv'])->name('reports.tev-liquidation-dv');
+            // TEV Liquidation workflow (Phase 2B Step 3)
+            Route::post('/tev/{tevRequest}/liquidate',
+                        [TevController::class, 'fileLiquidation'])->name('tev.liquidate');
+
+            Route::post('/tev/{tevRequest}/liquidation/approve',
+                        [TevController::class, 'approveLiquidation'])->name('tev.liquidation.approve');
+
+            // Liquidation DV PDF
+            Route::get('/reports/tev/{tevRequest}/liquidation-dv',
+                    [ReportController::class, 'tevLiquidationDv'])->name('reports.tev-liquidation-dv');
+        });
 
     // ── Reports ──────────────────────────────────────────────────
     Route::get('/reports',                    [ReportController::class, 'index'])->name('reports.index');
@@ -244,7 +252,11 @@ Route::middleware(['auth'])->group(function () {
                [ReportController::class, 'tevRegister'])->name('reports.tev-register');
 
     // ── Users ────────────────────────────────────────────────────
-    Route::resource('users', UserController::class);
+    // Temporarily managed by payroll_officer until super_admin role is added
+    Route::middleware(['role:payroll_officer'])
+        ->group(function () {
+            Route::resource('users', UserController::class);
+        });
 
 });
 

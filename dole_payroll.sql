@@ -1,13 +1,13 @@
--- MySQL dump 10.13  Distrib 8.0.45, for Linux (x86_64)
+-- MariaDB dump 10.19  Distrib 10.4.32-MariaDB, for Win64 (AMD64)
 --
--- Host: dole-payroll-mysql-venardvibe-4523.e.aivencloud.com    Database: defaultdb
+-- Host: localhost    Database: dole_payroll
 -- ------------------------------------------------------
--- Server version	8.0.45
+-- Server version	10.4.32-MariaDB
 
 /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
 /*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
 /*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
-/*!50503 SET NAMES utf8mb4 */;
+/*!40101 SET NAMES utf8mb4 */;
 /*!40103 SET @OLD_TIME_ZONE=@@TIME_ZONE */;
 /*!40103 SET TIME_ZONE='+00:00' */;
 /*!40014 SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0 */;
@@ -21,11 +21,11 @@
 
 DROP TABLE IF EXISTS `cache`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!50503 SET character_set_client = utf8mb4 */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `cache` (
-  `key` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-  `value` mediumtext CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-  `expiration` int NOT NULL,
+  `key` varchar(255) NOT NULL,
+  `value` mediumtext NOT NULL,
+  `expiration` int(11) NOT NULL,
   PRIMARY KEY (`key`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -46,11 +46,11 @@ UNLOCK TABLES;
 
 DROP TABLE IF EXISTS `cache_locks`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!50503 SET character_set_client = utf8mb4 */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `cache_locks` (
-  `key` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-  `owner` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-  `expiration` int NOT NULL,
+  `key` varchar(255) NOT NULL,
+  `owner` varchar(255) NOT NULL,
+  `expiration` int(11) NOT NULL,
   PRIMARY KEY (`key`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -70,19 +70,19 @@ UNLOCK TABLES;
 
 DROP TABLE IF EXISTS `deduction_types`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!50503 SET character_set_client = utf8mb4 */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `deduction_types` (
-  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
-  `code` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-  `name` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-  `short_name` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `category` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'misc',
-  `is_computed` tinyint(1) NOT NULL DEFAULT '0' COMMENT 'true = auto-calculated by payroll engine',
-  `is_fixed_amount` tinyint(1) NOT NULL DEFAULT '0',
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `code` varchar(50) NOT NULL,
+  `name` varchar(200) NOT NULL,
+  `short_name` varchar(50) DEFAULT NULL,
+  `category` varchar(50) NOT NULL DEFAULT 'misc',
+  `is_computed` tinyint(1) NOT NULL DEFAULT 0 COMMENT 'true = auto-calculated by payroll engine',
+  `is_fixed_amount` tinyint(1) NOT NULL DEFAULT 0,
   `default_amount` decimal(12,2) DEFAULT NULL,
-  `display_order` smallint unsigned NOT NULL DEFAULT '0',
-  `is_active` tinyint(1) NOT NULL DEFAULT '1',
-  `notes` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
+  `display_order` smallint(5) unsigned NOT NULL DEFAULT 0,
+  `is_active` tinyint(1) NOT NULL DEFAULT 1,
+  `notes` text DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
@@ -108,20 +108,20 @@ UNLOCK TABLES;
 
 DROP TABLE IF EXISTS `divisions`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!50503 SET character_set_client = utf8mb4 */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `divisions` (
-  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
-  `name` varchar(200) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-  `code` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-  `description` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
-  `is_active` tinyint(1) NOT NULL DEFAULT '1',
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `name` varchar(200) NOT NULL,
+  `code` varchar(20) NOT NULL,
+  `description` text DEFAULT NULL,
+  `is_active` tinyint(1) NOT NULL DEFAULT 1,
   `deleted_at` timestamp NULL DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `divisions_name_unique` (`name`),
   UNIQUE KEY `divisions_code_unique` (`code`)
-) ENGINE=InnoDB AUTO_INCREMENT=21 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=22 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -130,7 +130,7 @@ CREATE TABLE `divisions` (
 
 LOCK TABLES `divisions` WRITE;
 /*!40000 ALTER TABLE `divisions` DISABLE KEYS */;
-INSERT INTO `divisions` VALUES (1,'Office of the Regional Director','ORD','Office of the Regional Director, DOLE Regional Office IX',1,NULL,'2026-03-26 09:35:50','2026-03-26 09:35:50'),(2,'Internal Management Services Division','IMSD','Handles administrative, finance, and human resource functions.',1,NULL,'2026-03-26 09:35:50','2026-03-26 09:35:50'),(3,'Technical Support & Services Division','TSSD','Handles labor standards, employment facilitation, and HRIS.',1,NULL,'2026-03-26 09:35:50','2026-03-26 09:35:50'),(4,'Labor Laws Compliance Division','LLCD','Labor inspectorate and compliance monitoring.',1,NULL,'2026-03-26 09:35:50','2026-03-26 09:35:50');
+INSERT INTO `divisions` VALUES (1,'Office of the Regional Director','ORD','Office of the Regional Director, DOLE Regional Office IX',1,NULL,'2026-03-26 09:35:50','2026-03-26 09:35:50'),(2,'Internal Management Services Division','IMSD','Handles administrative, finance, and human resource functions.',1,NULL,'2026-03-26 09:35:50','2026-03-26 09:35:50'),(3,'Technical Support & Services Division','TSSD','Handles labor standards, employment facilitation, and HRIS.',1,NULL,'2026-03-26 09:35:50','2026-03-26 09:35:50'),(4,'Labor Laws Compliance Division','LLCD','Labor inspectorate and compliance monitoring.',1,NULL,'2026-03-26 09:35:50','2026-03-26 09:35:50'),(21,'DELETE MONA TO AFTER HAHAHA','1111','111',1,NULL,'2026-04-09 14:17:36','2026-04-09 14:59:35');
 /*!40000 ALTER TABLE `divisions` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -140,23 +140,23 @@ UNLOCK TABLES;
 
 DROP TABLE IF EXISTS `employee_deduction_enrollments`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!50503 SET character_set_client = utf8mb4 */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `employee_deduction_enrollments` (
-  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
-  `employee_id` bigint unsigned NOT NULL,
-  `deduction_type_id` bigint unsigned NOT NULL,
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `employee_id` bigint(20) unsigned NOT NULL,
+  `deduction_type_id` bigint(20) unsigned NOT NULL,
   `amount` decimal(12,2) NOT NULL COMMENT 'Amount per cut-off',
   `effective_from` date NOT NULL,
   `effective_to` date DEFAULT NULL COMMENT 'null = ongoing',
-  `is_active` tinyint(1) NOT NULL DEFAULT '1',
-  `remarks` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `is_active` tinyint(1) NOT NULL DEFAULT 1,
+  `remarks` varchar(255) DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `ede_unique` (`employee_id`,`deduction_type_id`,`effective_from`),
   KEY `employee_deduction_enrollments_deduction_type_id_foreign` (`deduction_type_id`),
   KEY `employee_deduction_enrollments_employee_id_is_active_index` (`employee_id`,`is_active`),
-  CONSTRAINT `employee_deduction_enrollments_deduction_type_id_foreign` FOREIGN KEY (`deduction_type_id`) REFERENCES `deduction_types` (`id`) ON DELETE RESTRICT,
+  CONSTRAINT `employee_deduction_enrollments_deduction_type_id_foreign` FOREIGN KEY (`deduction_type_id`) REFERENCES `deduction_types` (`id`),
   CONSTRAINT `employee_deduction_enrollments_employee_id_foreign` FOREIGN KEY (`employee_id`) REFERENCES `employees` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -176,28 +176,28 @@ UNLOCK TABLES;
 
 DROP TABLE IF EXISTS `employee_promotion_history`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!50503 SET character_set_client = utf8mb4 */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `employee_promotion_history` (
-  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
-  `employee_id` bigint unsigned NOT NULL,
-  `type` varchar(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'promotion, step_increment, salary_adjustment, nosi, nosa',
-  `old_salary_grade` tinyint unsigned NOT NULL,
-  `old_step` tinyint unsigned NOT NULL,
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `employee_id` bigint(20) unsigned NOT NULL,
+  `type` varchar(30) NOT NULL COMMENT 'promotion, step_increment, salary_adjustment, nosi, nosa',
+  `old_salary_grade` tinyint(3) unsigned NOT NULL,
+  `old_step` tinyint(3) unsigned NOT NULL,
   `old_basic_salary` decimal(12,2) NOT NULL,
-  `new_salary_grade` tinyint unsigned NOT NULL,
-  `new_step` tinyint unsigned NOT NULL,
+  `new_salary_grade` tinyint(3) unsigned NOT NULL,
+  `new_step` tinyint(3) unsigned NOT NULL,
   `new_basic_salary` decimal(12,2) NOT NULL,
   `effectivity_date` date NOT NULL,
-  `csb_no` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'Civil Service Bulletin No.',
-  `remarks` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `recorded_by` bigint unsigned NOT NULL,
+  `csb_no` varchar(50) DEFAULT NULL COMMENT 'Civil Service Bulletin No.',
+  `remarks` varchar(255) DEFAULT NULL,
+  `recorded_by` bigint(20) unsigned NOT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `employee_promotion_history_recorded_by_foreign` (`recorded_by`),
   KEY `employee_promotion_history_employee_id_effectivity_date_index` (`employee_id`,`effectivity_date`),
   CONSTRAINT `employee_promotion_history_employee_id_foreign` FOREIGN KEY (`employee_id`) REFERENCES `employees` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `employee_promotion_history_recorded_by_foreign` FOREIGN KEY (`recorded_by`) REFERENCES `users` (`id`) ON DELETE RESTRICT
+  CONSTRAINT `employee_promotion_history_recorded_by_foreign` FOREIGN KEY (`recorded_by`) REFERENCES `users` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -216,37 +216,37 @@ UNLOCK TABLES;
 
 DROP TABLE IF EXISTS `employees`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!50503 SET character_set_client = utf8mb4 */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `employees` (
-  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
-  `plantilla_item_no` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-  `employee_no` varchar(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `last_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-  `first_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-  `middle_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `suffix` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `plantilla_item_no` varchar(50) NOT NULL,
+  `employee_no` varchar(30) DEFAULT NULL,
+  `last_name` varchar(255) NOT NULL,
+  `first_name` varchar(255) NOT NULL,
+  `middle_name` varchar(255) DEFAULT NULL,
+  `suffix` varchar(10) DEFAULT NULL,
   `date_of_birth` date DEFAULT NULL,
-  `gender` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `civil_status` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `position_title` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-  `salary_grade` tinyint unsigned NOT NULL,
-  `step` tinyint unsigned NOT NULL,
-  `sit_year` smallint unsigned NOT NULL DEFAULT '2022',
+  `gender` varchar(10) DEFAULT NULL,
+  `civil_status` varchar(20) DEFAULT NULL,
+  `position_title` varchar(255) NOT NULL,
+  `salary_grade` tinyint(3) unsigned NOT NULL,
+  `step` tinyint(3) unsigned NOT NULL,
+  `sit_year` smallint(5) unsigned NOT NULL DEFAULT 2022,
   `basic_salary` decimal(12,2) NOT NULL,
-  `pera` decimal(10,2) NOT NULL DEFAULT '2000.00' COMMENT 'Personnel Economic Relief Allowance',
-  `division_id` bigint unsigned NOT NULL,
-  `employment_status` varchar(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'permanent' COMMENT 'permanent, casual, coterminous',
+  `pera` decimal(10,2) NOT NULL DEFAULT 2000.00 COMMENT 'Personnel Economic Relief Allowance',
+  `division_id` bigint(20) unsigned NOT NULL,
+  `employment_status` varchar(30) NOT NULL DEFAULT 'permanent' COMMENT 'permanent, casual, coterminous',
   `original_appointment_date` date DEFAULT NULL,
   `last_promotion_date` date DEFAULT NULL,
   `hire_date` date NOT NULL,
-  `gsis_bp_no` varchar(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `pagibig_no` varchar(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `philhealth_no` varchar(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `tin` varchar(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `sss_no` varchar(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `vacation_leave_balance` decimal(6,3) NOT NULL DEFAULT '0.000',
-  `sick_leave_balance` decimal(6,3) NOT NULL DEFAULT '0.000',
-  `status` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'active' COMMENT 'active, on_leave, separated, retired',
+  `gsis_bp_no` varchar(30) DEFAULT NULL,
+  `pagibig_no` varchar(30) DEFAULT NULL,
+  `philhealth_no` varchar(30) DEFAULT NULL,
+  `tin` varchar(30) DEFAULT NULL,
+  `sss_no` varchar(30) DEFAULT NULL,
+  `vacation_leave_balance` decimal(6,3) NOT NULL DEFAULT 0.000,
+  `sick_leave_balance` decimal(6,3) NOT NULL DEFAULT 0.000,
+  `status` varchar(20) NOT NULL DEFAULT 'active' COMMENT 'active, on_leave, separated, retired',
   `deleted_at` timestamp NULL DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
@@ -256,7 +256,7 @@ CREATE TABLE `employees` (
   KEY `employees_last_name_first_name_index` (`last_name`,`first_name`),
   KEY `employees_division_id_index` (`division_id`),
   KEY `employees_status_index` (`status`),
-  CONSTRAINT `employees_division_id_foreign` FOREIGN KEY (`division_id`) REFERENCES `divisions` (`id`) ON DELETE RESTRICT
+  CONSTRAINT `employees_division_id_foreign` FOREIGN KEY (`division_id`) REFERENCES `divisions` (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -276,15 +276,15 @@ UNLOCK TABLES;
 
 DROP TABLE IF EXISTS `failed_jobs`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!50503 SET character_set_client = utf8mb4 */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `failed_jobs` (
-  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
-  `uuid` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-  `connection` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-  `queue` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-  `payload` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-  `exception` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-  `failed_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `uuid` varchar(255) NOT NULL,
+  `connection` text NOT NULL,
+  `queue` text NOT NULL,
+  `payload` longtext NOT NULL,
+  `exception` longtext NOT NULL,
+  `failed_at` timestamp NOT NULL DEFAULT current_timestamp(),
   PRIMARY KEY (`id`),
   UNIQUE KEY `failed_jobs_uuid_unique` (`uuid`)
 ) ENGINE=InnoDB AUTO_INCREMENT=45 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -306,18 +306,18 @@ UNLOCK TABLES;
 
 DROP TABLE IF EXISTS `job_batches`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!50503 SET character_set_client = utf8mb4 */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `job_batches` (
-  `id` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-  `name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-  `total_jobs` int NOT NULL,
-  `pending_jobs` int NOT NULL,
-  `failed_jobs` int NOT NULL,
-  `failed_job_ids` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-  `options` mediumtext CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
-  `cancelled_at` int DEFAULT NULL,
-  `created_at` int NOT NULL,
-  `finished_at` int DEFAULT NULL,
+  `id` varchar(255) NOT NULL,
+  `name` varchar(255) NOT NULL,
+  `total_jobs` int(11) NOT NULL,
+  `pending_jobs` int(11) NOT NULL,
+  `failed_jobs` int(11) NOT NULL,
+  `failed_job_ids` longtext NOT NULL,
+  `options` mediumtext DEFAULT NULL,
+  `cancelled_at` int(11) DEFAULT NULL,
+  `created_at` int(11) NOT NULL,
+  `finished_at` int(11) DEFAULT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -337,15 +337,15 @@ UNLOCK TABLES;
 
 DROP TABLE IF EXISTS `jobs`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!50503 SET character_set_client = utf8mb4 */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `jobs` (
-  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
-  `queue` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-  `payload` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-  `attempts` tinyint unsigned NOT NULL,
-  `reserved_at` int unsigned DEFAULT NULL,
-  `available_at` int unsigned NOT NULL,
-  `created_at` int unsigned NOT NULL,
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `queue` varchar(255) NOT NULL,
+  `payload` longtext NOT NULL,
+  `attempts` tinyint(3) unsigned NOT NULL,
+  `reserved_at` int(10) unsigned DEFAULT NULL,
+  `available_at` int(10) unsigned NOT NULL,
+  `created_at` int(10) unsigned NOT NULL,
   PRIMARY KEY (`id`),
   KEY `jobs_queue_index` (`queue`)
 ) ENGINE=InnoDB AUTO_INCREMENT=115 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -366,11 +366,11 @@ UNLOCK TABLES;
 
 DROP TABLE IF EXISTS `migrations`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!50503 SET character_set_client = utf8mb4 */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `migrations` (
-  `id` int unsigned NOT NULL AUTO_INCREMENT,
-  `migration` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-  `batch` int NOT NULL,
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `migration` varchar(255) NOT NULL,
+  `batch` int(11) NOT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=29 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -391,11 +391,11 @@ UNLOCK TABLES;
 
 DROP TABLE IF EXISTS `model_has_permissions`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!50503 SET character_set_client = utf8mb4 */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `model_has_permissions` (
-  `permission_id` bigint unsigned NOT NULL,
-  `model_type` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-  `model_id` bigint unsigned NOT NULL,
+  `permission_id` bigint(20) unsigned NOT NULL,
+  `model_type` varchar(255) NOT NULL,
+  `model_id` bigint(20) unsigned NOT NULL,
   PRIMARY KEY (`permission_id`,`model_id`,`model_type`),
   KEY `model_has_permissions_model_id_model_type_index` (`model_id`,`model_type`),
   CONSTRAINT `model_has_permissions_permission_id_foreign` FOREIGN KEY (`permission_id`) REFERENCES `permissions` (`id`) ON DELETE CASCADE
@@ -417,11 +417,11 @@ UNLOCK TABLES;
 
 DROP TABLE IF EXISTS `model_has_roles`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!50503 SET character_set_client = utf8mb4 */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `model_has_roles` (
-  `role_id` bigint unsigned NOT NULL,
-  `model_type` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-  `model_id` bigint unsigned NOT NULL,
+  `role_id` bigint(20) unsigned NOT NULL,
+  `model_type` varchar(255) NOT NULL,
+  `model_id` bigint(20) unsigned NOT NULL,
   PRIMARY KEY (`role_id`,`model_id`,`model_type`),
   KEY `model_has_roles_model_id_model_type_index` (`model_id`,`model_type`),
   CONSTRAINT `model_has_roles_role_id_foreign` FOREIGN KEY (`role_id`) REFERENCES `roles` (`id`) ON DELETE CASCADE
@@ -444,20 +444,20 @@ UNLOCK TABLES;
 
 DROP TABLE IF EXISTS `office_orders`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!50503 SET character_set_client = utf8mb4 */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `office_orders` (
-  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
-  `office_order_no` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-  `employee_id` bigint unsigned NOT NULL,
-  `purpose` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-  `destination` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-  `travel_type` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'local' COMMENT 'local, regional, national',
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `office_order_no` varchar(50) NOT NULL,
+  `employee_id` bigint(20) unsigned NOT NULL,
+  `purpose` varchar(255) NOT NULL,
+  `destination` varchar(255) NOT NULL,
+  `travel_type` varchar(20) NOT NULL DEFAULT 'local' COMMENT 'local, regional, national',
   `travel_date_start` date NOT NULL,
   `travel_date_end` date NOT NULL,
-  `status` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'draft' COMMENT 'draft, approved, cancelled',
-  `approved_by` bigint unsigned DEFAULT NULL,
+  `status` varchar(20) NOT NULL DEFAULT 'draft' COMMENT 'draft, approved, cancelled',
+  `approved_by` bigint(20) unsigned DEFAULT NULL,
   `approved_at` timestamp NULL DEFAULT NULL,
-  `remarks` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `remarks` varchar(255) DEFAULT NULL,
   `deleted_at` timestamp NULL DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
@@ -466,7 +466,7 @@ CREATE TABLE `office_orders` (
   KEY `office_orders_approved_by_foreign` (`approved_by`),
   KEY `office_orders_employee_id_status_index` (`employee_id`,`status`),
   CONSTRAINT `office_orders_approved_by_foreign` FOREIGN KEY (`approved_by`) REFERENCES `users` (`id`) ON DELETE SET NULL,
-  CONSTRAINT `office_orders_employee_id_foreign` FOREIGN KEY (`employee_id`) REFERENCES `employees` (`id`) ON DELETE RESTRICT
+  CONSTRAINT `office_orders_employee_id_foreign` FOREIGN KEY (`employee_id`) REFERENCES `employees` (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -486,10 +486,10 @@ UNLOCK TABLES;
 
 DROP TABLE IF EXISTS `password_reset_tokens`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!50503 SET character_set_client = utf8mb4 */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `password_reset_tokens` (
-  `email` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-  `token` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `email` varchar(255) NOT NULL,
+  `token` varchar(255) NOT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`email`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -510,22 +510,22 @@ UNLOCK TABLES;
 
 DROP TABLE IF EXISTS `payroll_audit_log`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!50503 SET character_set_client = utf8mb4 */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `payroll_audit_log` (
-  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
-  `payroll_batch_id` bigint unsigned DEFAULT NULL,
-  `user_id` bigint unsigned NOT NULL,
-  `action` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-  `old_value` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `new_value` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `notes` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
-  `ip_address` varchar(45) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `performed_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `payroll_batch_id` bigint(20) unsigned DEFAULT NULL,
+  `user_id` bigint(20) unsigned NOT NULL,
+  `action` text NOT NULL,
+  `old_value` varchar(255) DEFAULT NULL,
+  `new_value` varchar(255) DEFAULT NULL,
+  `notes` text DEFAULT NULL,
+  `ip_address` varchar(45) DEFAULT NULL,
+  `performed_at` timestamp NOT NULL DEFAULT current_timestamp(),
   PRIMARY KEY (`id`),
   KEY `payroll_audit_log_payroll_batch_id_performed_at_index` (`payroll_batch_id`,`performed_at`),
   KEY `payroll_audit_log_user_id_index` (`user_id`),
   CONSTRAINT `payroll_audit_log_payroll_batch_id_foreign` FOREIGN KEY (`payroll_batch_id`) REFERENCES `payroll_batches` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `payroll_audit_log_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE RESTRICT
+  CONSTRAINT `payroll_audit_log_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=27 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -545,25 +545,25 @@ UNLOCK TABLES;
 
 DROP TABLE IF EXISTS `payroll_batches`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!50503 SET character_set_client = utf8mb4 */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `payroll_batches` (
-  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
-  `period_year` smallint unsigned NOT NULL,
-  `period_month` tinyint unsigned NOT NULL,
-  `cutoff` varchar(5) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `period_year` smallint(5) unsigned NOT NULL,
+  `period_month` tinyint(3) unsigned NOT NULL,
+  `cutoff` varchar(5) NOT NULL,
   `period_start` date NOT NULL,
   `period_end` date NOT NULL,
   `release_date` date DEFAULT NULL,
-  `status` varchar(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'draft',
+  `status` varchar(30) NOT NULL DEFAULT 'draft',
   `prepared_at` timestamp NULL DEFAULT NULL,
-  `reviewed_by` bigint unsigned DEFAULT NULL,
+  `reviewed_by` bigint(20) unsigned DEFAULT NULL,
   `reviewed_at` timestamp NULL DEFAULT NULL,
-  `created_by` bigint unsigned DEFAULT NULL,
-  `approved_by` bigint unsigned DEFAULT NULL,
+  `created_by` bigint(20) unsigned DEFAULT NULL,
+  `approved_by` bigint(20) unsigned DEFAULT NULL,
   `approved_at` timestamp NULL DEFAULT NULL,
   `released_at` timestamp NULL DEFAULT NULL,
-  `released_by` bigint unsigned DEFAULT NULL,
-  `remarks` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `released_by` bigint(20) unsigned DEFAULT NULL,
+  `remarks` varchar(255) DEFAULT NULL,
   `deleted_at` timestamp NULL DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
@@ -595,23 +595,23 @@ UNLOCK TABLES;
 
 DROP TABLE IF EXISTS `payroll_deductions`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!50503 SET character_set_client = utf8mb4 */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `payroll_deductions` (
-  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
-  `payroll_entry_id` bigint unsigned NOT NULL,
-  `deduction_type_id` bigint unsigned NOT NULL,
-  `code` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-  `name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `payroll_entry_id` bigint(20) unsigned NOT NULL,
+  `deduction_type_id` bigint(20) unsigned NOT NULL,
+  `code` varchar(50) NOT NULL,
+  `name` varchar(100) NOT NULL,
   `amount` decimal(12,2) NOT NULL,
-  `is_overridden` tinyint(1) NOT NULL DEFAULT '0',
-  `override_reason` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `is_overridden` tinyint(1) NOT NULL DEFAULT 0,
+  `override_reason` varchar(255) DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `pd_unique` (`payroll_entry_id`,`deduction_type_id`),
   KEY `payroll_deductions_deduction_type_id_foreign` (`deduction_type_id`),
   KEY `payroll_deductions_payroll_entry_id_index` (`payroll_entry_id`),
-  CONSTRAINT `payroll_deductions_deduction_type_id_foreign` FOREIGN KEY (`deduction_type_id`) REFERENCES `deduction_types` (`id`) ON DELETE RESTRICT,
+  CONSTRAINT `payroll_deductions_deduction_type_id_foreign` FOREIGN KEY (`deduction_type_id`) REFERENCES `deduction_types` (`id`),
   CONSTRAINT `payroll_deductions_payroll_entry_id_foreign` FOREIGN KEY (`payroll_entry_id`) REFERENCES `payroll_entries` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=31 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -632,32 +632,32 @@ UNLOCK TABLES;
 
 DROP TABLE IF EXISTS `payroll_entries`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!50503 SET character_set_client = utf8mb4 */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `payroll_entries` (
-  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
-  `payroll_batch_id` bigint unsigned NOT NULL,
-  `employee_id` bigint unsigned NOT NULL,
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `payroll_batch_id` bigint(20) unsigned NOT NULL,
+  `employee_id` bigint(20) unsigned NOT NULL,
   `basic_salary` decimal(12,2) NOT NULL,
-  `pera` decimal(10,2) NOT NULL DEFAULT '2000.00',
-  `rata` decimal(10,2) NOT NULL DEFAULT '0.00',
-  `gross_income` decimal(12,2) NOT NULL DEFAULT '0.00',
-  `lwop_days` decimal(5,3) NOT NULL DEFAULT '0.000',
-  `lwop_deduction` decimal(10,2) NOT NULL DEFAULT '0.00',
-  `tardiness` decimal(10,2) NOT NULL DEFAULT '0.00',
-  `undertime` decimal(10,2) NOT NULL DEFAULT '0.00',
-  `total_deductions` decimal(12,2) NOT NULL DEFAULT '0.00',
-  `withholding_tax` decimal(10,2) NOT NULL DEFAULT '0.00',
-  `net_amount` decimal(12,2) NOT NULL DEFAULT '0.00',
-  `status` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'computed',
-  `is_manually_overridden` tinyint(1) NOT NULL DEFAULT '0',
-  `override_notes` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
+  `pera` decimal(10,2) NOT NULL DEFAULT 2000.00,
+  `rata` decimal(10,2) NOT NULL DEFAULT 0.00,
+  `gross_income` decimal(12,2) NOT NULL DEFAULT 0.00,
+  `lwop_days` decimal(5,3) NOT NULL DEFAULT 0.000,
+  `lwop_deduction` decimal(10,2) NOT NULL DEFAULT 0.00,
+  `tardiness` decimal(10,2) NOT NULL DEFAULT 0.00,
+  `undertime` decimal(10,2) NOT NULL DEFAULT 0.00,
+  `total_deductions` decimal(12,2) NOT NULL DEFAULT 0.00,
+  `withholding_tax` decimal(10,2) NOT NULL DEFAULT 0.00,
+  `net_amount` decimal(12,2) NOT NULL DEFAULT 0.00,
+  `status` varchar(20) NOT NULL DEFAULT 'computed',
+  `is_manually_overridden` tinyint(1) NOT NULL DEFAULT 0,
+  `override_notes` text DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `pe_unique` (`payroll_batch_id`,`employee_id`),
   KEY `payroll_entries_employee_id_foreign` (`employee_id`),
   KEY `payroll_entries_payroll_batch_id_status_index` (`payroll_batch_id`,`status`),
-  CONSTRAINT `payroll_entries_employee_id_foreign` FOREIGN KEY (`employee_id`) REFERENCES `employees` (`id`) ON DELETE RESTRICT,
+  CONSTRAINT `payroll_entries_employee_id_foreign` FOREIGN KEY (`employee_id`) REFERENCES `employees` (`id`),
   CONSTRAINT `payroll_entries_payroll_batch_id_foreign` FOREIGN KEY (`payroll_batch_id`) REFERENCES `payroll_batches` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -678,15 +678,15 @@ UNLOCK TABLES;
 
 DROP TABLE IF EXISTS `per_diem_rates`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!50503 SET character_set_client = utf8mb4 */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `per_diem_rates` (
-  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
-  `travel_type` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'local, regional, national',
-  `destination_category` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'e.g. Metro Manila, Regional Center, Others',
-  `year` smallint unsigned NOT NULL,
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `travel_type` varchar(20) NOT NULL COMMENT 'local, regional, national',
+  `destination_category` varchar(50) DEFAULT NULL COMMENT 'e.g. Metro Manila, Regional Center, Others',
+  `year` smallint(5) unsigned NOT NULL,
   `daily_rate` decimal(10,2) NOT NULL COMMENT 'Full day per diem per COA Circular',
   `half_day_rate` decimal(10,2) DEFAULT NULL,
-  `coa_circular_ref` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'e.g. COA Circular 2021-001',
+  `coa_circular_ref` varchar(50) DEFAULT NULL COMMENT 'e.g. COA Circular 2021-001',
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
@@ -710,11 +710,11 @@ UNLOCK TABLES;
 
 DROP TABLE IF EXISTS `permissions`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!50503 SET character_set_client = utf8mb4 */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `permissions` (
-  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
-  `name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-  `guard_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `name` varchar(255) NOT NULL,
+  `guard_name` varchar(255) NOT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
@@ -737,14 +737,14 @@ UNLOCK TABLES;
 
 DROP TABLE IF EXISTS `personal_access_tokens`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!50503 SET character_set_client = utf8mb4 */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `personal_access_tokens` (
-  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
-  `tokenable_type` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-  `tokenable_id` bigint unsigned NOT NULL,
-  `name` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-  `token` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-  `abilities` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `tokenable_type` varchar(255) NOT NULL,
+  `tokenable_id` bigint(20) unsigned NOT NULL,
+  `name` text NOT NULL,
+  `token` varchar(64) NOT NULL,
+  `abilities` text DEFAULT NULL,
   `last_used_at` timestamp NULL DEFAULT NULL,
   `expires_at` timestamp NULL DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
@@ -771,10 +771,10 @@ UNLOCK TABLES;
 
 DROP TABLE IF EXISTS `role_has_permissions`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!50503 SET character_set_client = utf8mb4 */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `role_has_permissions` (
-  `permission_id` bigint unsigned NOT NULL,
-  `role_id` bigint unsigned NOT NULL,
+  `permission_id` bigint(20) unsigned NOT NULL,
+  `role_id` bigint(20) unsigned NOT NULL,
   PRIMARY KEY (`permission_id`,`role_id`),
   KEY `role_has_permissions_role_id_foreign` (`role_id`),
   CONSTRAINT `role_has_permissions_permission_id_foreign` FOREIGN KEY (`permission_id`) REFERENCES `permissions` (`id`) ON DELETE CASCADE,
@@ -797,11 +797,11 @@ UNLOCK TABLES;
 
 DROP TABLE IF EXISTS `roles`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!50503 SET character_set_client = utf8mb4 */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `roles` (
-  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
-  `name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-  `guard_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `name` varchar(255) NOT NULL,
+  `guard_name` varchar(255) NOT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
@@ -825,12 +825,12 @@ UNLOCK TABLES;
 
 DROP TABLE IF EXISTS `salary_index_tables`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!50503 SET character_set_client = utf8mb4 */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `salary_index_tables` (
-  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
-  `salary_grade` tinyint unsigned NOT NULL,
-  `step` tinyint unsigned NOT NULL,
-  `year` smallint unsigned NOT NULL,
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `salary_grade` tinyint(3) unsigned NOT NULL,
+  `step` tinyint(3) unsigned NOT NULL,
+  `year` smallint(5) unsigned NOT NULL,
   `amount` decimal(12,2) NOT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
@@ -856,14 +856,14 @@ UNLOCK TABLES;
 
 DROP TABLE IF EXISTS `sessions`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!50503 SET character_set_client = utf8mb4 */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `sessions` (
-  `id` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-  `user_id` bigint unsigned DEFAULT NULL,
-  `ip_address` varchar(45) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `user_agent` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
-  `payload` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-  `last_activity` int NOT NULL,
+  `id` varchar(255) NOT NULL,
+  `user_id` bigint(20) unsigned DEFAULT NULL,
+  `ip_address` varchar(45) DEFAULT NULL,
+  `user_agent` text DEFAULT NULL,
+  `payload` longtext NOT NULL,
+  `last_activity` int(11) NOT NULL,
   PRIMARY KEY (`id`),
   KEY `sessions_user_id_index` (`user_id`),
   KEY `sessions_last_activity_index` (`last_activity`)
@@ -876,7 +876,7 @@ CREATE TABLE `sessions` (
 
 LOCK TABLES `sessions` WRITE;
 /*!40000 ALTER TABLE `sessions` DISABLE KEYS */;
-INSERT INTO `sessions` VALUES ('EIn4NR8S9n7x5lPAviuIJpV2dmIkgWMjKZIysTSc',1,'127.0.0.1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36 Edg/146.0.0.0','YTo0OntzOjY6Il90b2tlbiI7czo0MDoiVTdNUzl3dXFPajFJS2ZEMlpnWm9rSzVlcWROamd6YmJiTDJ6SnpMaiI7czo5OiJfcHJldmlvdXMiO2E6MTp7czozOiJ1cmwiO3M6Mjc6Imh0dHA6Ly8xMjcuMC4wLjE6ODAwMC91c2VycyI7fXM6NjoiX2ZsYXNoIjthOjI6e3M6Mzoib2xkIjthOjA6e31zOjM6Im5ldyI7YTowOnt9fXM6NTA6ImxvZ2luX3dlYl81OWJhMzZhZGRjMmIyZjk0MDE1ODBmMDE0YzdmNThlYTRlMzA5ODlkIjtpOjE7fQ==',1775484694);
+INSERT INTO `sessions` VALUES ('AUB2yR0054pIolgKehzEhKeEpQeU1M4FwLXGJKUI',1,'127.0.0.1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36 Edg/146.0.0.0','YTo0OntzOjY6Il90b2tlbiI7czo0MDoiN0ZSZWJRdWhYMmRaZEpRWVlraWMxMm9TSUJmdXJlV0FxSjVVQXNWbCI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6MTp7czozOiJ1cmwiO3M6Mjc6Imh0dHA6Ly8xMjcuMC4wLjE6ODAwMC91c2VycyI7fXM6NTA6ImxvZ2luX3dlYl81OWJhMzZhZGRjMmIyZjk0MDE1ODBmMDE0YzdmNThlYTRlMzA5ODlkIjtpOjE7fQ==',1775747741),('o61gBHAHIJmdrWBZ2OT9lcMTQkNjwBhD3I8pCRrh',1,'127.0.0.1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36 Edg/146.0.0.0','YTo1OntzOjY6Il90b2tlbiI7czo0MDoiME9TVFdINFE0bTUwWjlwOFo5MXdZd2dvSFNhTm5sUTR3TTYxeU50VSI7czozOiJ1cmwiO2E6MDp7fXM6OToiX3ByZXZpb3VzIjthOjE6e3M6MzoidXJsIjtzOjMxOiJodHRwOi8vMTI3LjAuMC4xOjgwMDAvZGl2aXNpb25zIjt9czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo1MDoibG9naW5fd2ViXzU5YmEzNmFkZGMyYjJmOTQwMTU4MGYwMTRjN2Y1OGVhNGUzMDk4OWQiO2k6MTt9',1775744256);
 /*!40000 ALTER TABLE `sessions` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -886,35 +886,35 @@ UNLOCK TABLES;
 
 DROP TABLE IF EXISTS `special_payroll_batches`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!50503 SET character_set_client = utf8mb4 */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `special_payroll_batches` (
-  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
-  `type` varchar(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'newly_hired, salary_differential, nosi, nosa, step_increment',
-  `title` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-  `year` smallint unsigned NOT NULL,
-  `month` tinyint unsigned NOT NULL,
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `type` varchar(30) NOT NULL COMMENT 'newly_hired, salary_differential, nosi, nosa, step_increment',
+  `title` varchar(255) NOT NULL,
+  `year` smallint(5) unsigned NOT NULL,
+  `month` tinyint(3) unsigned NOT NULL,
   `effectivity_date` date NOT NULL,
   `period_start` date DEFAULT NULL,
   `period_end` date DEFAULT NULL,
-  `employee_id` bigint unsigned NOT NULL,
+  `employee_id` bigint(20) unsigned NOT NULL,
   `old_basic_salary` decimal(12,2) DEFAULT NULL,
   `new_basic_salary` decimal(12,2) DEFAULT NULL,
   `differential_amount` decimal(12,2) DEFAULT NULL,
   `pro_rated_days` decimal(5,3) DEFAULT NULL COMMENT 'Days worked out of 22-day denominator',
-  `gross_amount` decimal(12,2) NOT NULL DEFAULT '0.00',
-  `deductions_amount` decimal(12,2) NOT NULL DEFAULT '0.00',
-  `net_amount` decimal(12,2) NOT NULL DEFAULT '0.00',
-  `status` varchar(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'draft',
-  `approved_by` bigint unsigned DEFAULT NULL,
+  `gross_amount` decimal(12,2) NOT NULL DEFAULT 0.00,
+  `deductions_amount` decimal(12,2) NOT NULL DEFAULT 0.00,
+  `net_amount` decimal(12,2) NOT NULL DEFAULT 0.00,
+  `status` varchar(30) NOT NULL DEFAULT 'draft',
+  `approved_by` bigint(20) unsigned DEFAULT NULL,
   `approved_at` timestamp NULL DEFAULT NULL,
-  `remarks` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `remarks` varchar(255) DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `special_payroll_batches_approved_by_foreign` (`approved_by`),
   KEY `special_payroll_batches_employee_id_type_year_index` (`employee_id`,`type`,`year`),
   CONSTRAINT `special_payroll_batches_approved_by_foreign` FOREIGN KEY (`approved_by`) REFERENCES `users` (`id`) ON DELETE SET NULL,
-  CONSTRAINT `special_payroll_batches_employee_id_foreign` FOREIGN KEY (`employee_id`) REFERENCES `employees` (`id`) ON DELETE RESTRICT
+  CONSTRAINT `special_payroll_batches_employee_id_foreign` FOREIGN KEY (`employee_id`) REFERENCES `employees` (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=9 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -934,21 +934,21 @@ UNLOCK TABLES;
 
 DROP TABLE IF EXISTS `tev_approval_logs`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!50503 SET character_set_client = utf8mb4 */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `tev_approval_logs` (
-  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
-  `tev_request_id` bigint unsigned NOT NULL,
-  `user_id` bigint unsigned NOT NULL,
-  `step` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'submitted, hr_approved, accountant_certified, rd_approved, cashier_released',
-  `action` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'approved, rejected, returned',
-  `remarks` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
-  `ip_address` varchar(45) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `performed_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `tev_request_id` bigint(20) unsigned NOT NULL,
+  `user_id` bigint(20) unsigned NOT NULL,
+  `step` varchar(50) NOT NULL COMMENT 'submitted, hr_approved, accountant_certified, rd_approved, cashier_released',
+  `action` varchar(20) NOT NULL COMMENT 'approved, rejected, returned',
+  `remarks` text DEFAULT NULL,
+  `ip_address` varchar(45) DEFAULT NULL,
+  `performed_at` timestamp NOT NULL DEFAULT current_timestamp(),
   PRIMARY KEY (`id`),
   KEY `tev_approval_logs_user_id_foreign` (`user_id`),
   KEY `tev_approval_logs_tev_request_id_performed_at_index` (`tev_request_id`,`performed_at`),
   CONSTRAINT `tev_approval_logs_tev_request_id_foreign` FOREIGN KEY (`tev_request_id`) REFERENCES `tev_requests` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `tev_approval_logs_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE RESTRICT
+  CONSTRAINT `tev_approval_logs_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -968,19 +968,19 @@ UNLOCK TABLES;
 
 DROP TABLE IF EXISTS `tev_certifications`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!50503 SET character_set_client = utf8mb4 */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `tev_certifications` (
-  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
-  `tev_request_id` bigint unsigned NOT NULL,
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `tev_request_id` bigint(20) unsigned NOT NULL,
   `date_returned` date DEFAULT NULL,
-  `place_reported_back` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `travel_completed` tinyint(1) NOT NULL DEFAULT '0',
-  `annex_a_amount` decimal(10,2) NOT NULL DEFAULT '0.00',
-  `annex_a_particulars` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
-  `agency_visited` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `place_reported_back` varchar(100) DEFAULT NULL,
+  `travel_completed` tinyint(1) NOT NULL DEFAULT 0,
+  `annex_a_amount` decimal(10,2) NOT NULL DEFAULT 0.00,
+  `annex_a_particulars` text DEFAULT NULL,
+  `agency_visited` varchar(255) DEFAULT NULL,
   `appearance_date` date DEFAULT NULL,
-  `contact_person` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `certified_by` bigint unsigned DEFAULT NULL,
+  `contact_person` varchar(255) DEFAULT NULL,
+  `certified_by` bigint(20) unsigned DEFAULT NULL,
   `certified_at` timestamp NULL DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
@@ -1007,20 +1007,20 @@ UNLOCK TABLES;
 
 DROP TABLE IF EXISTS `tev_itinerary_lines`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!50503 SET character_set_client = utf8mb4 */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `tev_itinerary_lines` (
-  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
-  `tev_request_id` bigint unsigned NOT NULL,
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `tev_request_id` bigint(20) unsigned NOT NULL,
   `travel_date` date NOT NULL,
-  `origin` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-  `destination` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `origin` varchar(255) NOT NULL,
+  `destination` varchar(255) NOT NULL,
   `departure_time` time DEFAULT NULL,
   `arrival_time` time DEFAULT NULL,
-  `mode_of_transport` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'bus, jeepney, boat, plane, vehicle',
-  `transportation_cost` decimal(10,2) NOT NULL DEFAULT '0.00',
-  `per_diem_amount` decimal(10,2) NOT NULL DEFAULT '0.00' COMMENT 'From per_diem_rates lookup',
-  `is_half_day` tinyint(1) NOT NULL DEFAULT '0',
-  `remarks` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `mode_of_transport` varchar(50) DEFAULT NULL COMMENT 'bus, jeepney, boat, plane, vehicle',
+  `transportation_cost` decimal(10,2) NOT NULL DEFAULT 0.00,
+  `per_diem_amount` decimal(10,2) NOT NULL DEFAULT 0.00 COMMENT 'From per_diem_rates lookup',
+  `is_half_day` tinyint(1) NOT NULL DEFAULT 0,
+  `remarks` varchar(255) DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
@@ -1045,29 +1045,29 @@ UNLOCK TABLES;
 
 DROP TABLE IF EXISTS `tev_requests`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!50503 SET character_set_client = utf8mb4 */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `tev_requests` (
-  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
-  `tev_no` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-  `office_order_id` bigint unsigned NOT NULL,
-  `employee_id` bigint unsigned NOT NULL,
-  `track` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'reimbursement' COMMENT 'cash_advance, reimbursement',
-  `purpose` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-  `destination` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-  `travel_type` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'local',
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `tev_no` varchar(50) NOT NULL,
+  `office_order_id` bigint(20) unsigned NOT NULL,
+  `employee_id` bigint(20) unsigned NOT NULL,
+  `track` varchar(20) NOT NULL DEFAULT 'reimbursement' COMMENT 'cash_advance, reimbursement',
+  `purpose` varchar(255) NOT NULL,
+  `destination` varchar(255) NOT NULL,
+  `travel_type` varchar(20) NOT NULL DEFAULT 'local',
   `travel_date_start` date NOT NULL,
   `travel_date_end` date NOT NULL,
-  `total_days` int NOT NULL DEFAULT '0',
-  `total_per_diem` decimal(12,2) NOT NULL DEFAULT '0.00',
-  `total_transportation` decimal(10,2) NOT NULL DEFAULT '0.00',
-  `total_other_expenses` decimal(10,2) NOT NULL DEFAULT '0.00',
-  `grand_total` decimal(12,2) NOT NULL DEFAULT '0.00',
-  `cash_advance_amount` decimal(12,2) NOT NULL DEFAULT '0.00' COMMENT 'Amount released if CA track',
-  `balance_due` decimal(12,2) NOT NULL DEFAULT '0.00' COMMENT 'Grand total minus CA amount',
-  `status` varchar(30) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'draft' COMMENT 'draft, submitted, hr_approved, accountant_certified, rd_approved, cashier_released, completed',
-  `submitted_by` bigint unsigned DEFAULT NULL,
+  `total_days` int(11) NOT NULL DEFAULT 0,
+  `total_per_diem` decimal(12,2) NOT NULL DEFAULT 0.00,
+  `total_transportation` decimal(10,2) NOT NULL DEFAULT 0.00,
+  `total_other_expenses` decimal(10,2) NOT NULL DEFAULT 0.00,
+  `grand_total` decimal(12,2) NOT NULL DEFAULT 0.00,
+  `cash_advance_amount` decimal(12,2) NOT NULL DEFAULT 0.00 COMMENT 'Amount released if CA track',
+  `balance_due` decimal(12,2) NOT NULL DEFAULT 0.00 COMMENT 'Grand total minus CA amount',
+  `status` varchar(30) NOT NULL DEFAULT 'draft' COMMENT 'draft, submitted, hr_approved, accountant_certified, rd_approved, cashier_released, completed',
+  `submitted_by` bigint(20) unsigned DEFAULT NULL,
   `submitted_at` timestamp NULL DEFAULT NULL,
-  `remarks` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `remarks` varchar(255) DEFAULT NULL,
   `deleted_at` timestamp NULL DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
@@ -1076,8 +1076,8 @@ CREATE TABLE `tev_requests` (
   KEY `tev_requests_submitted_by_foreign` (`submitted_by`),
   KEY `tev_requests_employee_id_status_index` (`employee_id`,`status`),
   KEY `tev_requests_office_order_id_index` (`office_order_id`),
-  CONSTRAINT `tev_requests_employee_id_foreign` FOREIGN KEY (`employee_id`) REFERENCES `employees` (`id`) ON DELETE RESTRICT,
-  CONSTRAINT `tev_requests_office_order_id_foreign` FOREIGN KEY (`office_order_id`) REFERENCES `office_orders` (`id`) ON DELETE RESTRICT,
+  CONSTRAINT `tev_requests_employee_id_foreign` FOREIGN KEY (`employee_id`) REFERENCES `employees` (`id`),
+  CONSTRAINT `tev_requests_office_order_id_foreign` FOREIGN KEY (`office_order_id`) REFERENCES `office_orders` (`id`),
   CONSTRAINT `tev_requests_submitted_by_foreign` FOREIGN KEY (`submitted_by`) REFERENCES `users` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -1098,14 +1098,14 @@ UNLOCK TABLES;
 
 DROP TABLE IF EXISTS `users`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!50503 SET character_set_client = utf8mb4 */;
+/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `users` (
-  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
-  `name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-  `email` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `name` varchar(255) NOT NULL,
+  `email` varchar(255) NOT NULL,
   `email_verified_at` timestamp NULL DEFAULT NULL,
-  `password` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-  `remember_token` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `password` varchar(255) NOT NULL,
+  `remember_token` varchar(100) DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
@@ -1119,9 +1119,13 @@ CREATE TABLE `users` (
 
 LOCK TABLES `users` WRITE;
 /*!40000 ALTER TABLE `users` DISABLE KEYS */;
-INSERT INTO `users` VALUES (1,'Payroll Admin','admin@dole9.gov.ph','2026-03-26 09:36:27','$2y$12$yj/i7z4VX7RgCsvXPQ5uQe6i6SV6ct0eUhT60oKblIjSaXU9tcQPa',NULL,'2026-03-26 09:36:28','2026-03-26 09:36:28'),(2,'Test HRMO','hrmo@dole9.gov.ph','2026-04-05 11:36:46','$2y$12$eVciJfCB2pLX8KpQSR3nY.auzPs8G2w7xMl6mHQUYp/UoRkwn/pw2',NULL,'2026-04-05 11:36:46','2026-04-05 11:36:46'),(3,'Test Accountant','accountant@dole9.gov.ph','2026-04-05 11:36:50','$2y$12$8oVTUI60Z0Y0snxQAgM5bOljSOCUgWgv6SUz.oueJtb5Qq0o4rDKa',NULL,'2026-04-05 11:36:51','2026-04-05 11:36:51'),(4,'Test Budget Officer','budget@dole9.gov.ph','2026-04-05 11:36:53','$2y$12$6Hgd3bNc7taAzUW9F2JqJ.Be9D6OPG7g97mu/Z./sSW1VNpaGET9K',NULL,'2026-04-05 11:36:53','2026-04-05 11:36:53'),(5,'Test Chief Admin Officer','cao@dole9.gov.ph','2026-04-05 11:36:55','$2y$12$PUq.D1fKS4mwGzwjq6h5EOP38heDW9UiSWRHkz/tJY.Mh6pfc5bWq',NULL,'2026-04-05 11:36:55','2026-04-05 11:36:55'),(6,'Test ARD','ard@dole9.gov.ph','2026-04-05 11:36:57','$2y$12$H6nB3oJQzs5JFXk31nBmlOPP3PhHaKZ8dHro0KyfmUp8YcUkprsFC',NULL,'2026-04-05 11:36:57','2026-04-05 11:36:57'),(7,'Test Cashier','cashier@dole9.gov.ph','2026-04-05 11:37:00','$2y$12$DmvglORAPPb1W9DKemyEN.i7qLaEmq6XGByTm8DH1D7Vh3H189Bie',NULL,'2026-04-05 11:37:00','2026-04-05 11:37:00');
+INSERT INTO `users` VALUES (1,'Payroll Officer','admin@dole9.gov.ph','2026-03-26 09:36:27','$2y$12$yj/i7z4VX7RgCsvXPQ5uQe6i6SV6ct0eUhT60oKblIjSaXU9tcQPa',NULL,'2026-03-26 09:36:28','2026-04-09 15:15:12'),(2,'HRMO','hrmo@dole9.gov.ph','2026-04-05 11:36:46','$2y$12$eVciJfCB2pLX8KpQSR3nY.auzPs8G2w7xMl6mHQUYp/UoRkwn/pw2',NULL,'2026-04-05 11:36:46','2026-04-09 15:15:41'),(3,'Accountant','accountant@dole9.gov.ph','2026-04-05 11:36:50','$2y$12$8oVTUI60Z0Y0snxQAgM5bOljSOCUgWgv6SUz.oueJtb5Qq0o4rDKa',NULL,'2026-04-05 11:36:51','2026-04-09 15:14:48'),(4,'Budget Officer','budget@dole9.gov.ph','2026-04-05 11:36:53','$2y$12$6Hgd3bNc7taAzUW9F2JqJ.Be9D6OPG7g97mu/Z./sSW1VNpaGET9K',NULL,'2026-04-05 11:36:53','2026-04-09 15:15:18'),(5,'Chief Admin Officer','cao@dole9.gov.ph','2026-04-05 11:36:55','$2y$12$PUq.D1fKS4mwGzwjq6h5EOP38heDW9UiSWRHkz/tJY.Mh6pfc5bWq',NULL,'2026-04-05 11:36:55','2026-04-09 15:15:34'),(6,'ARD','ard@dole9.gov.ph','2026-04-05 11:36:57','$2y$12$H6nB3oJQzs5JFXk31nBmlOPP3PhHaKZ8dHro0KyfmUp8YcUkprsFC',NULL,'2026-04-05 11:36:57','2026-04-09 15:14:56'),(7,'Cashier','cashier@dole9.gov.ph','2026-04-05 11:37:00','$2y$12$DmvglORAPPb1W9DKemyEN.i7qLaEmq6XGByTm8DH1D7Vh3H189Bie',NULL,'2026-04-05 11:37:00','2026-04-09 15:15:25');
 /*!40000 ALTER TABLE `users` ENABLE KEYS */;
 UNLOCK TABLES;
+
+--
+-- Dumping routines for database 'dole_payroll'
+--
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 
 /*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
@@ -1132,4 +1136,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2026-04-09  6:08:44
+-- Dump completed on 2026-04-09 23:16:42

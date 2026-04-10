@@ -25,7 +25,7 @@ class TevController extends Controller
     // ─────────────────────────────────────────────────────────────────────
     public function index(Request $request)
     {
-        $this->authorizeRole(['payroll_officer', 'hrmo', 'accountant', 'ard', 'cashier']);
+        $this->authorizeRole(['hrmo', 'accountant', 'budget_officer', 'ard', 'chief_admin_officer', 'cashier']);
 
         $query = TevRequest::with(['employee', 'officeOrder'])->orderByDesc('id');
 
@@ -44,7 +44,7 @@ class TevController extends Controller
     // ─────────────────────────────────────────────────────────────────────
     public function create()
     {
-        $this->authorizeRole(['payroll_officer', 'hrmo']);
+        $this->authorizeRole(['hrmo']);
 
         $approvedOrders = OfficeOrder::with('employee')
             ->where('status', 'approved')
@@ -58,10 +58,12 @@ class TevController extends Controller
 
     // ─────────────────────────────────────────────────────────────────────
     //  Store  POST /tev
+    //  NOTE: TEV is auto-submitted on creation (no manual submit step needed).
+    //  HRMO always files on behalf of employees, so draft is redundant.
     // ─────────────────────────────────────────────────────────────────────
     public function store(StoreTevRequest $request)
     {
-        $this->authorizeRole(['payroll_officer', 'hrmo']);
+        $this->authorizeRole(['hrmo']);
 
         $validated = $request->validated();
 
@@ -77,7 +79,10 @@ class TevController extends Controller
                 'travel_date_start'    => $validated['travel_date_start'],
                 'travel_date_end'      => $validated['travel_date_end'],
                 'total_other_expenses' => 0,
-                'status'               => 'draft',
+                // ── Auto-submitted: HRMO files directly to accountant queue ──
+                'status'               => 'submitted',
+                'submitted_by'         => Auth::id(),
+                'submitted_at'         => now(),
                 'remarks'              => $validated['remarks'] ?? null,
             ]);
 
@@ -99,11 +104,21 @@ class TevController extends Controller
 
             $this->tevService->computeTotals($tev);
 
+            // Log the auto-submission in the approval timeline
+            TevApprovalLog::create([
+                'tev_request_id' => $tev->id,
+                'user_id'        => Auth::id(),
+                'step'           => 'submitted',
+                'action'         => 'approved',
+                'remarks'        => 'Auto-submitted on creation by HRMO.',
+                'ip_address'     => $request->ip(),
+            ]);
+
             PayrollAuditLog::create([
                 'user_id'    => Auth::id(),
-                'action'     => 'Created TEV: ' . $tev->tev_no,
+                'action'     => 'Created & Submitted TEV: ' . $tev->tev_no,
                 'old_value'  => null,
-                'new_value'  => 'draft',
+                'new_value'  => 'submitted',
                 'ip_address' => $request->ip(),
             ]);
 
@@ -111,7 +126,7 @@ class TevController extends Controller
         });
 
         return redirect()->route('tev.show', $this->lastCreatedId)
-            ->with('success', 'TEV created successfully.');
+            ->with('success', 'TEV created and submitted to the Accountant for review.');
     }
 
     private int $lastCreatedId;
@@ -121,7 +136,7 @@ class TevController extends Controller
     // ─────────────────────────────────────────────────────────────────────
     public function show(int $id)
     {
-        $this->authorizeRole(['payroll_officer', 'hrmo', 'accountant', 'ard', 'cashier']);
+        $this->authorizeRole(['hrmo', 'accountant', 'budget_officer', 'ard', 'chief_admin_officer', 'cashier']);
 
         $tev = TevRequest::with([
             'employee',
@@ -137,64 +152,33 @@ class TevController extends Controller
     }
 
     // ─────────────────────────────────────────────────────────────────────
-    //  Submit  POST /tev/{tevRequest}/submit
+    //  submit() — kept for legacy safety but should not be reachable.
+    //  TEVs are now auto-submitted on creation. This method aborts if called.
     // ─────────────────────────────────────────────────────────────────────
     public function submit(Request $request, int $tevRequest)
     {
-        $tev  = TevRequest::findOrFail($tevRequest);
-        $user = Auth::user();
-
-        $isOwner = $tev->employee && $tev->employee->user_id === $user->id;
-        $isStaff = $user->hasAnyRole(['payroll_officer', 'hrmo']);
-
-        if (!$isOwner && !$isStaff) abort(403);
-
-        if ($tev->status !== 'draft') {
-            return back()->with('error', 'Only draft TEV requests can be submitted.');
-        }
-        if ($tev->itineraryLines()->count() === 0) {
-            return back()->with('error', 'Add at least one itinerary line before submitting.');
-        }
-
-        $tev->update([
-            'status'       => 'submitted',
-            'submitted_by' => Auth::id(),
-            'submitted_at' => now(),
-        ]);
-
-        TevApprovalLog::create([
-            'tev_request_id' => $tev->id,
-            'user_id'        => Auth::id(),
-            'step'           => 'submitted',
-            'action'         => 'approved',
-            'remarks'        => null,
-            'ip_address'     => $request->ip(),
-        ]);
-
-        PayrollAuditLog::create([
-            'user_id'    => Auth::id(),
-            'action'     => 'Submitted TEV: ' . $tev->tev_no,
-            'old_value'  => 'draft',
-            'new_value'  => 'submitted',
-            'ip_address' => $request->ip(),
-        ]);
-
-        return redirect()->route('tev.show', $tev->id)
-            ->with('success', 'TEV submitted for approval.');
+        // TEVs are auto-submitted on creation — manual submit is no longer used.
+        abort(410, 'Manual submission is no longer required. TEVs are automatically submitted on creation.');
     }
 
     // ─────────────────────────────────────────────────────────────────────
     //  Approve (generic role-based transition)  POST /tev/{tevRequest}/approve
     // ─────────────────────────────────────────────────────────────────────
-    public function approve(Request $request, int $tevRequest)
-    {
-        $tev = TevRequest::findOrFail($tevRequest);
-        $request->validate(['remarks' => ['nullable', 'string', 'max:500']]);
+public function approve(Request $request, int $tevRequest)
+{
+    $tev = TevRequest::findOrFail($tevRequest);
+    $request->validate(['remarks' => ['nullable', 'string', 'max:500']]);
 
-        [$newStatus, $stepLabel] = $this->resolveTransition($tev);
-        $old = $tev->status;
+    [$newStatus, $stepLabel] = $this->resolveTransition($tev);
+    $old = $tev->status;
 
-        $tev->update(['status' => $newStatus]);
+    // ── When cashier releases a CA, record the advance amount ──
+    $updateData = ['status' => $newStatus];
+    if ($newStatus === 'cashier_released') {
+        $updateData['cash_advance_amount'] = $tev->grand_total;
+    }
+
+    $tev->update($updateData);
 
         TevApprovalLog::create([
             'tev_request_id' => $tev->id,
@@ -229,11 +213,17 @@ class TevController extends Controller
             ['remarks.required' => 'A reason is required when rejecting a TEV.']
         );
 
-        $this->authorizeRole(['payroll_officer', 'hrmo', 'accountant', 'ard', 'chief_admin_officer', 'cashier']);
+        // Each role may only reject at the step they are responsible for.
+        // This mirrors the blade $canReject logic and must stay in sync.
+        $user = Auth::user();
+        $authorized = (
+            ($tev->status === 'submitted'            && $user->hasAnyRole(['accountant'])) ||
+            ($tev->status === 'accountant_certified' && $user->hasAnyRole(['ard', 'chief_admin_officer'])) ||
+            ($tev->status === 'rd_approved'          && $user->hasAnyRole(['cashier']))
+        );
 
-        $terminal = ['draft', 'rejected', 'cashier_released', 'reimbursed', 'liquidation_filed', 'liquidated'];
-        if (in_array($tev->status, $terminal)) {
-            return back()->with('error', 'This TEV cannot be rejected at its current status.');
+        if (!$authorized) {
+            abort(403, 'You are not authorized to reject this TEV at its current status.');
         }
 
         $old = $tev->status;
@@ -265,7 +255,7 @@ class TevController extends Controller
     // ─────────────────────────────────────────────────────────────────────
     public function certify(Request $request, int $tevRequest)
     {
-        $this->authorizeRole(['payroll_officer', 'hrmo', 'accountant']);
+        $this->authorizeRole(['hrmo', 'accountant']);
 
         $tev = TevRequest::findOrFail($tevRequest);
 
@@ -308,7 +298,7 @@ class TevController extends Controller
 
     // ─────────────────────────────────────────────────────────────────────
     //  File Liquidation  POST /tev/{tevRequest}/liquidate
-    //  Employee/payroll officer files actual expenses after CA release
+    //  HRMO files actual expenses after CA release
     // ─────────────────────────────────────────────────────────────────────
     public function fileLiquidation(Request $request, int $tevRequest)
     {
@@ -324,7 +314,7 @@ class TevController extends Controller
         }
 
         $isOwner = $tev->employee && $tev->employee->user_id === $user->id;
-        $isStaff = $user->hasAnyRole(['payroll_officer', 'hrmo']);
+        $isStaff = $user->hasAnyRole(['hrmo']);
 
         if (!$isOwner && !$isStaff) {
             abort(403, 'You are not authorized to file liquidation for this TEV.');
@@ -436,8 +426,7 @@ class TevController extends Controller
         $status = $tev->status;
 
         $map = [
-            'submitted'            => [['hrmo', 'payroll_officer'],   'HR Approve'],
-            'hr_approved'          => [['accountant'],                 'Certify (Accountant)'],
+            'submitted'            => [['accountant'],                 'Certify (Accountant)'],
             'accountant_certified' => [['ard', 'chief_admin_officer'], 'RD Approve'],
             'rd_approved'          => [['cashier'],                    $tev->track === 'cash_advance' ? 'Release Cash Advance' : 'Mark Reimbursed'],
             'liquidation_filed'    => [['cashier'],                    'Approve Liquidation'],
@@ -448,7 +437,6 @@ class TevController extends Controller
         }
 
         [$roles, $label] = $map[$status];
-
         return [$user->hasAnyRole($roles), $label];
     }
 
@@ -457,10 +445,7 @@ class TevController extends Controller
         $user   = Auth::user();
         $status = $tev->status;
 
-        if ($status === 'submitted' && $user->hasAnyRole(['hrmo', 'payroll_officer'])) {
-            return ['hr_approved', 'HR Approved'];
-        }
-        if ($status === 'hr_approved' && $user->hasAnyRole(['accountant'])) {
+        if ($status === 'submitted' && $user->hasAnyRole(['accountant'])) {
             return ['accountant_certified', 'Accountant Certified'];
         }
         if ($status === 'accountant_certified' && $user->hasAnyRole(['ard', 'chief_admin_officer'])) {
@@ -472,7 +457,6 @@ class TevController extends Controller
             return [$newStatus, $label];
         }
 
-        // liquidation_filed → liquidated is handled by approveLiquidation(), not this method
         abort(403, 'You are not authorized to approve this TEV at its current status.');
     }
 

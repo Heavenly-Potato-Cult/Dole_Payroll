@@ -56,7 +56,6 @@
     margin-bottom: 14px; font-size: 0.78rem; color: var(--text-mid); line-height: 1.6;
     overflow: hidden;
 }
-/* Toggle button — hidden on desktop, shown on mobile via media query */
 .itin-example-toggle {
     display: none;
     width: 100%; background: none; border: none; cursor: pointer;
@@ -66,18 +65,16 @@
 }
 .itin-example-toggle-icon { font-size: 0.68rem; transition: transform 0.22s; flex-shrink: 0; }
 .itin-example-toggle[aria-expanded="true"] .itin-example-toggle-icon { transform: rotate(180deg); }
-/* Body always visible on desktop */
 .itin-example-body { padding: 10px 14px 12px; display: block; }
-/* Inner table wrapper scrolls independently */
 .itin-example-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; margin-top: 8px; }
 .itin-example-table { width: 100%; border-collapse: collapse; font-size: 0.76rem; min-width: 400px; }
-.itin-example-table th { 
-    padding: 4px 8px; 
-    border: 1px solid #c8cfe8; 
-    background: var(--navy);  /* Navy blue background */
-    color: #fff;              /* White text for contrast */
-    text-align: left; 
-    white-space: nowrap; 
+.itin-example-table th {
+    padding: 4px 8px;
+    border: 1px solid #c8cfe8;
+    background: var(--navy);
+    color: #fff;
+    text-align: left;
+    white-space: nowrap;
 }
 .itin-example-table td { padding: 4px 8px; border: 1px solid #c8cfe8; }
 .itin-tips { margin-top: 8px; font-size: 0.74rem; color: #7B5800; line-height: 1.7; }
@@ -104,6 +101,16 @@
 .step-num { width: 20px; height: 20px; border-radius: 50%; flex-shrink: 0; background: var(--border); color: var(--text-light); display: flex; align-items: center; justify-content: center; font-size: 0.70rem; font-weight: 700; }
 .step-item.active .step-num { background: var(--navy); color: #fff; }
 
+/* ── Auto-submit notice ── */
+.autosubmit-notice {
+    display: flex; align-items: flex-start; gap: 12px;
+    background: #EEF3FF; border: 1px solid #4F73D9; border-radius: 8px;
+    padding: 12px 16px; font-size: 0.79rem; color: #1A3A8F; margin-bottom: 20px;
+    line-height: 1.55;
+}
+.autosubmit-notice .an-icon { font-size: 1.2rem; flex-shrink: 0; margin-top: 1px; }
+@media print { .autosubmit-notice { display: none !important; } }
+
 /* ── Layout grid ── */
 .tev-create-grid { display: grid; grid-template-columns: 1fr 300px; gap: 20px; align-items: start; max-width: 100%; }
 .tev-left-col    { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
@@ -113,13 +120,11 @@
 /* ════════════════════════════════════════
    RESPONSIVE
 ════════════════════════════════════════ */
-/* Tablet */
 @media (max-width: 900px) {
     .tev-create-grid { grid-template-columns: 1fr; }
     .tev-right-panel { position: static; order: -1; }
 }
 
-/* Large phone */
 @media (max-width: 768px) {
     .track-cards    { grid-template-columns: 1fr; gap: 10px; }
     .form-row-grid  { grid-template-columns: 1fr; gap: 12px; }
@@ -128,13 +133,11 @@
     .step-indicator { display: none; }
     .tev-right-panel { position: static; }
 
-    /* Activate accordion for example hint */
     .itin-example-toggle { display: flex; }
     .itin-example-body   { display: none; padding: 0 14px; }
     .itin-example-body.open { display: block; padding: 0 14px 12px; }
 }
 
-/* Phone */
 @media (max-width: 600px) {
     body { overflow-x: hidden; }
     .tev-create-grid, .card, .card-body, .card-header,
@@ -151,7 +154,6 @@
     .form-row-grid { grid-template-columns: 1fr; gap: 10px; }
 }
 
-/* Small phone */
 @media (max-width: 480px) {
     .itin-card-row { grid-template-columns: 1fr; gap: 8px; }
     .itin-card     { padding: 12px; }
@@ -169,7 +171,7 @@
 <div class="page-header">
     <div class="page-header-left">
         <h1>New TEV Request</h1>
-        <p class="text-muted">Travel Expense Voucher — fill in all sections then click <strong>Save TEV Request</strong>.</p>
+        <p class="text-muted">Travel Expense Voucher — fill in all sections then click <strong>Submit TEV Request</strong>. The TEV will be sent directly to the Accountant for review.</p>
     </div>
     <a href="{{ route('tev.index') }}" class="btn btn-outline btn-sm">← Back to List</a>
 </div>
@@ -183,12 +185,22 @@
 </div>
 @endif
 
+{{-- Auto-submit notice ── --}}
+<div class="autosubmit-notice">
+    <span class="an-icon">📬</span>
+    <div>
+        <strong>Heads up:</strong> Once you click <strong>Submit TEV Request</strong>, this TEV will be
+        <strong>automatically sent to the Accountant</strong> for review — no separate submission step needed.
+        Make sure all itinerary lines are complete before saving.
+    </div>
+</div>
+
 <div class="step-indicator">
     <div class="step-item active"><div class="step-num">1</div> Select Office Order</div>
     <div class="step-item active"><div class="step-num">2</div> Choose Track</div>
     <div class="step-item active"><div class="step-num">3</div> Travel Details</div>
     <div class="step-item active"><div class="step-num">4</div> Itinerary Lines</div>
-    <div class="step-item active"><div class="step-num">5</div> Save</div>
+    <div class="step-item active"><div class="step-num">5</div> Submit</div>
 </div>
 
 @php
@@ -209,6 +221,15 @@
 
 <form method="POST" action="{{ route('tev.store') }}" id="tevForm">
 @csrf
+
+{{--
+    ══════════════════════════════════════════════════════════════════════
+    HIDDEN INPUTS — Single source of truth for itinerary lines.
+    These are the ONLY inputs submitted to the server for itinerary data.
+    The desktop table and mobile cards are purely visual (no name attrs).
+    ══════════════════════════════════════════════════════════════════════
+--}}
+<div id="hiddenLineInputs" style="display:none;"></div>
 
 <div class="tev-create-grid">
 
@@ -344,12 +365,10 @@
 
                 {{-- Example hint — accordion on mobile ── --}}
                 <div class="itin-example">
-                    {{-- Toggle button: only visible on mobile via CSS ── --}}
                     <button type="button" class="itin-example-toggle" id="itinExampleToggle" aria-expanded="false">
                         <span>💡 How to fill this section — tap to expand</span>
                         <span class="itin-example-toggle-icon">▼</span>
                     </button>
-                    {{-- Content: always open on desktop, toggled on mobile ── --}}
                     <div class="itin-example-body" id="itinExampleBody">
                         <strong>How to fill this section:</strong> Each row is one <em>leg</em> of your journey.
                         Enter place names (not dates) in the <strong>From</strong> and <strong>To</strong> columns.<br>
@@ -388,7 +407,7 @@
                     </div>
                 </div>
 
-                {{-- Desktop table ── --}}
+                {{-- Desktop table — visual only, NO name attributes on inputs ── --}}
                 <div class="itin-desktop">
                     <table>
                         <thead>
@@ -418,7 +437,7 @@
                     </table>
                 </div>
 
-                {{-- Mobile cards ── --}}
+                {{-- Mobile cards — visual only, NO name attributes on inputs ── --}}
                 <div class="itin-mobile" id="itinMobileContainer"></div>
 
                 <div id="itin-empty" style="text-align:center; padding:24px; color:var(--text-light); font-size:0.83rem; display:none;">
@@ -452,16 +471,16 @@
         <div class="card">
             <div class="card-body">
                 <div style="font-size:0.78rem; color:var(--text-mid); margin-bottom:14px; line-height:1.5;">
-                    Review all sections before saving.<br>
-                    Per diem rates are auto-filled from the selected travel type.
+                    Review all sections before submitting.<br>
+                    This TEV will go <strong>directly to the Accountant</strong> — no extra step required.
                 </div>
-                <button type="submit" class="btn btn-primary" style="width:100%;">💾 Save TEV Request</button>
+                <button type="submit" class="btn btn-primary" style="width:100%;">📤 Submit TEV Request</button>
                 <a href="{{ route('tev.index') }}" class="btn btn-outline" style="width:100%; margin-top:8px; display:block; text-align:center;">Cancel</a>
             </div>
         </div>
 
         <div style="background:#fff; border:1px solid var(--border); border-radius:8px; padding:12px 14px; font-size:0.76rem; line-height:1.7; color:var(--text-mid);">
-            <div style="font-weight:700; color:var(--navy); margin-bottom:6px;">✅ Before you save:</div>
+            <div style="font-weight:700; color:var(--navy); margin-bottom:6px;">✅ Before you submit:</div>
             <div>☐ Office Order selected</div>
             <div>☐ Track chosen (CA or Reimb.)</div>
             <div>☐ Travel dates set</div>
@@ -487,6 +506,9 @@
     var currentType    = document.getElementById('travel_type').value || 'local';
     var rowsData       = [];
 
+    // ── Cached OO date start (for auto-filling first itinerary row) ───────
+    var ooDateStart = '';
+
     // ── Example accordion (mobile) ────────────────────────────────────────
     var exToggle = document.getElementById('itinExampleToggle');
     var exBody   = document.getElementById('itinExampleBody');
@@ -505,6 +527,7 @@
         if (!opt || !opt.value) {
             document.getElementById('oo-preview').style.display  = 'none';
             document.getElementById('perdiem-info').style.display = 'none';
+            ooDateStart = '';
             return;
         }
         var dest = opt.getAttribute('data-destination') || '';
@@ -512,6 +535,9 @@
         var purp = opt.getAttribute('data-purpose')     || '';
         var dS   = opt.getAttribute('data-date-start')  || '';
         var dE   = opt.getAttribute('data-date-end')    || '';
+
+        // Store OO start date for itinerary auto-fill
+        ooDateStart = dS;
 
         document.getElementById('oo-destination').textContent  = dest;
         document.getElementById('oo-travel-type').textContent  = type.charAt(0).toUpperCase() + type.slice(1);
@@ -537,6 +563,13 @@
                 'Half day: ₱' + rates.half_day.toLocaleString('en-PH', {minimumFractionDigits:2});
             document.getElementById('perdiem-info').style.display = 'block';
         }
+
+        // ── Auto-fill travel_date on the FIRST itinerary row from OO start date ──
+        if (dS && rowsData.length > 0) {
+            rowsData[0].travel_date = dS;
+            renderAllRows();
+        }
+
         refreshAllPerDiem();
     }
 
@@ -561,10 +594,10 @@
         return half ? rates.half_day : rates.daily;
     }
     function refreshAllPerDiem() {
-        rowsData.forEach(function (row, idx) {
+        rowsData.forEach(function (row) {
             row.per_diem_amount = getDailyRate(row.is_half_day || false);
-            updateRowUI(idx);
         });
+        renderAllRows();
         updateTotals();
     }
 
@@ -586,31 +619,61 @@
         document.getElementById('itin-empty').style.display   = rowsData.length === 0 ? 'block' : 'none';
     }
 
-    // ── Row UI sync ───────────────────────────────────────────────────────
-    function updateRowUI(idx) {
-        var row = rowsData[idx]; if (!row) return;
-        var dr = document.getElementById('desktop-row-' + idx);
-        if (dr) {
-            dr.querySelector('.itin-transport').value = row.transportation_cost;
-            dr.querySelector('.itin-perdiem').value   = row.per_diem_amount;
-            dr.querySelector('.itin-halfday').checked = row.is_half_day;
-        }
-        var mc = document.getElementById('mobile-card-' + idx);
-        if (mc) {
-            mc.querySelector('.itin-mobile-transport').value = row.transportation_cost;
-            mc.querySelector('.itin-mobile-perdiem').value   = row.per_diem_amount;
-            mc.querySelector('.itin-mobile-halfday').checked = row.is_half_day;
-        }
-    }
+    // ── Update a single field in rowsData then sync hidden inputs ─────────
     function updateRowValue(idx, field, value) {
         if (!rowsData[idx]) return;
         rowsData[idx][field] = value;
-        if (field === 'is_half_day') rowsData[idx].per_diem_amount = getDailyRate(value);
-        updateRowUI(idx);
+        if (field === 'is_half_day') {
+            rowsData[idx].per_diem_amount = getDailyRate(value);
+            syncRowDisplayPerdiem(idx);
+        }
+        syncHiddenInputs();
         updateTotals();
     }
 
-    // ── Render all rows ───────────────────────────────────────────────────
+    // Sync only the per-diem display fields for a given row
+    function syncRowDisplayPerdiem(idx) {
+        var row = rowsData[idx];
+        if (!row) return;
+        var dr = document.getElementById('desktop-row-' + idx);
+        if (dr) {
+            var pd = dr.querySelector('.itin-perdiem');
+            if (pd) pd.value = row.per_diem_amount;
+        }
+        var mc = document.getElementById('mobile-card-' + idx);
+        if (mc) {
+            var mpd = mc.querySelector('.itin-mobile-perdiem');
+            if (mpd) mpd.value = row.per_diem_amount;
+        }
+    }
+
+    // ══════════════════════════════════════════════════════════════════════
+    // HIDDEN INPUT SYNC
+    // ══════════════════════════════════════════════════════════════════════
+    function syncHiddenInputs() {
+        var container = document.getElementById('hiddenLineInputs');
+        container.innerHTML = '';
+        var fields = [
+            'travel_date', 'origin', 'destination', 'departure_time',
+            'arrival_time', 'mode_of_transport', 'transportation_cost',
+            'per_diem_amount', 'is_half_day'
+        ];
+        rowsData.forEach(function (row, idx) {
+            fields.forEach(function (field) {
+                var inp = document.createElement('input');
+                inp.type  = 'hidden';
+                inp.name  = 'lines[' + idx + '][' + field + ']';
+                if (field === 'is_half_day') {
+                    inp.value = row.is_half_day ? '1' : '';
+                } else {
+                    inp.value = row[field] !== undefined ? row[field] : '';
+                }
+                container.appendChild(inp);
+            });
+        });
+    }
+
+    // ── Render all rows (visual only — no name attributes) ───────────────
     function renderAllRows() {
         var dtb  = document.getElementById('itinBodyDesktop');
         var mob  = document.getElementById('itinMobileContainer');
@@ -623,33 +686,40 @@
                 return '<option value="' + m + '"' + sel + '>' + m.charAt(0).toUpperCase() + m.slice(1) + '</option>';
             }).join('');
 
-            // Desktop row
+            // ── Desktop row (NO name attributes) ──
             var tr = document.createElement('tr');
             tr.id  = 'desktop-row-' + idx;
             tr.innerHTML =
-                '<td><input type="date"   name="lines['+idx+'][travel_date]"         value="'+(row.travel_date||'')+'" required></td>'+
-                '<td><input type="text"   name="lines['+idx+'][origin]"              value="'+escHtml(row.origin||'')+'" placeholder="e.g. DOLE RO9 Office" required></td>'+
-                '<td><input type="text"   name="lines['+idx+'][destination]"         value="'+escHtml(row.destination||'')+'" placeholder="e.g. Dipolog City" required></td>'+
-                '<td><input type="time"   name="lines['+idx+'][departure_time]"      value="'+(row.departure_time||'')+'"></td>'+
-                '<td><input type="time"   name="lines['+idx+'][arrival_time]"        value="'+(row.arrival_time||'')+'"></td>'+
-                '<td><select name="lines['+idx+'][mode_of_transport]" required><option value="">— select —</option>'+modeOpts+'</select></td>'+
-                '<td><input type="number" name="lines['+idx+'][transportation_cost]" value="'+(row.transportation_cost||0)+'" step="0.01" min="0" class="itin-transport" required placeholder="0.00"></td>'+
-                '<td style="text-align:center;"><input type="checkbox" name="lines['+idx+'][is_half_day]" value="1" class="itin-halfday"'+(row.is_half_day?' checked':'')+'>'+
-                '<td><input type="number" name="lines['+idx+'][per_diem_amount]"     value="'+(row.per_diem_amount||0)+'" step="0.01" min="0" class="itin-perdiem" required placeholder="0.00"></td>'+
+                '<td><input type="date"   data-field="travel_date"         value="'+(row.travel_date||'')+'"></td>'+
+                '<td><input type="text"   data-field="origin"              value="'+escHtml(row.origin||'')+'" placeholder="e.g. DOLE RO9 Office"></td>'+
+                '<td><input type="text"   data-field="destination"         value="'+escHtml(row.destination||'')+'" placeholder="e.g. Dipolog City"></td>'+
+                '<td><input type="time"   data-field="departure_time"      value="'+(row.departure_time||'')+'"></td>'+
+                '<td><input type="time"   data-field="arrival_time"        value="'+(row.arrival_time||'')+'"></td>'+
+                '<td><select data-field="mode_of_transport"><option value="">— select —</option>'+modeOpts+'</select></td>'+
+                '<td><input type="number" data-field="transportation_cost" value="'+(row.transportation_cost||0)+'" step="0.01" min="0" class="itin-transport" placeholder="0.00"></td>'+
+                '<td style="text-align:center;"><input type="checkbox" data-field="is_half_day" class="itin-halfday"'+(row.is_half_day?' checked':'')+'></td>'+
+                '<td><input type="number" data-field="per_diem_amount"     value="'+(row.per_diem_amount||0)+'" step="0.01" min="0" class="itin-perdiem" placeholder="0.00"></td>'+
                 '<td><button type="button" class="btn btn-sm btn-danger" onclick="tevRemoveRow('+idx+')" style="padding:3px 8px;">✕</button></td>';
 
-            tr.querySelector('.itin-transport').addEventListener('input',  function(e){ updateRowValue(idx,'transportation_cost',e.target.value); });
-            tr.querySelector('.itin-perdiem').addEventListener('input',    function(e){ updateRowValue(idx,'per_diem_amount',e.target.value); });
-            tr.querySelector('.itin-halfday').addEventListener('change',   function(e){ updateRowValue(idx,'is_half_day',e.target.checked); });
-            tr.querySelectorAll('input[type="date"],input[type="text"],input[type="time"],select').forEach(function(el){
-                if (el.name) {
-                    var m = el.name.match(/\[([^\]]+)\]$/);
-                    if (m) el.addEventListener('change', function(e){ updateRowValue(idx, m[1], e.target.value); });
-                }
+            tr.querySelectorAll('[data-field]').forEach(function(el) {
+                var field = el.getAttribute('data-field');
+                var evt   = (el.type === 'checkbox') ? 'change' : 'input';
+                el.addEventListener(evt, function() {
+                    var val = (el.type === 'checkbox') ? el.checked : el.value;
+                    updateRowValue(idx, field, val);
+                    var mc = document.getElementById('mobile-card-' + idx);
+                    if (mc) {
+                        var mEl = mc.querySelector('[data-field="' + field + '"]');
+                        if (mEl && mEl !== el) {
+                            if (mEl.type === 'checkbox') mEl.checked = el.checked;
+                            else mEl.value = el.value;
+                        }
+                    }
+                });
             });
             dtb.appendChild(tr);
 
-            // Mobile card
+            // ── Mobile card (NO name attributes) ──
             var card = document.createElement('div');
             card.className = 'itin-card';
             card.id        = 'mobile-card-' + idx;
@@ -659,44 +729,56 @@
                     '<button type="button" class="itin-card-remove" onclick="tevRemoveRow('+idx+')">✕ Remove</button>'+
                 '</div>'+
                 '<div class="itin-card-row">'+
-                    '<div class="itin-card-field"><label>Travel Date *</label><input type="date" name="lines['+idx+'][travel_date]" value="'+(row.travel_date||'')+'" required class="itin-mobile-date"></div>'+
-                    '<div class="itin-card-field"><label>Mode *</label><select name="lines['+idx+'][mode_of_transport]" required class="itin-mobile-mode"><option value="">— select —</option>'+modeOpts+'</select></div>'+
+                    '<div class="itin-card-field"><label>Travel Date *</label><input type="date" data-field="travel_date" value="'+(row.travel_date||'')+'"></div>'+
+                    '<div class="itin-card-field"><label>Mode *</label><select data-field="mode_of_transport"><option value="">— select —</option>'+modeOpts+'</select></div>'+
                 '</div>'+
-                '<div class="itin-card-field"><label>From (Origin) *</label><input type="text" name="lines['+idx+'][origin]" value="'+escHtml(row.origin||'')+'" placeholder="e.g. DOLE RO9 Office" required class="itin-mobile-origin"><p class="field-hint">Place name where you departed from</p></div>'+
-                '<div class="itin-card-field"><label>To (Destination) *</label><input type="text" name="lines['+idx+'][destination]" value="'+escHtml(row.destination||'')+'" placeholder="e.g. Dipolog City" required class="itin-mobile-dest"><p class="field-hint">Place name where you arrived</p></div>'+
+                '<div class="itin-card-field"><label>From (Origin) *</label><input type="text" data-field="origin" value="'+escHtml(row.origin||'')+'" placeholder="e.g. DOLE RO9 Office"><p class="field-hint">Place name where you departed from</p></div>'+
+                '<div class="itin-card-field"><label>To (Destination) *</label><input type="text" data-field="destination" value="'+escHtml(row.destination||'')+'" placeholder="e.g. Dipolog City"><p class="field-hint">Place name where you arrived</p></div>'+
                 '<div class="itin-card-row">'+
-                    '<div class="itin-card-field"><label>Depart Time</label><input type="time" name="lines['+idx+'][departure_time]" value="'+(row.departure_time||'')+'" class="itin-mobile-depart"></div>'+
-                    '<div class="itin-card-field"><label>Arrive Time</label><input type="time" name="lines['+idx+'][arrival_time]"   value="'+(row.arrival_time||'')+'"   class="itin-mobile-arrive"></div>'+
+                    '<div class="itin-card-field"><label>Depart Time</label><input type="time" data-field="departure_time" value="'+(row.departure_time||'')+'"></div>'+
+                    '<div class="itin-card-field"><label>Arrive Time</label><input type="time" data-field="arrival_time"   value="'+(row.arrival_time||'')+'"></div>'+
                 '</div>'+
                 '<div class="itin-card-row">'+
-                    '<div class="itin-card-field"><label>Transport (₱) *</label><input type="number" name="lines['+idx+'][transportation_cost]" value="'+(row.transportation_cost||0)+'" step="0.01" min="0" class="itin-mobile-transport" required placeholder="0.00"><p class="field-hint">Fare paid</p></div>'+
-                    '<div class="itin-card-field"><label>Per Diem (₱) *</label><input type="number" name="lines['+idx+'][per_diem_amount]"     value="'+(row.per_diem_amount||0)+'"    step="0.01" min="0" class="itin-mobile-perdiem"   required placeholder="0.00"><p class="field-hint">Auto-filled</p></div>'+
+                    '<div class="itin-card-field"><label>Transport (₱) *</label><input type="number" data-field="transportation_cost" value="'+(row.transportation_cost||0)+'" step="0.01" min="0" class="itin-mobile-transport" placeholder="0.00"><p class="field-hint">Fare paid</p></div>'+
+                    '<div class="itin-card-field"><label>Per Diem (₱) *</label><input type="number" data-field="per_diem_amount"     value="'+(row.per_diem_amount||0)+'"    step="0.01" min="0" class="itin-mobile-perdiem"   placeholder="0.00"><p class="field-hint">Auto-filled</p></div>'+
                 '</div>'+
                 '<div class="itin-card-halfday">'+
-                    '<input type="checkbox" name="lines['+idx+'][is_half_day]" value="1" class="itin-mobile-halfday"'+(row.is_half_day?' checked':'')+'>'+
+                    '<input type="checkbox" data-field="is_half_day" class="itin-mobile-halfday"'+(row.is_half_day?' checked':'')+'>'+
                     '<label>Half Day (reduces per diem to half rate)</label>'+
                 '</div>';
 
-            card.querySelector('.itin-mobile-transport').addEventListener('input',  function(e){ updateRowValue(idx,'transportation_cost',e.target.value); });
-            card.querySelector('.itin-mobile-perdiem').addEventListener('input',    function(e){ updateRowValue(idx,'per_diem_amount',e.target.value); });
-            card.querySelector('.itin-mobile-halfday').addEventListener('change',   function(e){ updateRowValue(idx,'is_half_day',e.target.checked); });
-            card.querySelector('.itin-mobile-date').addEventListener('change',      function(e){ updateRowValue(idx,'travel_date',e.target.value); });
-            card.querySelector('.itin-mobile-origin').addEventListener('change',    function(e){ updateRowValue(idx,'origin',e.target.value); });
-            card.querySelector('.itin-mobile-dest').addEventListener('change',      function(e){ updateRowValue(idx,'destination',e.target.value); });
-            card.querySelector('.itin-mobile-mode').addEventListener('change',      function(e){ updateRowValue(idx,'mode_of_transport',e.target.value); });
-            card.querySelector('.itin-mobile-depart').addEventListener('change',    function(e){ updateRowValue(idx,'departure_time',e.target.value); });
-            card.querySelector('.itin-mobile-arrive').addEventListener('change',    function(e){ updateRowValue(idx,'arrival_time',e.target.value); });
+            card.querySelectorAll('[data-field]').forEach(function(el) {
+                var field = el.getAttribute('data-field');
+                var evt   = (el.type === 'checkbox') ? 'change' : 'input';
+                el.addEventListener(evt, function() {
+                    var val = (el.type === 'checkbox') ? el.checked : el.value;
+                    updateRowValue(idx, field, val);
+                    var dr = document.getElementById('desktop-row-' + idx);
+                    if (dr) {
+                        var dEl = dr.querySelector('[data-field="' + field + '"]');
+                        if (dEl && dEl !== el) {
+                            if (dEl.type === 'checkbox') dEl.checked = el.checked;
+                            else dEl.value = el.value;
+                        }
+                    }
+                });
+            });
             mob.appendChild(card);
         });
 
+        syncHiddenInputs();
         updateTotals();
     }
 
     // ── Add / Remove ──────────────────────────────────────────────────────
     function addRow(data) {
         data = data || {};
+        var autoDate = data.travel_date || '';
+        if (!autoDate && rowsData.length === 0 && ooDateStart) {
+            autoDate = ooDateStart;
+        }
         rowsData.push({
-            travel_date:         data.travel_date         || '',
+            travel_date:         autoDate,
             origin:              data.origin              || '',
             destination:         data.destination         || '',
             departure_time:      data.departure_time      || '',

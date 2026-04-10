@@ -115,7 +115,7 @@ class TevItineraryController extends Controller
     private function authorizeEdit(TevRequest $tev): void
     {
         $user    = Auth::user();
-        $isStaff = $user->hasAnyRole(['payroll_officer', 'hrmo']);
+        $isStaff = $user->hasAnyRole(['hrmo']); // payroll_officer excluded: TEV is a separate department
         $isOwner = $tev->employee && $tev->employee->user_id === $user->id;
 
         if (!$isStaff && !$isOwner) {

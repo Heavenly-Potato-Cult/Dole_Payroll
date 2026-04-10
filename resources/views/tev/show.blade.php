@@ -40,7 +40,7 @@
 .detail-item .label { font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-light); }
 .detail-item .value { font-weight: 600; color: var(--text); font-size: 0.86rem; }
 
-/* ── Itinerary table — always scrollable, never forces page scroll ── */
+/* ── Itinerary table ── */
 .itin-tbl-wrap { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
 .itin-tbl { width: 100%; border-collapse: collapse; font-size: 0.78rem; white-space: nowrap; min-width: 650px; }
 .itin-tbl thead th {
@@ -80,6 +80,25 @@
 /* ── Cert grid ── */
 .cert-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px; }
 
+/* ── Action banner ── */
+.action-banner {
+    display: flex; align-items: flex-start; gap: 14px;
+    border-radius: 10px; padding: 14px 18px; margin-bottom: 20px;
+    border: 1px solid transparent;
+}
+.action-banner .ab-icon { font-size: 1.5rem; line-height: 1; flex-shrink: 0; margin-top: 1px; }
+.action-banner .ab-body { flex: 1; min-width: 0; }
+.action-banner .ab-title { font-size: 0.85rem; font-weight: 700; margin-bottom: 3px; line-height: 1.3; }
+.action-banner .ab-desc  { font-size: 0.78rem; line-height: 1.55; opacity: 0.85; margin: 0; }
+.action-banner .ab-meta  { font-size: 0.72rem; margin-top: 8px; opacity: 0.65; line-height: 1.4; }
+.ab-action  { background: #EEF3FF; border-color: #4F73D9; color: #1A3A8F; }
+.ab-waiting { background: #F5F5F5; border-color: #BDBDBD; color: #424242; }
+.ab-success { background: #F1FAF5; border-color: #43A047; color: #1B5E20; }
+.ab-warning { background: #FFF8E1; border-color: #F9A825; color: #7B5800; }
+.ab-danger  { background: #FFF0F0; border-color: #EF5350; color: #B71C1C; }
+.ab-purple  { background: #F3E5F5; border-color: #8E24AA; color: #4A148C; }
+@media print { .action-banner { display: none !important; } }
+
 /* ════════════════════════════════════════
    RESPONSIVE
 ════════════════════════════════════════ */
@@ -115,7 +134,6 @@
 
     .cert-grid { grid-template-columns: 1fr; }
 
-    /* Let itinerary table scroll inside its wrapper, not the page */
     .itin-tbl-wrap { overflow-x: auto; }
 
     .show-right { order: -1; position: static !important; }
@@ -158,7 +176,6 @@
 
     $statusClass = match ($tev->status) {
         'submitted'            => 'badge-pending',
-        'hr_approved'          => 'badge-computed',
         'accountant_certified' => 'badge-computed',
         'rd_approved'          => 'badge-released',
         'cashier_released'     => 'badge-locked',
@@ -170,28 +187,34 @@
     };
     $statusLabel = ucwords(str_replace('_', ' ', $tev->status));
 
+    // ── Workflow steps — no 'draft' since TEVs are auto-submitted on creation ──
     if ($tev->track === 'cash_advance') {
-        $steps     = ['Draft','Submitted','HR Approved','Acct. Certified','RD Approved','Released','Liq. Filed','Liquidated'];
-        $stepOrder = ['draft','submitted','hr_approved','accountant_certified','rd_approved','cashier_released','liquidation_filed','liquidated'];
+        $steps     = ['Submitted', 'Acct. Certified', 'RD Approved', 'Released', 'Liq. Filed', 'Liquidated'];
+        $stepOrder = ['submitted', 'accountant_certified', 'rd_approved', 'cashier_released', 'liquidation_filed', 'liquidated'];
     } else {
-        $steps     = ['Draft','Submitted','HR Approved','Acct. Certified','RD Approved','Reimbursed'];
-        $stepOrder = ['draft','submitted','hr_approved','accountant_certified','rd_approved','reimbursed'];
+        $steps     = ['Submitted', 'Acct. Certified', 'RD Approved', 'Reimbursed'];
+        $stepOrder = ['submitted', 'accountant_certified', 'rd_approved', 'reimbursed'];
     }
 
     $currentIdx = array_search($tev->status, $stepOrder);
     if ($currentIdx === false) $currentIdx = -1;
 
-    $isOwner   = $emp && $emp->user_id === auth()->id();
-    $canSubmit = $tev->status === 'draft'
-              && ($isOwner || auth()->user()->hasAnyRole(['payroll_officer','hrmo']));
-    $canReject = !in_array($tev->status, ['draft','rejected','cashier_released','reimbursed','liquidation_filed','liquidated'])
-              && auth()->user()->hasAnyRole(['payroll_officer','hrmo','accountant','ard','chief_admin_officer','cashier']);
+    // ── Permissions ──
+    // No canSubmit: TEVs are auto-submitted on creation, manual submit removed.
+    $canReject = (
+        ($tev->status === 'submitted'            && auth()->user()->hasAnyRole(['accountant'])) ||
+        ($tev->status === 'accountant_certified' && auth()->user()->hasAnyRole(['ard', 'chief_admin_officer'])) ||
+        ($tev->status === 'rd_approved'          && auth()->user()->hasAnyRole(['cashier']))
+    );
     $canCertify = in_array($tev->status, ['rd_approved','cashier_released','reimbursed','liquidation_filed','liquidated'])
-               && auth()->user()->hasAnyRole(['payroll_officer','hrmo','accountant']);
+               && auth()->user()->hasAnyRole(['hrmo','accountant']);
 
     $canFileLiquidation    = $tev->track === 'cash_advance'
                           && $tev->status === 'cashier_released'
-                          && ($isOwner || auth()->user()->hasAnyRole(['payroll_officer','hrmo']));
+                          && (
+                                ($tev->employee && $tev->employee->user_id === auth()->id())
+                                || auth()->user()->hasAnyRole(['hrmo'])
+                             );
     $canApproveLiquidation = $tev->status === 'liquidation_filed'
                           && auth()->user()->hasAnyRole(['cashier']);
 
@@ -243,6 +266,105 @@
         </div>
     @endforeach
 </div>
+
+{{-- ══════════════════════════════════════════════════════════
+     Action Banner — role-aware
+══════════════════════════════════════════════════════════ --}}
+@php
+    $u        = auth()->user();
+    $ab       = null;
+    $lastLog  = $tev->approvalLogs->last();
+    $lastWho  = optional($lastLog?->user)->name ?? 'System';
+    $lastWhen = $lastLog?->performed_at?->format('M d, Y h:i A');
+    $lastMeta = $lastLog ? "Last action by {$lastWho} · {$lastWhen}" : null;
+
+    // ── HRMO ──────────────────────────────────────────────────────────────
+    if ($u->hasAnyRole(['hrmo'])) {
+        $ab = match ($tev->status) {
+            // No 'draft' case — TEVs go straight to submitted on creation
+            'submitted'            => ['ab-waiting', '📬', 'Submitted — awaiting Accountant certification.',
+                                       'No further action needed from HR. The accountant will review and certify this TEV for ' . optional($emp)->last_name . '.', $lastMeta],
+            'accountant_certified' => ['ab-waiting', '🔍', 'Accountant certified — awaiting RD/ARD approval.',
+                                       'The TEV is moving through the approval chain. No HR action needed at this stage.', $lastMeta],
+            'rd_approved'          => ['ab-waiting', '✅', 'RD approved — awaiting cashier release.',
+                                       $tev->track === 'cash_advance'
+                                           ? 'The cashier will release the cash advance. No HR action needed.'
+                                           : 'The cashier will process the reimbursement. No HR action needed.',
+                                       $lastMeta],
+            'cashier_released'     => ['ab-warning', '💵', 'Cash advance released — liquidation required.',
+                                       'The cash advance of ₱' . number_format($tev->cash_advance_amount ?? $tev->grand_total, 2) . ' has been released to ' . optional($emp)->last_name . '. File the liquidation once travel is complete.',
+                                       $lastMeta],
+            'reimbursed'           => ['ab-success', '🎉', 'Reimbursement processed — TEV closed.',
+                                       'This TEV has been fully reimbursed and closed. No further action needed.', $lastMeta],
+            'liquidation_filed'    => ['ab-waiting', '🗂',  'Liquidation filed — awaiting cashier approval.',
+                                       'The liquidation has been filed. The cashier will review and finalise.', $lastMeta],
+            'liquidated'           => ['ab-success', '🎉', 'Fully liquidated — process complete.',
+                                       'This TEV has been reconciled and closed.', $lastMeta],
+            'rejected'             => ['ab-danger',  '🚫', 'TEV rejected.',
+                                       $lastLog?->remarks ? 'Reason: ' . $lastLog->remarks : 'See the Approval Timeline below for details.',
+                                       $lastMeta],
+            default                => null,
+        };
+    }
+    // ── Accountant ────────────────────────────────────────────────────────
+    elseif ($u->hasAnyRole(['accountant'])) {
+        $ab = match ($tev->status) {
+            'submitted'            => ['ab-action',  '📋', 'Action required — certify or reject this TEV.',
+                                       'Review the itinerary and totals below, then use the panel on the right.', null],
+            'accountant_certified' => ['ab-success', '✅', 'You have certified this TEV.',
+                                       'Waiting for RD/ARD approval. Nothing further needed from you.', $lastMeta],
+            default                => ['ab-waiting', 'ℹ️', 'No action required at this step.',
+                                       'This TEV is at a stage outside your review scope.', null],
+        };
+    }
+    // ── ARD / Chief Admin Officer ──────────────────────────────────────────
+    elseif ($u->hasAnyRole(['ard', 'chief_admin_officer'])) {
+        $ab = match ($tev->status) {
+            'accountant_certified' => ['ab-action',  '🏆', 'Action required — approve or reject this TEV.',
+                                       'The Accountant has certified this request. Use the panel on the right to proceed.', $lastMeta],
+            'rd_approved'          => ['ab-success', '✅', 'You have approved this TEV.',
+                                       'Waiting for the cashier to release the ' . ($tev->track === 'cash_advance' ? 'cash advance.' : 'reimbursement.'),
+                                       $lastMeta],
+            default                => ['ab-waiting', 'ℹ️', 'No action required at this step.',
+                                       'This TEV is outside your current review scope.', null],
+        };
+    }
+    // ── Cashier ────────────────────────────────────────────────────────────
+    elseif ($u->hasAnyRole(['cashier'])) {
+        $ab = match ($tev->status) {
+            'rd_approved'       => ['ab-action',  '💵', 'Action required — release this TEV.',
+                                    $tev->track === 'cash_advance'
+                                        ? 'RD has approved. Release the cash advance of ₱' . number_format($tev->grand_total, 2) . ' to the employee.'
+                                        : 'RD has approved. Process the reimbursement of ₱' . number_format($tev->grand_total, 2) . '.',
+                                    $lastMeta],
+            'cashier_released'  => ['ab-waiting', '⏳', 'Cash advance released — awaiting employee liquidation.',
+                                    'Nothing to do yet. HRMO will file the liquidation on behalf of the employee once travel is complete.', $lastMeta],
+            'liquidation_filed' => ['ab-purple',  '🗂',  'Action required — approve this liquidation.',
+                                    'Review the reconciliation widget on the right and approve or reject.', $lastMeta],
+            'liquidated'        => ['ab-success', '✅', 'Liquidation approved. TEV fully closed.',
+                                    'No further action needed.', $lastMeta],
+            default             => ['ab-waiting', 'ℹ️', 'No action required at this step.',
+                                    'This TEV is outside your current release scope.', null],
+        };
+    }
+    // ── Other roles ────────────────────────────────────────────────────────
+    else {
+        $ab = ['ab-waiting', 'ℹ️',
+               ucwords(str_replace('_', ' ', $tev->status)) . ' — in progress.',
+               'This TEV is moving through the approval workflow.', $lastMeta];
+    }
+@endphp
+@if ($ab)
+@php [$abVariant, $abIcon, $abTitle, $abDesc, $abMeta] = $ab; @endphp
+<div class="action-banner {{ $abVariant }} no-print">
+    <span class="ab-icon">{{ $abIcon }}</span>
+    <div class="ab-body">
+        <div class="ab-title">{{ $abTitle }}</div>
+        <p class="ab-desc">{{ $abDesc }}</p>
+        @if ($abMeta)<div class="ab-meta">{{ $abMeta }}</div>@endif
+    </div>
+</div>
+@endif
 
 <div class="show-grid">
 
@@ -328,7 +450,6 @@
         {{-- Itinerary ── --}}
         <div class="card">
             <div class="card-header"><h3>🗓 Itinerary of Travel</h3></div>
-            {{-- padding:0 so the scrollable wrapper goes edge-to-edge ── --}}
             <div class="card-body" style="padding:0;">
                 <div class="itin-tbl-wrap">
                     <table class="itin-tbl">
@@ -456,6 +577,127 @@
             </div>
         </div>
 
+        {{-- ── Status Context Card ── --}}
+        @php
+            $lastLog = $tev->approvalLogs->last();
+
+            $contextIcon = match ($tev->status) {
+                'submitted'            => '📬',
+                'accountant_certified' => '✅',
+                'rd_approved'          => '🏆',
+                'cashier_released'     => '💵',
+                'reimbursed'           => '💸',
+                'liquidation_filed'    => '🗂',
+                'liquidated'           => '🎉',
+                'rejected'             => '🚫',
+                default                => 'ℹ️',
+            };
+
+            $contextTitle = match ($tev->status) {
+                'submitted'            => 'Submitted — Awaiting Accountant Review',
+                'accountant_certified' => 'Accountant Certified — Awaiting RD Approval',
+                'rd_approved'          => $tev->track === 'cash_advance'
+                                            ? 'RD Approved — Awaiting Cash Release'
+                                            : 'RD Approved — Awaiting Reimbursement',
+                'cashier_released'     => 'Cash Advance Released — Awaiting Liquidation',
+                'reimbursed'           => 'Reimbursed — Process Complete',
+                'liquidation_filed'    => 'Liquidation Filed — Awaiting Cashier Approval',
+                'liquidated'           => 'Fully Liquidated — Process Complete',
+                'rejected'             => 'TEV Rejected',
+                default                => ucwords(str_replace('_', ' ', $tev->status)),
+            };
+
+            $u = auth()->user();
+            $contextNote = null;
+
+            if ($tev->status === 'submitted') {
+                if ($u->hasAnyRole(['accountant'])) {
+                    $contextNote = 'Review the itinerary and expenses below, then certify or reject.';
+                } elseif ($u->hasAnyRole(['hrmo'])) {
+                    $contextNote = 'TEV submitted on behalf of ' . optional($emp)->last_name . '. Awaiting accountant review — no HR action needed.';
+                }
+            } elseif ($tev->status === 'accountant_certified') {
+                if ($u->hasAnyRole(['ard', 'chief_admin_officer'])) {
+                    $contextNote = 'This TEV has been certified by the Accountant. Review and approve or reject.';
+                } elseif ($u->hasAnyRole(['hrmo'])) {
+                    $contextNote = 'Certified by the Accountant. Waiting for RD/ARD approval — no HR action needed.';
+                } elseif ($u->hasAnyRole(['accountant'])) {
+                    $contextNote = 'You have certified this TEV. It is now pending RD/ARD approval.';
+                }
+            } elseif ($tev->status === 'rd_approved') {
+                if ($u->hasAnyRole(['cashier'])) {
+                    $contextNote = $tev->track === 'cash_advance'
+                        ? 'RD has approved this TEV. Release the cash advance to the employee.'
+                        : 'RD has approved this TEV. Process the reimbursement.';
+                } elseif ($u->hasAnyRole(['hrmo'])) {
+                    $contextNote = 'RD approved. The cashier will process the ' . ($tev->track === 'cash_advance' ? 'cash advance release' : 'reimbursement') . ' for ' . optional($emp)->last_name . ' shortly.';
+                }
+            } elseif ($tev->status === 'cashier_released') {
+                if ($u->hasAnyRole(['hrmo'])) {
+                    $contextNote = 'Cash advance released. File the liquidation on behalf of ' . optional($emp)->last_name . ' once travel is complete.';
+                } elseif ($u->hasAnyRole(['cashier'])) {
+                    $contextNote = 'You have released the cash advance. Awaiting liquidation filing by HRMO.';
+                }
+            } elseif ($tev->status === 'liquidation_filed') {
+                if ($u->hasAnyRole(['cashier'])) {
+                    $contextNote = 'HRMO has filed the liquidation on behalf of ' . optional($emp)->last_name . '. Review the balance and approve.';
+                } elseif ($u->hasAnyRole(['hrmo'])) {
+                    $contextNote = 'Liquidation filed. Waiting for the cashier to review and close out.';
+                }
+            } elseif ($tev->status === 'liquidated') {
+                $contextNote = 'This TEV has been fully liquidated. No further action required.';
+            } elseif ($tev->status === 'reimbursed') {
+                $contextNote = 'Reimbursement has been processed. This TEV is now closed.';
+            } elseif ($tev->status === 'rejected') {
+                $contextNote = $lastLog?->remarks
+                    ? 'Reason: ' . $lastLog->remarks
+                    : 'This TEV was rejected. Please review the approval timeline for details.';
+            }
+
+            $ctxBorder = match ($tev->status) {
+                'submitted'                                    => '#1565C0',
+                'accountant_certified', 'rd_approved'          => '#2E7D52',
+                'cashier_released', 'reimbursed'               => '#F57F17',
+                'liquidation_filed'                            => '#6A1B9A',
+                'liquidated'                                   => '#2E7D52',
+                'rejected'                                     => '#B71C1C',
+                default                                        => 'var(--navy)',
+            };
+            $ctxBg = match ($tev->status) {
+                'submitted'                                    => '#E8EEF8',
+                'accountant_certified', 'rd_approved'          => '#F1FAF5',
+                'cashier_released', 'reimbursed'               => '#FFF8E1',
+                'liquidation_filed'                            => '#F3E5F5',
+                'liquidated'                                   => '#E8F5E9',
+                'rejected'                                     => '#FFF0F0',
+                default                                        => '#F8F9FF',
+            };
+            $ctxColor = match ($tev->status) {
+                'submitted'                                    => '#1565C0',
+                'accountant_certified', 'rd_approved'          => '#1B5E20',
+                'cashier_released', 'reimbursed'               => '#7B5800',
+                'liquidation_filed'                            => '#4A148C',
+                'liquidated'                                   => '#1B5E20',
+                'rejected'                                     => '#B71C1C',
+                default                                        => 'var(--navy)',
+            };
+        @endphp
+        <div style="border-radius:8px; border-left:4px solid {{ $ctxBorder }}; background:{{ $ctxBg }}; padding:14px 16px;">
+            <div style="display:flex; align-items:center; gap:8px; margin-bottom:{{ $contextNote ? '8px' : '0' }};">
+                <span style="font-size:1.1rem; line-height:1;">{{ $contextIcon }}</span>
+                <span style="font-size:0.78rem; font-weight:700; color:{{ $ctxColor }}; line-height:1.3;">{{ $contextTitle }}</span>
+            </div>
+            @if ($contextNote)
+            <p style="margin:0; font-size:0.76rem; color:{{ $ctxColor }}; opacity:0.85; line-height:1.55; padding-left:26px;">{{ $contextNote }}</p>
+            @endif
+            @if ($lastLog && $tev->status !== 'draft')
+            <div style="margin-top:10px; padding-top:8px; border-top:1px solid {{ $ctxBorder }}22; padding-left:26px; font-size:0.72rem; color:{{ $ctxColor }}; opacity:0.7;">
+                Last action by <strong>{{ optional($lastLog->user)->name ?? 'System' }}</strong>
+                · {{ $lastLog->performed_at?->format('M d, Y h:i A') }}
+            </div>
+            @endif
+        </div>
+
         {{-- Cash Advance Reconciliation ── --}}
         @if ($showBalanceWidget)
         <div class="card">
@@ -509,19 +751,12 @@
         </div>
         @endif
 
-        {{-- Submit ── --}}
-        @if ($canSubmit)
-        <div class="card no-print">
-            <div class="card-header"><h3>📤 Submit TEV</h3></div>
-            <div class="card-body">
-                <p style="font-size:0.82rem; color:var(--text-mid); margin-bottom:12px;">Submit this TEV for HR review. Make sure all itinerary lines are complete.</p>
-                <form method="POST" action="{{ route('tev.submit', $tev->id) }}">
-                    @csrf
-                    <button type="submit" class="btn btn-primary" onclick="return confirm('Submit this TEV for approval?')">📤 Submit for Approval</button>
-                </form>
-            </div>
-        </div>
-        @endif
+        {{--
+            ── NOTE: No Submit button here. ──────────────────────────────────
+            TEVs are auto-submitted on creation via TevController@store.
+            The manual $canSubmit / Submit for Approval card has been removed.
+            ──────────────────────────────────────────────────────────────────
+        --}}
 
         {{-- Generic Approve ── --}}
         @if ($canApprove && $tev->status !== 'liquidation_filed')

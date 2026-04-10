@@ -21,4 +21,9 @@ yarn-error.log
 certs/
 backups/
 gdrive-credentials.json
+# rclone & Google Drive
 rclone.exe
+dole_payroll.sql
+
+# rclone config (each teammate has their own)
+rclone.conf
