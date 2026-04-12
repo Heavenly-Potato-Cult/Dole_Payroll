@@ -330,9 +330,7 @@
                                         {{ substr($emp->middle_name, 0, 1) }}.
                                     @endif
                                 </span>
-                                <span class="nh-name-sub">
-                                    {{ optional($emp)->position_title ?? '—' }}
-                                </span>
+
                             </td>
 
                             <td class="col-position text-muted" style="font-size:0.82rem;">
