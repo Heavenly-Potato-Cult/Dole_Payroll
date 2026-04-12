@@ -266,7 +266,7 @@ CREATE TABLE `employees` (
 
 LOCK TABLES `employees` WRITE;
 /*!40000 ALTER TABLE `employees` DISABLE KEYS */;
-INSERT INTO `employees` VALUES (1,'DOLE9-001',NULL,'SANTOS','MARIA','REYES',NULL,NULL,NULL,NULL,'Administrative Aide IV',4,1,2022,14993.00,2000.00,2,'permanent',NULL,NULL,'2015-06-01','GSIS-001','PAGIBIG-001','PH-001','111-222-333-000',NULL,15.000,15.000,'active',NULL,'2026-03-26 09:36:26','2026-03-26 09:36:26'),(2,'DOLE9-002',NULL,'DELA CRUZ','JUAN','GARCIA',NULL,NULL,NULL,NULL,'Labor and Employment Officer II',15,3,2022,35858.00,2000.00,2,'permanent',NULL,NULL,'2010-03-15','GSIS-002','PAGIBIG-002','PH-002','111-222-333-001','SSS-002',15.000,15.000,'active',NULL,'2026-03-26 09:36:26','2026-03-26 10:46:10'),(3,'DOLE9-003',NULL,'MENDOZA','ANA','LUNA',NULL,NULL,NULL,NULL,'Labor and Employment Officer III',18,2,2022,45706.00,2000.00,2,'permanent',NULL,NULL,'2008-01-10','GSIS-003','PAGIBIG-003','PH-003','111-222-333-002',NULL,15.000,15.000,'active',NULL,'2026-03-26 09:36:27','2026-03-26 09:36:27'),(4,'DOLE9-004',NULL,'TEST','NEW HIRED','EMPLOYEE',NULL,NULL,NULL,NULL,'JOB ORDER',1,1,2022,12517.00,2000.00,3,'permanent',NULL,NULL,'2026-03-23','321','PAGIBIG004','PH-004','123456789123','SSS004',0.000,0.000,'active',NULL,'2026-03-28 13:39:33','2026-03-30 08:57:55');
+INSERT INTO `employees` VALUES (1,'DOLE9-001',NULL,'SANTOS','MARIA','REYES',NULL,NULL,NULL,NULL,'Administrative Aide IV',4,1,2022,14993.00,2000.00,2,'permanent',NULL,NULL,'2015-06-01','GSIS-001','PAGIBIG-001','PH-001','111-222-333-000',NULL,15.000,15.000,'active',NULL,'2026-03-26 09:36:26','2026-03-26 09:36:26'),(2,'DOLE9-002',NULL,'DELA CRUZ','JUAN','GARCIA',NULL,NULL,NULL,NULL,'Labor and Employment Officer II',15,3,2022,35858.00,2000.00,2,'permanent',NULL,NULL,'2010-03-15','GSIS-002','PAGIBIG-002','PH-002','111-222-333-001','SSS-002',15.000,15.000,'active',NULL,'2026-03-26 09:36:26','2026-03-26 10:46:10'),(3,'DOLE9-003',NULL,'MENDOZA','ANA','LUNA',NULL,NULL,NULL,NULL,'Labor and Employment Officer III',18,2,2022,45706.00,2000.00,2,'permanent',NULL,NULL,'2008-01-10','GSIS-003','PAGIBIG-003','PH-003','111-222-333-002',NULL,15.000,15.000,'active',NULL,'2026-03-26 09:36:27','2026-03-26 09:36:27'),(4,'DOLE9-004',NULL,'HIRED','NEW',NULL,NULL,NULL,NULL,NULL,'JOB ORDER',1,1,2022,12517.00,2000.00,3,'permanent',NULL,NULL,'2026-03-23','321','PAGIBIG004','PH-004','123456789123','SSS004',0.000,0.000,'active',NULL,'2026-03-28 13:39:33','2026-04-10 04:25:54');
 /*!40000 ALTER TABLE `employees` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -467,7 +467,7 @@ CREATE TABLE `office_orders` (
   KEY `office_orders_employee_id_status_index` (`employee_id`,`status`),
   CONSTRAINT `office_orders_approved_by_foreign` FOREIGN KEY (`approved_by`) REFERENCES `users` (`id`) ON DELETE SET NULL,
   CONSTRAINT `office_orders_employee_id_foreign` FOREIGN KEY (`employee_id`) REFERENCES `employees` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -476,7 +476,7 @@ CREATE TABLE `office_orders` (
 
 LOCK TABLES `office_orders` WRITE;
 /*!40000 ALTER TABLE `office_orders` DISABLE KEYS */;
-INSERT INTO `office_orders` VALUES (1,'OO-2026-001',4,'Seminar','Dipolog City, Zamboanga Del Norte','local','2026-05-01','2026-05-08','approved',6,'2026-04-05 12:25:49',NULL,NULL,'2026-04-01 07:08:15','2026-04-05 12:25:49');
+INSERT INTO `office_orders` VALUES (1,'OO-2026-001',4,'Seminar','Dipolog City, Zamboanga Del Norte','local','2026-05-01','2026-05-08','approved',6,'2026-04-05 12:25:49',NULL,NULL,'2026-04-01 07:08:15','2026-04-05 12:25:49'),(2,'OO-2026-002',1,'Conference','Mactan, Cebu','national','2026-04-27','2026-04-30','approved',6,'2026-04-10 00:56:03',NULL,NULL,'2026-04-10 00:55:18','2026-04-10 00:56:03'),(3,'OO-2026-003',3,'Seminar','Pagadian, Zamboanga del Norte','regional','2026-05-11','2026-05-15','approved',6,'2026-04-10 01:36:13',NULL,NULL,'2026-04-10 01:36:00','2026-04-10 01:36:13');
 /*!40000 ALTER TABLE `office_orders` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -526,7 +526,7 @@ CREATE TABLE `payroll_audit_log` (
   KEY `payroll_audit_log_user_id_index` (`user_id`),
   CONSTRAINT `payroll_audit_log_payroll_batch_id_foreign` FOREIGN KEY (`payroll_batch_id`) REFERENCES `payroll_batches` (`id`) ON DELETE CASCADE,
   CONSTRAINT `payroll_audit_log_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=27 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=55 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -535,7 +535,7 @@ CREATE TABLE `payroll_audit_log` (
 
 LOCK TABLES `payroll_audit_log` WRITE;
 /*!40000 ALTER TABLE `payroll_audit_log` DISABLE KEYS */;
-INSERT INTO `payroll_audit_log` VALUES (1,1,1,'created',NULL,'draft',NULL,'172.18.0.1','2026-03-26 10:06:44'),(2,1,1,'computed','draft','computed',NULL,'172.18.0.1','2026-03-26 10:10:44'),(3,2,1,'created',NULL,'draft',NULL,'172.18.0.1','2026-03-26 13:02:09'),(4,2,1,'computed','draft','computed',NULL,'172.18.0.1','2026-03-26 13:02:53'),(5,2,1,'Submitted for Accountant Review','computed','pending_accountant',NULL,'172.18.0.1','2026-03-26 14:20:51'),(6,1,1,'Submitted for Accountant Review','computed','pending_accountant',NULL,'172.18.0.1','2026-03-26 14:33:35'),(7,NULL,1,'Created Newly Hired Pro-Rated Payroll: TEST, NEW HIRED',NULL,'draft',NULL,'127.0.0.1','2026-03-28 14:05:42'),(8,NULL,1,'Created Newly Hired Pro-Rated Payroll: TEST, NEW HIRED',NULL,'draft',NULL,'127.0.0.1','2026-03-28 14:09:55'),(9,NULL,1,'Created Salary Differential: TEST, NEW HIRED',NULL,'draft',NULL,'127.0.0.1','2026-03-30 08:54:38'),(10,NULL,1,'Created Salary Differential: TEST, NEW HIRED',NULL,'draft',NULL,'127.0.0.1','2026-03-30 09:12:15'),(11,NULL,1,'Created NOSI: TEST, NEW HIRED',NULL,'draft',NULL,'127.0.0.1','2026-03-31 10:36:01'),(12,NULL,1,'Created Office Order: OO-2026-001',NULL,'draft',NULL,'127.0.0.1','2026-04-01 07:08:15'),(13,1,3,'Funds Certified — Forwarded to RD/ARD','pending_accountant','pending_rd',NULL,'127.0.0.1','2026-04-05 11:58:59'),(14,2,3,'Funds Certified — Forwarded to RD/ARD','pending_accountant','pending_rd',NULL,'127.0.0.1','2026-04-05 11:59:50'),(15,1,6,'Approved & Released by RD/ARD','pending_rd','released',NULL,'127.0.0.1','2026-04-05 12:02:41'),(16,2,6,'Approved & Released by RD/ARD','pending_rd','released',NULL,'127.0.0.1','2026-04-05 12:03:49'),(17,1,7,'Locked after Disbursement','released','locked',NULL,'127.0.0.1','2026-04-05 12:05:19'),(18,NULL,6,'Approved Office Order: OO-2026-001','draft','approved',NULL,'127.0.0.1','2026-04-05 12:25:49'),(19,NULL,2,'Created TEV: TEV-2026-0001',NULL,'draft',NULL,'127.0.0.1','2026-04-05 21:22:30'),(20,NULL,2,'Submitted TEV: TEV-2026-0001','draft','submitted',NULL,'127.0.0.1','2026-04-05 21:22:58'),(21,NULL,2,'HR Approved: TEV-2026-0001','submitted','hr_approved',NULL,'127.0.0.1','2026-04-05 21:23:17'),(22,NULL,3,'Accountant Certified: TEV-2026-0001','hr_approved','accountant_certified',NULL,'127.0.0.1','2026-04-05 21:26:12'),(23,NULL,6,'RD Approved: TEV-2026-0001','accountant_certified','rd_approved',NULL,'127.0.0.1','2026-04-05 21:28:03'),(24,NULL,7,'Cash Advance Released: TEV-2026-0001','rd_approved','cashier_released',NULL,'127.0.0.1','2026-04-06 11:50:22'),(25,NULL,1,'Filed Liquidation for TEV: TEV-2026-0001','cashier_released','liquidation_filed',NULL,'127.0.0.1','2026-04-06 11:51:43'),(26,NULL,7,'Approved Liquidation for TEV: TEV-2026-0001','liquidation_filed','liquidated',NULL,'127.0.0.1','2026-04-06 11:57:14');
+INSERT INTO `payroll_audit_log` VALUES (1,1,1,'created',NULL,'draft',NULL,'172.18.0.1','2026-03-26 10:06:44'),(2,1,1,'computed','draft','computed',NULL,'172.18.0.1','2026-03-26 10:10:44'),(3,2,1,'created',NULL,'draft',NULL,'172.18.0.1','2026-03-26 13:02:09'),(4,2,1,'computed','draft','computed',NULL,'172.18.0.1','2026-03-26 13:02:53'),(5,2,1,'Submitted for Accountant Review','computed','pending_accountant',NULL,'172.18.0.1','2026-03-26 14:20:51'),(6,1,1,'Submitted for Accountant Review','computed','pending_accountant',NULL,'172.18.0.1','2026-03-26 14:33:35'),(7,NULL,1,'Created Newly Hired Pro-Rated Payroll: TEST, NEW HIRED',NULL,'draft',NULL,'127.0.0.1','2026-03-28 14:05:42'),(8,NULL,1,'Created Newly Hired Pro-Rated Payroll: TEST, NEW HIRED',NULL,'draft',NULL,'127.0.0.1','2026-03-28 14:09:55'),(9,NULL,1,'Created Salary Differential: TEST, NEW HIRED',NULL,'draft',NULL,'127.0.0.1','2026-03-30 08:54:38'),(10,NULL,1,'Created Salary Differential: TEST, NEW HIRED',NULL,'draft',NULL,'127.0.0.1','2026-03-30 09:12:15'),(11,NULL,1,'Created NOSI: TEST, NEW HIRED',NULL,'draft',NULL,'127.0.0.1','2026-03-31 10:36:01'),(12,NULL,1,'Created Office Order: OO-2026-001',NULL,'draft',NULL,'127.0.0.1','2026-04-01 07:08:15'),(13,1,3,'Funds Certified — Forwarded to RD/ARD','pending_accountant','pending_rd',NULL,'127.0.0.1','2026-04-05 11:58:59'),(14,2,3,'Funds Certified — Forwarded to RD/ARD','pending_accountant','pending_rd',NULL,'127.0.0.1','2026-04-05 11:59:50'),(15,1,6,'Approved & Released by RD/ARD','pending_rd','released',NULL,'127.0.0.1','2026-04-05 12:02:41'),(16,2,6,'Approved & Released by RD/ARD','pending_rd','released',NULL,'127.0.0.1','2026-04-05 12:03:49'),(17,1,7,'Locked after Disbursement','released','locked',NULL,'127.0.0.1','2026-04-05 12:05:19'),(18,NULL,6,'Approved Office Order: OO-2026-001','draft','approved',NULL,'127.0.0.1','2026-04-05 12:25:49'),(19,NULL,2,'Created TEV: TEV-2026-0001',NULL,'draft',NULL,'127.0.0.1','2026-04-05 21:22:30'),(20,NULL,2,'Submitted TEV: TEV-2026-0001','draft','submitted',NULL,'127.0.0.1','2026-04-05 21:22:58'),(21,NULL,2,'HR Approved: TEV-2026-0001','submitted','hr_approved',NULL,'127.0.0.1','2026-04-05 21:23:17'),(22,NULL,3,'Accountant Certified: TEV-2026-0001','hr_approved','accountant_certified',NULL,'127.0.0.1','2026-04-05 21:26:12'),(23,NULL,6,'RD Approved: TEV-2026-0001','accountant_certified','rd_approved',NULL,'127.0.0.1','2026-04-05 21:28:03'),(24,NULL,7,'Cash Advance Released: TEV-2026-0001','rd_approved','cashier_released',NULL,'127.0.0.1','2026-04-06 11:50:22'),(25,NULL,1,'Filed Liquidation for TEV: TEV-2026-0001','cashier_released','liquidation_filed',NULL,'127.0.0.1','2026-04-06 11:51:43'),(26,NULL,7,'Approved Liquidation for TEV: TEV-2026-0001','liquidation_filed','liquidated',NULL,'127.0.0.1','2026-04-06 11:57:14'),(27,NULL,2,'Created Office Order: OO-2026-002',NULL,'draft',NULL,'127.0.0.1','2026-04-10 00:55:18'),(28,NULL,6,'Approved Office Order: OO-2026-002','draft','approved',NULL,'127.0.0.1','2026-04-10 00:56:03'),(29,NULL,2,'Created TEV: TEV-2026-0002',NULL,'draft',NULL,'127.0.0.1','2026-04-10 01:02:39'),(30,NULL,2,'Submitted TEV: TEV-2026-0002','draft','submitted',NULL,'127.0.0.1','2026-04-10 01:03:11'),(31,NULL,2,'HR Approved: TEV-2026-0002','submitted','hr_approved',NULL,'127.0.0.1','2026-04-10 01:03:47'),(32,NULL,3,'Accountant Certified: TEV-2026-0002','hr_approved','accountant_certified',NULL,'127.0.0.1','2026-04-10 01:04:12'),(33,NULL,6,'RD Approved: TEV-2026-0002','accountant_certified','rd_approved',NULL,'127.0.0.1','2026-04-10 01:04:46'),(34,NULL,7,'Reimbursed: TEV-2026-0002','rd_approved','reimbursed',NULL,'127.0.0.1','2026-04-10 01:05:41'),(35,NULL,2,'Created Office Order: OO-2026-003',NULL,'draft',NULL,'127.0.0.1','2026-04-10 01:36:00'),(36,NULL,6,'Approved Office Order: OO-2026-003','draft','approved',NULL,'127.0.0.1','2026-04-10 01:36:13'),(37,NULL,2,'Created TEV: TEV-2026-0003',NULL,'draft',NULL,'127.0.0.1','2026-04-10 02:20:02'),(38,NULL,2,'Submitted TEV: TEV-2026-0003','draft','submitted',NULL,'127.0.0.1','2026-04-10 02:20:14'),(39,NULL,3,'Accountant Certified: TEV-2026-0003','submitted','accountant_certified',NULL,'127.0.0.1','2026-04-10 02:21:10'),(40,NULL,6,'RD Approved: TEV-2026-0003','accountant_certified','rd_approved',NULL,'127.0.0.1','2026-04-10 02:41:31'),(41,NULL,7,'Cash Advance Released: TEV-2026-0003','rd_approved','cashier_released',NULL,'127.0.0.1','2026-04-10 02:42:11'),(42,NULL,2,'Filed Liquidation for TEV: TEV-2026-0003','cashier_released','liquidation_filed',NULL,'127.0.0.1','2026-04-10 02:54:26'),(43,NULL,7,'Approved Liquidation for TEV: TEV-2026-0003','liquidation_filed','liquidated',NULL,'127.0.0.1','2026-04-10 02:54:59'),(44,NULL,2,'Created TEV: TEV-2026-0001',NULL,'draft',NULL,'127.0.0.1','2026-04-10 02:56:56'),(45,NULL,2,'Created & Submitted TEV: TEV-2026-0001',NULL,'submitted',NULL,'127.0.0.1','2026-04-10 03:13:11'),(46,NULL,3,'Accountant Certified: TEV-2026-0001','submitted','accountant_certified',NULL,'127.0.0.1','2026-04-10 03:13:39'),(47,NULL,6,'RD Approved: TEV-2026-0001','accountant_certified','rd_approved',NULL,'127.0.0.1','2026-04-10 03:14:03'),(48,NULL,7,'Cash Advance Released: TEV-2026-0001','rd_approved','cashier_released',NULL,'127.0.0.1','2026-04-10 03:14:48'),(49,NULL,2,'Created & Submitted TEV: TEV-2026-0001',NULL,'submitted',NULL,'127.0.0.1','2026-04-10 03:23:31'),(50,NULL,3,'Accountant Certified: TEV-2026-0001','submitted','accountant_certified',NULL,'127.0.0.1','2026-04-10 03:23:57'),(51,NULL,6,'RD Approved: TEV-2026-0001','accountant_certified','rd_approved',NULL,'127.0.0.1','2026-04-10 03:24:17'),(52,NULL,7,'Cash Advance Released: TEV-2026-0001','rd_approved','cashier_released',NULL,'127.0.0.1','2026-04-10 03:24:47'),(53,NULL,2,'Filed Liquidation for TEV: TEV-2026-0001','cashier_released','liquidation_filed',NULL,'127.0.0.1','2026-04-10 03:25:25'),(54,NULL,7,'Approved Liquidation for TEV: TEV-2026-0001','liquidation_filed','liquidated',NULL,'127.0.0.1','2026-04-10 03:26:03');
 /*!40000 ALTER TABLE `payroll_audit_log` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -876,7 +876,7 @@ CREATE TABLE `sessions` (
 
 LOCK TABLES `sessions` WRITE;
 /*!40000 ALTER TABLE `sessions` DISABLE KEYS */;
-INSERT INTO `sessions` VALUES ('AUB2yR0054pIolgKehzEhKeEpQeU1M4FwLXGJKUI',1,'127.0.0.1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36 Edg/146.0.0.0','YTo0OntzOjY6Il90b2tlbiI7czo0MDoiN0ZSZWJRdWhYMmRaZEpRWVlraWMxMm9TSUJmdXJlV0FxSjVVQXNWbCI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6MTp7czozOiJ1cmwiO3M6Mjc6Imh0dHA6Ly8xMjcuMC4wLjE6ODAwMC91c2VycyI7fXM6NTA6ImxvZ2luX3dlYl81OWJhMzZhZGRjMmIyZjk0MDE1ODBmMDE0YzdmNThlYTRlMzA5ODlkIjtpOjE7fQ==',1775747741),('o61gBHAHIJmdrWBZ2OT9lcMTQkNjwBhD3I8pCRrh',1,'127.0.0.1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36 Edg/146.0.0.0','YTo1OntzOjY6Il90b2tlbiI7czo0MDoiME9TVFdINFE0bTUwWjlwOFo5MXdZd2dvSFNhTm5sUTR3TTYxeU50VSI7czozOiJ1cmwiO2E6MDp7fXM6OToiX3ByZXZpb3VzIjthOjE6e3M6MzoidXJsIjtzOjMxOiJodHRwOi8vMTI3LjAuMC4xOjgwMDAvZGl2aXNpb25zIjt9czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo1MDoibG9naW5fd2ViXzU5YmEzNmFkZGMyYjJmOTQwMTU4MGYwMTRjN2Y1OGVhNGUzMDk4OWQiO2k6MTt9',1775744256);
+INSERT INTO `sessions` VALUES ('qE9NBFuhVxK2dSXU8tYJNWMQKrfOJdVisYc6ZLXq',1,'127.0.0.1','Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36 Edg/146.0.0.0','YTo0OntzOjY6Il90b2tlbiI7czo0MDoiOUFUaG1mMnpJUWZJY0JhbzAxaG9qYUNRNVJRbU1ZNUtsWDc4T3lCUiI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6MTp7czozOiJ1cmwiO3M6MzE6Imh0dHA6Ly8xMjcuMC4wLjE6ODAwMC9kYXNoYm9hcmQiO31zOjUwOiJsb2dpbl93ZWJfNTliYTM2YWRkYzJiMmY5NDAxNTgwZjAxNGM3ZjU4ZWE0ZTMwOTg5ZCI7aToxO30=',1775795159);
 /*!40000 ALTER TABLE `sessions` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -949,7 +949,7 @@ CREATE TABLE `tev_approval_logs` (
   KEY `tev_approval_logs_tev_request_id_performed_at_index` (`tev_request_id`,`performed_at`),
   CONSTRAINT `tev_approval_logs_tev_request_id_foreign` FOREIGN KEY (`tev_request_id`) REFERENCES `tev_requests` (`id`) ON DELETE CASCADE,
   CONSTRAINT `tev_approval_logs_user_id_foreign` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=29 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -958,7 +958,7 @@ CREATE TABLE `tev_approval_logs` (
 
 LOCK TABLES `tev_approval_logs` WRITE;
 /*!40000 ALTER TABLE `tev_approval_logs` DISABLE KEYS */;
-INSERT INTO `tev_approval_logs` VALUES (1,1,2,'submitted','approved',NULL,'127.0.0.1','2026-04-05 21:22:58'),(2,1,2,'hr_approved','approved',NULL,'127.0.0.1','2026-04-05 21:23:17'),(3,1,3,'accountant_certified','approved',NULL,'127.0.0.1','2026-04-05 21:26:12'),(4,1,6,'rd_approved','approved','Okay kaayu','127.0.0.1','2026-04-05 21:28:03'),(5,1,7,'cashier_released','approved',NULL,'127.0.0.1','2026-04-06 11:50:22'),(6,1,1,'liquidation_filed','approved','Liquidation filed. Actual amount: ₱800.00. Balance due: ₱800.00 (to claim)','127.0.0.1','2026-04-06 11:51:43'),(7,1,7,'liquidated','approved','okay na','127.0.0.1','2026-04-06 11:57:13');
+INSERT INTO `tev_approval_logs` VALUES (23,6,2,'submitted','approved','Auto-submitted on creation by HRMO.','127.0.0.1','2026-04-10 03:23:31'),(24,6,3,'accountant_certified','approved','All goods','127.0.0.1','2026-04-10 03:23:57'),(25,6,6,'rd_approved','approved',NULL,'127.0.0.1','2026-04-10 03:24:17'),(26,6,7,'cashier_released','approved','Please claim it to my office.','127.0.0.1','2026-04-10 03:24:47'),(27,6,2,'liquidation_filed','approved','Liquidation filed. Actual amount: ₱1,200.00. Balance due: ₱350.00 (to refund)','127.0.0.1','2026-04-10 03:25:25'),(28,6,7,'liquidated','approved',NULL,'127.0.0.1','2026-04-10 03:26:03');
 /*!40000 ALTER TABLE `tev_approval_logs` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -1026,7 +1026,7 @@ CREATE TABLE `tev_itinerary_lines` (
   PRIMARY KEY (`id`),
   KEY `tev_itinerary_lines_tev_request_id_travel_date_index` (`tev_request_id`,`travel_date`),
   CONSTRAINT `tev_itinerary_lines_tev_request_id_foreign` FOREIGN KEY (`tev_request_id`) REFERENCES `tev_requests` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -1035,7 +1035,7 @@ CREATE TABLE `tev_itinerary_lines` (
 
 LOCK TABLES `tev_itinerary_lines` WRITE;
 /*!40000 ALTER TABLE `tev_itinerary_lines` DISABLE KEYS */;
-INSERT INTO `tev_itinerary_lines` VALUES (1,1,'2026-05-01','DOLE RO9 Office','Dipolog City',NULL,NULL,'rented van',0.00,800.00,0,NULL,'2026-04-05 21:22:29','2026-04-05 21:22:29');
+INSERT INTO `tev_itinerary_lines` VALUES (6,6,'2026-05-01','DOLE RO9 Office','Dipolog City',NULL,NULL,'bus',750.00,800.00,0,NULL,'2026-04-10 03:23:31','2026-04-10 03:23:31');
 /*!40000 ALTER TABLE `tev_itinerary_lines` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -1079,7 +1079,7 @@ CREATE TABLE `tev_requests` (
   CONSTRAINT `tev_requests_employee_id_foreign` FOREIGN KEY (`employee_id`) REFERENCES `employees` (`id`),
   CONSTRAINT `tev_requests_office_order_id_foreign` FOREIGN KEY (`office_order_id`) REFERENCES `office_orders` (`id`),
   CONSTRAINT `tev_requests_submitted_by_foreign` FOREIGN KEY (`submitted_by`) REFERENCES `users` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -1088,7 +1088,7 @@ CREATE TABLE `tev_requests` (
 
 LOCK TABLES `tev_requests` WRITE;
 /*!40000 ALTER TABLE `tev_requests` DISABLE KEYS */;
-INSERT INTO `tev_requests` VALUES (1,'TEV-2026-0001',1,4,'cash_advance','Seminar','Dipolog City, Zamboanga Del Norte','local','2026-05-01','2026-05-08',1,800.00,0.00,0.00,800.00,0.00,-800.00,'liquidated',2,'2026-04-05 21:22:58',NULL,NULL,'2026-04-05 21:22:29','2026-04-06 11:57:13');
+INSERT INTO `tev_requests` VALUES (6,'TEV-2026-0001',1,4,'cash_advance','Seminar','Dipolog City, Zamboanga Del Norte','local','2026-05-01','2026-05-08',1,800.00,750.00,0.00,1550.00,1550.00,350.00,'liquidated',2,'2026-04-10 03:23:31',NULL,NULL,'2026-04-10 03:23:31','2026-04-10 03:26:03');
 /*!40000 ALTER TABLE `tev_requests` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -1136,4 +1136,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2026-04-09 23:16:42
+-- Dump completed on 2026-04-10 12:28:14

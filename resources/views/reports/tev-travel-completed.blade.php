@@ -3,34 +3,72 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Certification of Travel Completed – {{ $tev->tev_no }}</title>
 <style>
-    @page {
-        size: A4 portrait;
-        margin: 20mm 20mm 12mm 20mm;
+    /* ── SCREEN WRAPPER ── */
+    body {
+        margin: 0;
+        padding: 0;
+        background: #e8eaf0;
+        font-family: Arial, sans-serif;
     }
 
-    * { margin: 0; padding: 0; box-sizing: border-box; }
+    .screen-toolbar {
+        position: fixed;
+        top: 0; left: 0; right: 0;
+        height: 44px;
+        background: #0F1B4C;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 20px;
+        z-index: 100;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+    }
+    .screen-toolbar .doc-label {
+        color: #fff;
+        font-size: 13px;
+        font-weight: 600;
+        letter-spacing: 0.02em;
+    }
+    .screen-toolbar .tev-ref {
+        color: #aab4d4;
+        font-size: 11px;
+        margin-left: 10px;
+    }
+    .print-btn {
+        background: #F9A825;
+        color: #0F1B4C;
+        border: none;
+        padding: 7px 18px;
+        border-radius: 4px;
+        font-size: 13px;
+        font-weight: 700;
+        cursor: pointer;
+    }
+    .print-btn:hover { background: #f0a000; }
 
-    body {
-        font-family: Arial, sans-serif;
+    .page-canvas {
+        padding: 60px 20px 40px;
+        display: flex;
+        justify-content: center;
+    }
+
+    /* ── DOCUMENT SHEET ── */
+    .sheet {
+        background: #fff;
+        width: 210mm;
+        min-height: 297mm;
+        padding: 20mm 20mm 16mm 20mm;
+        box-shadow: 0 4px 24px rgba(0,0,0,0.18);
+        box-sizing: border-box;
         font-size: 9pt;
         color: #000;
-        background: #fff;
-    }
-
-    .page {
-        width: 100%;
-        max-width: 180mm;
-        margin: 0 auto;
     }
 
     /* ── ADDRESS HEADER ── */
-    .addr-header {
-        text-align: center;
-        font-size: 8.5pt;
-        line-height: 1.5;
-    }
+    .addr-header { text-align: center; font-size: 8.5pt; line-height: 1.5; }
 
     /* ── TITLE ── */
     .doc-title {
@@ -45,31 +83,18 @@
     }
 
     /* ── MAIN FORM TABLE ── */
-    .outer-tbl {
-        width: 100%;
-        border-collapse: collapse;
-        border: 1px solid #000;
-    }
-    .outer-tbl td {
-        border: 1px solid #000;
-        padding: 4px 8px;
-        vertical-align: middle;
-    }
+    .outer-tbl { width: 100%; border-collapse: collapse; border: 1px solid #000; }
+    .outer-tbl td { border: 1px solid #000; padding: 4px 8px; vertical-align: middle; }
 
-    /* entity label/value */
     .e-lbl { font-size: 8.5pt; }
     .e-val  { font-weight: bold; font-size: 9.5pt; }
 
-    /* officer name */
     .officer-name { font-weight: bold; font-size: 10.5pt; }
     .officer-pos  { font-size: 8pt; color: #333; }
 
-    /* body paragraph */
     .body-cell {
-        font-size: 9pt;
-        line-height: 1.75;
-        padding: 9px 11px;
-        text-align: justify;
+        font-size: 9pt; line-height: 1.75;
+        padding: 9px 11px; text-align: justify;
     }
     .underline-field {
         display: inline-block;
@@ -77,89 +102,65 @@
         min-width: 120px;
     }
 
-    /* checkbox rows */
-    .cb-wrap {
-        padding: 5px 8px;
-    }
-    .cb-row {
-        display: flex;
-        align-items: baseline;
-        margin-bottom: 5px;
-        gap: 10px;
-    }
+    /* ── CHECKBOXES ── */
+    .cb-wrap { padding: 5px 8px; }
+    .cb-row  { display: flex; align-items: baseline; margin-bottom: 5px; gap: 10px; }
     .checkbox {
-        min-width: 15px;
-        height: 15px;
+        min-width: 15px; height: 15px;
         border: 1px solid #000;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 9pt;
-        font-weight: bold;
-        flex-shrink: 0;
-        margin-top: 1px;
+        display: inline-flex; align-items: center; justify-content: center;
+        font-size: 9pt; font-weight: bold; flex-shrink: 0; margin-top: 1px;
     }
-    .cb-text {
-        font-size: 9pt;
-        line-height: 1.5;
-    }
+    .cb-text { font-size: 9pt; line-height: 1.5; }
     .sub-row {
-        display: flex;
-        align-items: baseline;
-        padding-left: 25px;
-        margin-bottom: 5px;
-        font-size: 9pt;
-        line-height: 1.5;
-        gap: 6px;
-        flex-wrap: wrap;
+        display: flex; align-items: baseline;
+        padding-left: 25px; margin-bottom: 5px;
+        font-size: 9pt; line-height: 1.5; gap: 6px; flex-wrap: wrap;
     }
 
-    /* explanation lines */
-    .expl-cell {
-        padding: 5px 8px 2px;
-        font-size: 8.5pt;
-    }
-    .expl-line-cell {
-        height: 22px;
-        padding: 2px 8px;
-        border-bottom: 1px solid #000;
-    }
+    .expl-cell       { padding: 5px 8px 2px; font-size: 8.5pt; }
+    .expl-line-cell  { height: 22px; padding: 2px 8px; border-bottom: 1px solid #000; }
+    .section-header  { font-size: 8.5pt; padding: 6px 8px 2px; }
 
-    /* evidence */
-    .section-header {
-        font-size: 8.5pt;
-        padding: 6px 8px 2px;
-    }
-
-    /* signature */
-    .sig-label-sm { font-size: 8.5pt; padding: 4px 8px 0; }
-    .sig-name-bold {
-        font-weight: bold;
-        font-size: 10.5pt;
-        text-transform: uppercase;
-    }
-    .sig-role { font-size: 8pt; color: #333; }
-    .on-evidence {
-        font-size: 8.5pt;
-        font-style: italic;
-        padding: 7px 10px;
-        background-color: #fafafa;
-    }
+    .sig-label-sm   { font-size: 8.5pt; padding: 4px 8px 0; }
+    .sig-name-bold  { font-weight: bold; font-size: 10.5pt; text-transform: uppercase; }
+    .sig-role       { font-size: 8pt; color: #333; }
+    .on-evidence    { font-size: 8.5pt; font-style: italic; padding: 7px 10px; background-color: #fafafa; }
 
     /* ── FOOTER ── */
-    .footer {
-        margin-top: 8px;
-        font-size: 6.5pt;
-        color: #666;
-        border-top: 1px solid #ccc;
-        padding-top: 3px;
-        display: flex;
-        justify-content: space-between;
+    .doc-footer {
+        margin-top: 8px; font-size: 6.5pt; color: #666;
+        border-top: 1px solid #ccc; padding-top: 3px;
+        display: flex; justify-content: space-between;
+    }
+
+    /* ── PRINT OVERRIDES ── */
+    @media print {
+        body { background: #fff; }
+        .screen-toolbar { display: none; }
+        .page-canvas { padding: 0; display: block; }
+        .sheet {
+            width: 100%; min-height: unset;
+            padding: 16mm 18mm 12mm 18mm;
+            box-shadow: none; margin: 0;
+        }
+        @page { size: A4 portrait; margin: 0; }
     }
 </style>
 </head>
 <body>
-<div class="page">
+
+{{-- ── SCREEN TOOLBAR ── --}}
+<div class="screen-toolbar">
+    <div>
+        <span class="doc-label">Certification of Travel Completed</span>
+        <span class="tev-ref">{{ $tev->tev_no }}</span>
+    </div>
+    <button class="print-btn" onclick="window.print()">🖨 Print / Save as PDF</button>
+</div>
+
+<div class="page-canvas">
+<div class="sheet">
 
 @php
     $emp  = $tev->employee;
@@ -182,7 +183,6 @@
     $approvingPosition = optional($oo)->approving_officer_position ?? 'Regional Director';
     $officeDivision    = optional(optional($emp)->division)->name   ?? '';
 
-    // Checkbox states
     $isCompleted = (bool) optional($cert)->travel_completed;
     $isCutShort  = false;
     $isExtended  = false;
@@ -191,14 +191,13 @@
 
     $hasTicket  = false;
     $hasCertApp = (bool) optional($cert)->agency_visited;
-    $hasOtherEv = optional($oo)->office_order_no ? true : false;
+    $hasOtherEv = (bool) optional($oo)->office_order_no;
 
     $excessAmount  = '';
     $refundedUnder = '';
     $refundedDate  = '';
 
-    // Noted by — from office order or employee supervisor
-    $notedByName = optional($oo)->noted_by_name ?? '';
+    $notedByName = optional($oo)->noted_by_name     ?? '';
     $notedByPos  = optional($oo)->noted_by_position ?? '';
 @endphp
 
@@ -215,12 +214,12 @@
     {{-- Entity Name + Fund Cluster --}}
     <tr>
         <td style="width:105px;" class="e-lbl">Entity Name:</td>
-        <td style="width:40%;" class="e-val">DOLE RO IX</td>
-        <td style="width:90px;" class="e-lbl">Fund Cluster:</td>
+        <td style="width:40%;"   class="e-val">DOLE RO IX</td>
+        <td style="width:90px;"  class="e-lbl">Fund Cluster:</td>
         <td class="e-val">01101101</td>
     </tr>
 
-    {{-- Approving Officer / Division --}}
+    {{-- Approving Officer + Division --}}
     <tr>
         <td colspan="2" style="text-align:center; padding:5px 8px;">
             <div class="officer-name">{{ $approvingOfficer }}</div>
@@ -246,13 +245,10 @@
     {{-- Checkbox rows: travel status --}}
     <tr>
         <td colspan="4" class="cb-wrap">
-            {{-- Strictly in accordance --}}
             <div class="cb-row">
                 <div class="checkbox">{{ $checkStrict ? 'x' : '' }}</div>
                 <span class="cb-text">Strictly in accordance with the approved itinerary.</span>
             </div>
-
-            {{-- Cut short --}}
             <div class="cb-row">
                 <div class="checkbox">{{ $isCutShort ? 'x' : '' }}</div>
                 <span class="cb-text">
@@ -260,22 +256,16 @@
                     <span class="underline-field" style="min-width:140px;">{{ $excessAmount }}</span>
                 </span>
             </div>
-
-            {{-- Refunded under (sub-row) --}}
             <div class="sub-row">
                 was refunded under&nbsp;
                 <span class="underline-field" style="min-width:200px;">{{ $refundedUnder }}</span>
                 &nbsp;dated&nbsp;
                 <span class="underline-field" style="min-width:90px;">{{ $refundedDate }}</span>.
             </div>
-
-            {{-- Extended --}}
             <div class="cb-row">
                 <div class="checkbox">{{ $isExtended ? 'x' : '' }}</div>
                 <span class="cb-text">Extended as explained below, additional itinerary was submitted</span>
             </div>
-
-            {{-- Other deviations --}}
             <div class="cb-row">
                 <div class="checkbox">{{ $isOtherDev ? 'x' : '' }}</div>
                 <span class="cb-text">Other deviations as explained below.</span>
@@ -291,10 +281,9 @@
         <td colspan="4" class="expl-line-cell">&nbsp;</td>
     </tr>
     <tr>
-        <td colspan="4" style="height:22px; padding: 2px 8px;">&nbsp;</td>
+        <td colspan="4" style="height:22px; padding:2px 8px;">&nbsp;</td>
     </tr>
 
-    {{-- Spacer --}}
     <tr><td colspan="4" style="height:6px; border:none;"></td></tr>
 
     {{-- Evidence of travel --}}
@@ -304,7 +293,7 @@
     <tr>
         <td colspan="4" class="cb-wrap" style="padding-top:4px;">
             <div class="cb-row">
-                <div class="checkbox">{{ $hasTicket ? 'x' : '' }}</div>
+                <div class="checkbox">{{ $hasTicket  ? 'x' : '' }}</div>
                 <span class="cb-text">Used Ticket</span>
             </div>
             <div class="cb-row">
@@ -331,7 +320,7 @@
     </tr>
     <tr>
         <td colspan="2" style="border:none; padding:4px 8px;"></td>
-        <td colspan="2" style="padding: 4px 8px; text-align:center;">
+        <td colspan="2" style="padding:4px 8px; text-align:center;">
             <div class="sig-name-bold">{{ $empName }}</div>
             <div class="sig-role">Employee</div>
         </td>
@@ -351,7 +340,7 @@
     </tr>
     <tr>
         <td colspan="2" style="border:none; padding:4px 8px;"></td>
-        <td colspan="2" style="padding: 4px 8px; text-align:center;">
+        <td colspan="2" style="padding:4px 8px; text-align:center;">
             @if ($notedByName)
                 <div class="sig-name-bold">{{ strtoupper($notedByName) }}</div>
                 <div class="sig-role">{{ $notedByPos }}</div>
@@ -362,18 +351,18 @@
         </td>
     </tr>
 
-    {{-- Blank spacing rows --}}
     <tr><td colspan="4" style="height:10px;"></td></tr>
     <tr><td colspan="4" style="height:10px;"></td></tr>
 
 </table>
 
 {{-- ── FOOTER ── --}}
-<div class="footer">
+<div class="doc-footer">
     <span>{{ $tev->tev_no }}</span>
     <span>Generated: {{ now()->format('F j, Y \a\t h:i A') }}</span>
 </div>
 
-</div>{{-- end .page --}}
+</div>{{-- end .sheet --}}
+</div>{{-- end .page-canvas --}}
 </body>
 </html>

@@ -173,7 +173,6 @@ Route::middleware(['auth'])->group(function () {
         ->where('id', '[0-9]+');
 
     // ── Office Orders ────────────────────────────────────────────
-    // payroll_officer excluded: TEV is a separate department
     Route::middleware(['role:hrmo|accountant|budget_officer|ard|cashier|chief_admin_officer'])
         ->group(function () {
             Route::resource('office-orders', OfficeOrderController::class);
@@ -190,7 +189,6 @@ Route::middleware(['auth'])->group(function () {
         });
 
     // ── TEV ──────────────────────────────────────────────────────
-    // payroll_officer excluded: TEV is a separate department
     Route::middleware(['role:hrmo|accountant|budget_officer|ard|cashier|chief_admin_officer'])
         ->group(function () {
             Route::resource('tev', TevController::class);
@@ -222,13 +220,23 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/reports',                    [ReportController::class, 'index'])->name('reports.index');
     Route::get('/reports/payroll-register',   [ReportController::class, 'payrollRegister'])->name('reports.payroll-register');
     Route::get('/reports/payslip',            [ReportController::class, 'payslip'])->name('reports.payslip');
+
+    // ── GSIS (Phase 3A Step 1) ────────────────────────────────────────────
+    // ⚠ /gsis-summary and /gsis-detailed must be registered BEFORE /gsis
+    //   to avoid the literal strings being caught by a hypothetical {id} param.
+    //   (No conflict here, but ordering is kept explicit for safety.)
     Route::get('/reports/gsis-summary',       [ReportController::class, 'gsisSummary'])->name('reports.gsis-summary');
     Route::get('/reports/gsis-detailed',      [ReportController::class, 'gsisDetailed'])->name('reports.gsis-detailed');
+    Route::get('/reports/gsis',               [ReportController::class, 'gsisIndex'])->name('reports.gsis');
+
+    // ── HDMF / Pag-IBIG (Phase 3A Step 2) ───────────────────────────────
     Route::get('/reports/hdmf-p1',            [ReportController::class, 'hdmfP1'])->name('reports.hdmf-p1');
     Route::get('/reports/hdmf-p2',            [ReportController::class, 'hdmfP2'])->name('reports.hdmf-p2');
     Route::get('/reports/hdmf-mpl',           [ReportController::class, 'hdmfMpl'])->name('reports.hdmf-mpl');
     Route::get('/reports/hdmf-cal',           [ReportController::class, 'hdmfCal'])->name('reports.hdmf-cal');
     Route::get('/reports/hdmf-housing',       [ReportController::class, 'hdmfHousing'])->name('reports.hdmf-housing');
+
+    // ── Other remittances (Phase 3A Step 3) ─────────────────────────────
     Route::get('/reports/caress-union',       [ReportController::class, 'caressUnion'])->name('reports.caress-union');
     Route::get('/reports/caress-mortuary',    [ReportController::class, 'caressMortuary'])->name('reports.caress-mortuary');
     Route::get('/reports/lbp-loan',           [ReportController::class, 'lbpLoan'])->name('reports.lbp-loan');
@@ -252,7 +260,6 @@ Route::middleware(['auth'])->group(function () {
                [ReportController::class, 'tevRegister'])->name('reports.tev-register');
 
     // ── Users ────────────────────────────────────────────────────
-    // Temporarily managed by payroll_officer until super_admin role is added
     Route::middleware(['role:payroll_officer'])
         ->group(function () {
             Route::resource('users', UserController::class);

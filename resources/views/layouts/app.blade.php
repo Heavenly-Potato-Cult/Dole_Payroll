@@ -58,7 +58,6 @@
                 <span class="nav-icon">💰</span> Regular Payroll
             </a>
 
-            {{-- Special Payroll: HR creates, Accountant certifies, ARD/CAO approves --}}
             @role('payroll_officer|hrmo|accountant|ard|chief_admin_officer')
             <div class="nav-section-label" style="padding-left:12px; font-size:0.65rem;">Special Payroll</div>
             <a href="{{ route('special-payroll.newly-hired.index') }}"
@@ -81,7 +80,6 @@
             @endrole
 
             {{-- ── Travel (TEV) ───────────────────────────────────────── --}}
-            {{-- payroll_officer intentionally excluded: TEV is a separate department --}}
             @role('hrmo|accountant|budget_officer|ard|cashier|chief_admin_officer')
             <div class="nav-section-label">Travel (TEV)</div>
             <a href="{{ route('office-orders.index') }}"
@@ -95,23 +93,39 @@
             @endrole
 
             {{-- ── Reports ─────────────────────────────────────────────── --}}
-            {{-- Payroll reports: payroll_officer + approving/certifying roles --}}
-            @role('payroll_officer|accountant|ard|chief_admin_officer')
+            {{--
+                Show Reports section to any role that can access at least one report.
+                payroll_officer + accountant + ard + chief_admin_officer → payroll/remittance reports
+                hrmo + budget_officer + cashier → TEV register / employee TEV history
+                Single @role block avoids the duplicate-section bug in the original layout.
+            --}}
+            @role('payroll_officer|hrmo|accountant|ard|cashier|chief_admin_officer|budget_officer')
             <div class="nav-section-label">Reports</div>
-            <a href="{{ route('reports.index') }}"
-               class="nav-item {{ request()->routeIs('reports.*') ? 'active' : '' }}">
-                <span class="nav-icon">📊</span> Reports
+
+            {{-- TEV Register — all TEV roles --}}
+            @role('hrmo|accountant|budget_officer|ard|cashier|chief_admin_officer')
+            <a href="{{ route('reports.tev-register') }}"
+               class="nav-item {{ request()->routeIs('reports.tev-register*') ? 'active' : '' }}">
+                <span class="nav-icon">📊</span> TEV Register
             </a>
             @endrole
-            {{-- TEV reports: budget_officer + TEV chain roles (no payroll_officer) --}}
-            @role('budget_officer|hrmo|cashier')
-            @if(!auth()->user()->hasAnyRole(['accountant','ard','chief_admin_officer']))
-            <div class="nav-section-label">Reports</div>
-            <a href="{{ route('reports.index') }}"
-               class="nav-item {{ request()->routeIs('reports.*') ? 'active' : '' }}">
-                <span class="nav-icon">📊</span> Reports
+
+            {{-- GSIS Remittance — payroll_officer + hrmo + accountant --}}
+            @role('payroll_officer|hrmo|accountant')
+            <a href="{{ route('reports.gsis') }}"
+               class="nav-item {{ request()->routeIs('reports.gsis*') ? 'active' : '' }}">
+                <span class="nav-icon">🏦</span> GSIS Remittance
             </a>
-            @endif
+            @endrole
+
+            {{-- All Reports hub — payroll_officer + accountant + approving chain --}}
+            @role('payroll_officer|accountant|ard|chief_admin_officer')
+            <a href="{{ route('reports.index') }}"
+               class="nav-item {{ request()->routeIs('reports.index') ? 'active' : '' }}">
+                <span class="nav-icon">📋</span> All Reports
+            </a>
+            @endrole
+
             @endrole
 
             {{-- ── Administration ─────────────────────────────────────── --}}
@@ -148,7 +162,6 @@
 
         <header class="topbar">
             <div class="topbar-left">
-                {{-- Burger button — mobile only --}}
                 <button class="burger-btn" onclick="openSidebar()" aria-label="Open menu">
                     <span></span>
                     <span></span>
@@ -209,7 +222,6 @@ function closeSidebar() {
     document.getElementById('sidebarOverlay').classList.remove('show');
     document.body.style.overflow = '';
 }
-// Close sidebar on nav link click (mobile)
 document.querySelectorAll('.nav-item').forEach(link => {
     link.addEventListener('click', closeSidebar);
 });
