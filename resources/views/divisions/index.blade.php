@@ -8,12 +8,7 @@
 <div class="page-header">
     <div class="page-header-left">
         <h1>Divisions</h1>
-        <p>Manage DOLE RO9 organisational divisions</p>
-    </div>
-    <div class="d-flex gap-2 flex-wrap">
-        <a href="{{ route('divisions.create') }}" class="btn btn-primary">
-            + New Division
-        </a>
+        <p>DOLE RO9 organisational divisions (managed via HRIS API)</p>
     </div>
 </div>
 
@@ -55,7 +50,7 @@
                     <th>Description</th>
                     <th style="width:90px;text-align:center;">Employees</th>
                     <th style="width:90px;text-align:center;">Status</th>
-                    <th style="width:110px;text-align:center;">Actions</th>
+                    {{-- Actions column removed - divisions managed via HRIS API --}}
                 </tr>
             </thead>
             <tbody>
@@ -89,30 +84,14 @@
                             <span class="badge badge-inactive">Inactive</span>
                         @endif
                     </td>
-                    <td style="text-align:center;">
-                        <div class="d-flex gap-2" style="justify-content:center;">
-                            <a href="{{ route('divisions.edit', $division) }}"
-                               class="btn btn-outline btn-sm" title="Edit">✎</a>
-
-                            {{-- Delete form --}}
-                            <form method="POST"
-                                  action="{{ route('divisions.destroy', $division) }}"
-                                  onsubmit="return confirmDelete('{{ addslashes($division->name) }}', {{ $division->employees_count }})">
-                                @csrf
-                                @method('DELETE')
-                                <button type="submit" class="btn btn-danger btn-sm"
-                                        title="Delete">✕</button>
-                            </form>
-                        </div>
-                    </td>
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="7" style="text-align:center;padding:40px;color:var(--text-light);">
+                    <td colspan="6" style="text-align:center;padding:40px;color:var(--text-light);">
                         @if($search)
                             No divisions matched "<strong>{{ $search }}</strong>".
                         @else
-                            No divisions yet. <a href="{{ route('divisions.create') }}">Create the first one →</a>
+                            No divisions found. Divisions are synced from the HRIS API.
                         @endif
                     </td>
                 </tr>
@@ -123,7 +102,7 @@
 
     @if ($divisions->hasPages())
     <div style="padding:4px 20px 8px;">
-        {{ $divisions->links() }}
+        {{ $divisions->links('pagination::custom') }}
     </div>
     @endif
 </div>
@@ -131,13 +110,5 @@
 @endsection
 
 @section('scripts')
-<script>
-function confirmDelete(name, employeeCount) {
-    if (employeeCount > 0) {
-        alert('Cannot delete "' + name + '" — it still has ' + employeeCount + ' assigned employee(s).\nReassign or remove those employees first.');
-        return false;
-    }
-    return confirm('Delete division "' + name + '"?\nThis cannot be undone.');
-}
-</script>
+{{-- No scripts needed - divisions managed via HRIS API --}}
 @endsection

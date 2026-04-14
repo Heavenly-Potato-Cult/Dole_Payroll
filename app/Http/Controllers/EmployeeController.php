@@ -114,10 +114,32 @@ class EmployeeController extends Controller
                     ->with('error', 'No employees returned from HRIS API.');
             }
 
+            Log::info('HRIS sync started', ['total_from_api' => count($employees)]);
+
             $synced = 0;
             $updated = 0;
+            $skippedDivision = 0;
+            $skippedPlantilla = 0;
+            $usedPlantillas = []; // Track plantilla_item_no used in this sync batch
 
             foreach ($employees as $empData) {
+                // Match division by code from API to local division
+                $divisionCode = $empData['division_code'] ?? null;
+                $division = null;
+                if ($divisionCode) {
+                    $division = \App\Models\Division::where('code', $divisionCode)->first();
+                }
+
+                // Skip if no division match
+                if (!$division) {
+                    Log::warning('Skipping employee without matching division', [
+                        'employee_no' => $empData['employee_no'],
+                        'division_code' => $divisionCode,
+                    ]);
+                    $skippedDivision++;
+                    continue;
+                }
+
                 // Map API field names to database column names
                 $dbData = [
                     'employee_no' => $empData['employee_no'] ?? null,
@@ -129,7 +151,6 @@ class EmployeeController extends Controller
                     'salary_grade' => $empData['salary_grade'],
                     'step' => $empData['step'],
                     'basic_salary' => $empData['basic_monthly_salary'],
-                    'division_id' => $empData['division_id'] ?? null,
                     'employment_status' => $empData['employment_status'] ?? 'permanent',
                     'official_station' => $empData['official_station'] ?? null,
                     'original_appointment_date' => $empData['date_original_appointment'] ?? null,
@@ -142,12 +163,17 @@ class EmployeeController extends Controller
                     'status' => 'active',
                 ];
 
-                $employee = Employee::where('employee_no', $dbData['employee_no'])
-                    ->orWhere('plantilla_item_no', $dbData['plantilla_item_no'])
-                    ->first();
+                // Set division_id
+                $dbData['division_id'] = $division->id;
+
+                // Check for existing employee by employee_no only (not plantilla_item_no)
+                $employee = Employee::where('employee_no', $dbData['employee_no'])->first();
 
                 if ($employee) {
-                    $employee->update($dbData);
+                    // Update existing employee - don't change plantilla_item_no
+                    $updateData = $dbData;
+                    unset($updateData['plantilla_item_no']);
+                    $employee->update($updateData);
                     $updated++;
                 } else {
                     // Set default hire_date if not provided
@@ -156,6 +182,13 @@ class EmployeeController extends Controller
                     $synced++;
                 }
             }
+
+            Log::info('HRIS sync completed', [
+                'synced' => $synced,
+                'updated' => $updated,
+                'skipped_division' => $skippedDivision,
+                'skipped_plantilla' => $skippedPlantilla,
+            ]);
 
             return redirect()->route('employees.index')
                 ->with('success', "Synced {$synced} new employees, updated {$updated} existing employees from HRIS.");
