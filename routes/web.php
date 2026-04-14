@@ -229,12 +229,9 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/reports/gsis-detailed',      [ReportController::class, 'gsisDetailed'])->name('reports.gsis-detailed');
     Route::get('/reports/gsis',               [ReportController::class, 'gsisIndex'])->name('reports.gsis');
 
-    // ── HDMF / Pag-IBIG (Phase 3A Step 2) ───────────────────────────────
-    Route::get('/reports/hdmf-p1',            [ReportController::class, 'hdmfP1'])->name('reports.hdmf-p1');
-    Route::get('/reports/hdmf-p2',            [ReportController::class, 'hdmfP2'])->name('reports.hdmf-p2');
-    Route::get('/reports/hdmf-mpl',           [ReportController::class, 'hdmfMpl'])->name('reports.hdmf-mpl');
-    Route::get('/reports/hdmf-cal',           [ReportController::class, 'hdmfCal'])->name('reports.hdmf-cal');
-    Route::get('/reports/hdmf-housing',       [ReportController::class, 'hdmfHousing'])->name('reports.hdmf-housing');
+// ── HDMF / Pag-IBIG (Phase 3A Step 2) ───────────────────────────────
+Route::get('/reports/hdmf',          [ReportController::class, 'hdmfIndex'])->name('reports.hdmf');
+Route::get('/reports/hdmf/download', [ReportController::class, 'hdmf'])->name('reports.hdmf-download');
 
     // ── Other remittances (Phase 3A Step 3) ─────────────────────────────
     Route::get('/reports/caress-union',       [ReportController::class, 'caressUnion'])->name('reports.caress-union');

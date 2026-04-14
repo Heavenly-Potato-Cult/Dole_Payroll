@@ -4,6 +4,12 @@ namespace App\Http\Controllers;
 
 use App\Exports\GsisDetailedExport;
 use App\Exports\GsisSummaryExport;
+use App\Exports\HdmfRemittanceExport;
+use App\Exports\HdmfP1Export;
+use App\Exports\HdmfP2Export;
+use App\Exports\HdmfMplExport;
+use App\Exports\HdmfCalExport;
+use App\Exports\HdmfHousingExport;
 use App\Exports\TevRegisterExport;
 use App\Models\Employee;
 use App\Models\TevRequest;
@@ -18,24 +24,20 @@ class ReportController extends Controller
     //  TEV — Itinerary of Travel (Appendix A)
     //  GET /reports/tev/{tevRequest}/itinerary
     // ─────────────────────────────────────────────────────────────────────────
-    // ─────────────────────────────────────────────────────────────────────────
-    //  TEV — Itinerary of Travel (Appendix A)
-    //  GET /reports/tev/{tevRequest}/itinerary
-    // ─────────────────────────────────────────────────────────────────────────
     public function tevItinerary(int $tevRequest)
     {
         $this->authorizeRole(['hrmo', 'accountant', 'budget_officer', 'ard', 'cashier', 'chief_admin_officer']);
- 
+
         $tev = TevRequest::with([
             'itineraryLines',
             'employee.division',
             'officeOrder',
             'certification',
         ])->findOrFail($tevRequest);
- 
+
         return view('reports.tev-itinerary', compact('tev'));
     }
- 
+
     // ─────────────────────────────────────────────────────────────────────────
     //  TEV — Certification of Travel Completed
     //  GET /reports/tev/{tevRequest}/travel-completed
@@ -43,17 +45,17 @@ class ReportController extends Controller
     public function tevTravelCompleted(int $tevRequest)
     {
         $this->authorizeRole(['hrmo', 'accountant', 'budget_officer', 'ard', 'cashier', 'chief_admin_officer']);
- 
+
         $tev = TevRequest::with([
             'itineraryLines',
             'employee.division',
             'officeOrder',
             'certification',
         ])->findOrFail($tevRequest);
- 
+
         return view('reports.tev-travel-completed', compact('tev'));
     }
- 
+
     // ─────────────────────────────────────────────────────────────────────────
     //  TEV — Annex A: Expenses Not Requiring Receipts
     //  GET /reports/tev/{tevRequest}/annex-a
@@ -61,14 +63,14 @@ class ReportController extends Controller
     public function tevAnnexA(int $tevRequest)
     {
         $this->authorizeRole(['hrmo', 'accountant', 'budget_officer', 'ard', 'cashier', 'chief_admin_officer']);
- 
+
         $tev = TevRequest::with([
             'itineraryLines',
             'employee.division',
             'officeOrder',
             'certification',
         ])->findOrFail($tevRequest);
- 
+
         return view('reports.tev-annex-a', compact('tev'));
     }
 
@@ -79,7 +81,7 @@ class ReportController extends Controller
     public function tevLiquidationDv(int $tevRequest)
     {
         $this->authorizeRole(['hrmo', 'accountant', 'budget_officer', 'ard', 'cashier', 'chief_admin_officer']);
- 
+
         $tev = TevRequest::with([
             'itineraryLines',
             'employee.division',
@@ -87,15 +89,15 @@ class ReportController extends Controller
             'certification',
             'approvalLogs' => fn($q) => $q->with('user')->orderBy('performed_at'),
         ])->findOrFail($tevRequest);
- 
+
         if ($tev->track !== 'cash_advance') {
             abort(404, 'Liquidation DV is only available for Cash Advance TEVs.');
         }
- 
+
         if (!in_array($tev->status, ['liquidation_filed', 'liquidated'])) {
             abort(404, 'Liquidation has not been filed for this TEV yet.');
         }
- 
+
         return view('reports.tev-liquidation-dv', compact('tev'));
     }
 
@@ -199,8 +201,6 @@ class ReportController extends Controller
         $employeeCount = $summaryExport->getEmployeeCount();
         $grandTotal    = array_sum($totals);
 
-        // Label map: deduction_type code => human-readable name for preview table.
-        // Codes must match DeductionTypeSeeder exactly.
         $labelMap = [
             'GSIS_LIFE_RETIREMENT' => 'Life/Retirement Premium Personal Share',
             'GSIS_EMERGENCY'       => 'Emergency Loan',
@@ -216,12 +216,7 @@ class ReportController extends Controller
         ];
 
         $currentYear = now()->year;
-        $months = [
-            1 => 'January',   2 => 'February',  3 => 'March',
-            4 => 'April',     5 => 'May',        6 => 'June',
-            7 => 'July',      8 => 'August',     9 => 'September',
-            10 => 'October',  11 => 'November',  12 => 'December',
-        ];
+        $months = $this->monthNames();
 
         return view('reports.gsis', compact(
             'year', 'month', 'cutoff',
@@ -277,59 +272,87 @@ class ReportController extends Controller
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    //  Stubs for Phase 3A Steps 2–4 (routes already registered in web.php)
-    //  Each will be implemented in the next phase sessions.
+    //  HDMF — Filter / Preview page
+    //  GET /reports/hdmf
+    // ─────────────────────────────────────────────────────────────────────────
+    public function hdmfIndex(Request $request)
+    {
+        $this->authorizeRole(['payroll_officer', 'hrmo', 'accountant']);
+
+        $year   = (int) $request->get('year',   now()->year);
+        $month  = (int) $request->get('month',  now()->month);
+        $cutoff = $request->get('cutoff', 'both');
+
+        // Build per-sheet stats for the preview table
+        $p1      = new HdmfP1Export($year, $month, $cutoff);
+        $p2      = new HdmfP2Export($year, $month, $cutoff);
+        $mpl     = new HdmfMplExport($year, $month, $cutoff);
+        $cal     = new HdmfCalExport($year, $month, $cutoff);
+        $housing = new HdmfHousingExport($year, $month, $cutoff);
+
+        $sheets = [
+            ['label' => 'Pag-IBIG I (P1)',        'program' => 'F1',  'count' => $p1->getCount(),      'total' => $p1->getTotal()],
+            ['label' => 'Modified Pag-IBIG II (P2)', 'program' => 'M2', 'count' => $p2->getCount(),   'total' => $p2->getTotal()],
+            ['label' => 'Multi-Purpose Loan (MPL)', 'program' => 'MPL', 'count' => $mpl->getCount(),  'total' => $mpl->getTotal()],
+            ['label' => 'Calamity Loan (CAL)',      'program' => 'CAL', 'count' => $cal->getCount(),  'total' => $cal->getTotal()],
+            ['label' => 'Housing Loan (HL)',         'program' => 'HL',  'count' => $housing->getCount(), 'total' => $housing->getTotal()],
+        ];
+
+        $grandTotal    = array_sum(array_column($sheets, 'total'));
+        $employeeCount = $p1->getCount(); // P1 is the broadest — use as headline count
+
+        $currentYear = now()->year;
+        $months      = $this->monthNames();
+
+        return view('reports.hdmf', compact(
+            'year', 'month', 'cutoff',
+            'sheets', 'grandTotal', 'employeeCount',
+            'currentYear', 'months'
+        ));
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    //  HDMF — Combined 5-sheet Excel Download
+    //  GET /reports/hdmf/download
+    // ─────────────────────────────────────────────────────────────────────────
+    public function hdmf(Request $request)
+    {
+        $this->authorizeRole(['payroll_officer', 'hrmo', 'accountant']);
+
+        $request->validate([
+            'year'   => ['required', 'integer', 'min:2020', 'max:2099'],
+            'month'  => ['required', 'integer', 'min:1',    'max:12'],
+            'cutoff' => ['nullable', 'in:1st,2nd,both'],
+        ]);
+
+        $year   = (int) $request->year;
+        $month  = (int) $request->month;
+        $cutoff = $request->get('cutoff', 'both');
+
+        $filename = sprintf('HDMF-Remittance-%04d-%02d-%s.xlsx', $year, $month, $cutoff);
+
+        return Excel::download(new HdmfRemittanceExport($year, $month, $cutoff), $filename);
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    //  Stubs for Phase 3A Steps 3–4
     // ─────────────────────────────────────────────────────────────────────────
 
     public function payrollRegister(Request $request)
     {
         $this->authorizeRole(['payroll_officer', 'hrmo', 'accountant', 'ard', 'cashier']);
-        // TODO: Phase 3A Step 4
         abort(501, 'Not yet implemented.');
     }
 
     public function payslip(Request $request)
     {
         $this->authorizeRole(['payroll_officer', 'hrmo', 'accountant', 'ard', 'cashier']);
-        // TODO: Phase 3A Step 4
-        abort(501, 'Not yet implemented.');
-    }
-
-    public function hdmfP1(Request $request)
-    {
-        $this->authorizeRole(['payroll_officer', 'hrmo', 'accountant']);
-        // TODO: Phase 3A Step 2
-        abort(501, 'Not yet implemented.');
-    }
-
-    public function hdmfP2(Request $request)
-    {
-        $this->authorizeRole(['payroll_officer', 'hrmo', 'accountant']);
-        abort(501, 'Not yet implemented.');
-    }
-
-    public function hdmfMpl(Request $request)
-    {
-        $this->authorizeRole(['payroll_officer', 'hrmo', 'accountant']);
-        abort(501, 'Not yet implemented.');
-    }
-
-    public function hdmfCal(Request $request)
-    {
-        $this->authorizeRole(['payroll_officer', 'hrmo', 'accountant']);
-        abort(501, 'Not yet implemented.');
-    }
-
-    public function hdmfHousing(Request $request)
-    {
-        $this->authorizeRole(['payroll_officer', 'hrmo', 'accountant']);
         abort(501, 'Not yet implemented.');
     }
 
     public function caressUnion(Request $request)
     {
         $this->authorizeRole(['payroll_officer', 'hrmo', 'accountant']);
-        // TODO: Phase 3A Step 3
         abort(501, 'Not yet implemented.');
     }
 
@@ -364,12 +387,22 @@ class ReportController extends Controller
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    //  Private helper
+    //  Private helpers
     // ─────────────────────────────────────────────────────────────────────────
     private function authorizeRole(array $roles): void
     {
         if (!Auth::user()->hasAnyRole($roles)) {
             abort(403);
         }
+    }
+
+    private function monthNames(): array
+    {
+        return [
+            1 => 'January',   2 => 'February',  3 => 'March',
+            4 => 'April',     5 => 'May',        6 => 'June',
+            7 => 'July',      8 => 'August',     9 => 'September',
+            10 => 'October',  11 => 'November',  12 => 'December',
+        ];
     }
 }

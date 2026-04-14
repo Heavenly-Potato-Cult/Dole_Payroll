@@ -110,13 +110,17 @@
             </a>
             @endrole
 
-            {{-- GSIS Remittance — payroll_officer + hrmo + accountant --}}
-            @role('payroll_officer|hrmo|accountant')
-            <a href="{{ route('reports.gsis') }}"
-               class="nav-item {{ request()->routeIs('reports.gsis*') ? 'active' : '' }}">
-                <span class="nav-icon">🏦</span> GSIS Remittance
-            </a>
-            @endrole
+{{-- GSIS Remittance — payroll_officer + hrmo + accountant --}}
+@role('payroll_officer|hrmo|accountant')
+<a href="{{ route('reports.gsis') }}"
+   class="nav-item {{ request()->routeIs('reports.gsis*') ? 'active' : '' }}">
+    <span class="nav-icon">🏦</span> GSIS Remittance
+</a>
+<a href="{{ route('reports.hdmf') }}"
+   class="nav-item {{ request()->routeIs('reports.hdmf*') ? 'active' : '' }}">
+    <span class="nav-icon">🏧</span> HDMF / Pag-IBIG
+</a>
+@endrole
 
             {{-- All Reports hub — payroll_officer + accountant + approving chain --}}
             @role('payroll_officer|accountant|ard|chief_admin_officer')

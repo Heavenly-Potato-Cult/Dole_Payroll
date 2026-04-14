@@ -18,18 +18,18 @@ if exist "rclone.exe" (
     exit /b 0
 )
 
-echo Downloading rclone (Windows 64-bit)...
-powershell -Command "Invoke-WebRequest -Uri 'https://downloads.rclone.org/v1.64.2/rclone-v1.64.2-windows-amd64.zip' -OutFile 'rclone.zip'"
+echo Downloading rclone v1.73.4 (Windows 64-bit)...
+powershell -Command "Invoke-WebRequest -Uri 'https://downloads.rclone.org/v1.73.4/rclone-v1.73.4-windows-amd64.zip' -OutFile 'rclone.zip'"
 
 echo Extracting rclone...
 powershell -Command "Expand-Archive -Path 'rclone.zip' -DestinationPath '.' -Force"
 
 :: Move rclone.exe to project root
 echo Setting up rclone...
-move "rclone-v1.64.2-windows-amd64\rclone.exe" "rclone.exe" >nul 2>&1
+move "rclone-v1.73.4-windows-amd64\rclone.exe" "rclone.exe" >nul 2>&1
 
 :: Clean up
-rmdir /s /q "rclone-v1.64.2-windows-amd64" 2>nul
+rmdir /s /q "rclone-v1.73.4-windows-amd64" 2>nul
 del rclone.zip 2>nul
 
 if exist "rclone.exe" (
@@ -37,7 +37,7 @@ if exist "rclone.exe" (
     echo SUCCESS: rclone.exe downloaded and ready!
     echo.
     echo Next step: Configure rclone with your Google account:
-    echo   rclone config
+    echo   .\rclone.exe config
     echo.
 ) else (
     echo ERROR: Failed to download rclone.exe
