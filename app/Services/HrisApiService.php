@@ -96,37 +96,32 @@ class HrisApiService
         string $cutoffStart,
         string $cutoffEnd
     ): array {
-        // ── TODO: Replace mock with real API call ─────────────────
-        // When Maam Eden provides the real endpoint, replace the
-        // mock block below with:
-        //
-        // try {
-        //     $response = Http::withToken($this->apiKey)
-        //         ->timeout(10)
-        //         ->get("{$this->baseUrl}/attendance", [
-        //             'employee_id'  => $employeeId,
-        //             'cutoff_start' => $cutoffStart,
-        //             'cutoff_end'   => $cutoffEnd,
-        //         ]);
-        //
-        //     if ($response->successful()) {
-        //         return $response->json();
-        //     }
-        //
-        //     Log::warning('HRIS API non-200', [
-        //         'employee_id' => $employeeId,
-        //         'status'      => $response->status(),
-        //         'body'        => $response->body(),
-        //     ]);
-        // } catch (\Exception $e) {
-        //     Log::error('HRIS API error', ['error' => $e->getMessage()]);
-        // }
-        //
-        // // Fallback: return perfect attendance if API fails
-        // return $this->perfectAttendance($employeeId, $cutoffStart, $cutoffEnd);
-        // ─────────────────────────────────────────────────────────
+        try {
+            $response = Http::withToken($this->apiKey)
+                ->timeout(30)
+                ->get("{$this->baseUrl}/attendance", [
+                    'employee_id'  => $employeeId,
+                    'cutoff_start' => $cutoffStart,
+                    'cutoff_end'   => $cutoffEnd,
+                ]);
 
-        // ── MOCK RESPONSE (development stub) ─────────────────────
+            if ($response->successful()) {
+                $data = $response->json();
+                // API returns an array of attendance records
+                // Return the first record if found, or empty array
+                return is_array($data) && count($data) > 0 ? $data[0] : [];
+            }
+
+            Log::warning('HRIS API attendance non-200', [
+                'employee_id' => $employeeId,
+                'status'      => $response->status(),
+                'body'        => $response->body(),
+            ]);
+        } catch (\Exception $e) {
+            Log::error('HRIS API attendance error', ['error' => $e->getMessage()]);
+        }
+
+        // Fallback to mock if API fails
         return $this->mockAttendance($employeeId, $cutoffStart, $cutoffEnd);
     }
 

@@ -96,30 +96,36 @@ class AttendanceService
      *     'ytd_gross'       => float,  // year-to-date gross before this batch (for WHT)
      *   ]
      *
-     * ── STUB ────────────────────────────────────────────────────────────────
-     * Currently returns an empty array, which means PayrollComputationService
-     * will use zero attendance deductions for all employees.
-     *
-     * When Maam Eden Cutara's HRIS API is ready (TSSD team), replace the stub
-     * body with real API calls via HrisApiService::fetchAttendanceForBatch().
-     *
-     * Example integration (Phase 2 / HRIS wiring):
-     *
-     *   $hris = app(HrisApiService::class);
-     *   return $hris->fetchAttendanceForBatch(
-     *       $batch->period_year,
-     *       $batch->period_month,
-     *       $batch->cutoff
-     *   );
-     * ────────────────────────────────────────────────────────────────────────
-     *
      * @param  PayrollBatch $batch
      * @return array  [ employee_id => [ 'lwop_days'=>, 'late_minutes'=>, ... ] ]
      */
     public function getAttendanceForBatch(PayrollBatch $batch): array
     {
-        // STUB: returns empty attendance — no deductions applied.
-        // Replace with HrisApiService call when the API is available.
-        return [];
+        $hris = app(HrisApiService::class);
+        $attendanceMap = [];
+
+        // Get all employees in this batch
+        $entries = $batch->entries;
+        foreach ($entries as $entry) {
+            $employee = $entry->employee;
+            if (!$employee) continue;
+
+            // Fetch attendance from HRIS API
+            $attendance = $hris->fetchAttendance(
+                $employee->plantilla_item_no,
+                $batch->period_start,
+                $batch->period_end
+            );
+
+            // Map attendance data to expected format
+            $attendanceMap[$employee->id] = [
+                'lwop_days'        => (float) ($attendance['lwop_days'] ?? 0),
+                'late_minutes'     => (int) ($attendance['late_minutes'] ?? 0),
+                'undertime_mins'   => (int) ($attendance['undertime_minutes'] ?? 0),
+                'ytd_gross'        => 0, // TODO: Implement YTD gross tracking
+            ];
+        }
+
+        return $attendanceMap;
     }
 }
