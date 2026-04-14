@@ -63,15 +63,9 @@
 .emp-detail-row { display: none !important; }
 .emp-expand-btn { display: none !important; }
 
-/* ── DESKTOP (≥ 769px): pure normal table, nothing changes ── */
-@media (min-width: 769px) {
-    .emp-table              { display: table; width: 100%; border-collapse: collapse; }
-    .emp-table thead        { display: table-header-group; }
-    .emp-table tbody        { display: table-row-group; }
-    .emp-table tr           { display: table-row; }
-    .emp-table th,
-    .emp-table td           { display: table-cell; }
-}
+/* Fix pagination to prevent oversized angle brackets */
+.pagination { font-size: 0.875rem !important; }
+.pagination .page-link { font-size: 0.85rem !important; }
 
 /* ── MOBILE (≤ 768px): card rows ── */
 @media (max-width: 768px) {
@@ -224,7 +218,12 @@
         <p>DOLE RO9 Regular Plantilla — {{ $employees->total() }} {{ Str::plural('record', $employees->total()) }}</p>
     </div>
     @role('payroll_officer|hrmo')
-    <a href="{{ route('employees.create') }}" class="btn btn-primary">+ New Employee</a>
+    <form method="POST" action="{{ route('employees.pullFromApi') }}" style="display:inline;">
+        @csrf
+        <button type="submit" class="btn btn-primary" onclick="return confirm('Sync employees from HRIS API?\nThis will update existing employees and add new ones.')">
+            🔄 Sync from HRIS
+        </button>
+    </form>
     @endrole
 </div>
 
@@ -289,8 +288,8 @@
         </span>
     </div>
 
-    <div class="table-wrap">
-        <table class="emp-table">
+    <div style="overflow-x: auto;">
+        <table style="width: 100%; border-collapse: collapse;">
             <thead>
                 <tr>
                     <th style="width:160px;">Plantilla No.</th>
@@ -423,7 +422,7 @@
 
     @if ($employees->hasPages())
     <div style="padding:4px 20px 8px;">
-        {{ $employees->links() }}
+        {{ $employees->links('pagination::custom') }}
     </div>
     @endif
 </div>

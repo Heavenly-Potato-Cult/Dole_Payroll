@@ -6,7 +6,9 @@ use App\Http\Requests\StoreEmployeeRequest;
 use App\Http\Requests\UpdateEmployeeRequest;
 use App\Models\Division;
 use App\Models\Employee;
+use App\Services\HrisApiService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class EmployeeController extends Controller
 {
@@ -98,6 +100,71 @@ class EmployeeController extends Controller
 
         return redirect()->route('employees.index')
             ->with('success', "Employee \"{$name}\" removed from the active plantilla.");
+    }
+
+    // ── Pull from HRIS API ─────────────────────────────────────────
+    public function pullFromApi(Request $request)
+    {
+        try {
+            $hrisService = app(HrisApiService::class);
+            $employees = $hrisService->fetchEmployees();
+
+            if (empty($employees)) {
+                return redirect()->route('employees.index')
+                    ->with('error', 'No employees returned from HRIS API.');
+            }
+
+            $synced = 0;
+            $updated = 0;
+
+            foreach ($employees as $empData) {
+                // Map API field names to database column names
+                $dbData = [
+                    'employee_no' => $empData['employee_no'] ?? null,
+                    'last_name' => $empData['last_name'],
+                    'first_name' => $empData['first_name'],
+                    'middle_name' => $empData['middle_name'] ?? null,
+                    'position_title' => $empData['position_title'],
+                    'plantilla_item_no' => $empData['plantilla_item_no'],
+                    'salary_grade' => $empData['salary_grade'],
+                    'step' => $empData['step'],
+                    'basic_salary' => $empData['basic_monthly_salary'],
+                    'division_id' => $empData['division_id'] ?? null,
+                    'employment_status' => $empData['employment_status'] ?? 'permanent',
+                    'official_station' => $empData['official_station'] ?? null,
+                    'original_appointment_date' => $empData['date_original_appointment'] ?? null,
+                    'last_promotion_date' => $empData['last_promotion_date'] ?? null,
+                    'gsis_bp_no' => $empData['gsis_bp_no'] ?? null,
+                    'gsis_crn' => $empData['gsis_crn'] ?? null,
+                    'pagibig_no' => $empData['pagibig_mid_no'] ?? null,
+                    'philhealth_no' => $empData['philhealth_no'] ?? null,
+                    'tin' => $empData['tin'] ?? null,
+                    'status' => 'active',
+                ];
+
+                $employee = Employee::where('employee_no', $dbData['employee_no'])
+                    ->orWhere('plantilla_item_no', $dbData['plantilla_item_no'])
+                    ->first();
+
+                if ($employee) {
+                    $employee->update($dbData);
+                    $updated++;
+                } else {
+                    // Set default hire_date if not provided
+                    $dbData['hire_date'] = $empData['date_original_appointment'] ?? now();
+                    Employee::create($dbData);
+                    $synced++;
+                }
+            }
+
+            return redirect()->route('employees.index')
+                ->with('success', "Synced {$synced} new employees, updated {$updated} existing employees from HRIS.");
+
+        } catch (\Exception $e) {
+            Log::error('HRIS API sync error', ['error' => $e->getMessage()]);
+            return redirect()->route('employees.index')
+                ->with('error', 'Failed to sync from HRIS: ' . $e->getMessage());
+        }
     }
 
     // ── Deductions (stub — full module in Phase 2) ────────────────

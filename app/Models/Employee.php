@@ -30,9 +30,11 @@ class Employee extends Model
         'employment_type',   // regular | vacant
         'tin',
         'gsis_bp_no',
+        'gsis_crn',
         'pagibig_no',
         'philhealth_no',
         'sss_no',
+        'official_station',
     ];
 
     protected $casts = [

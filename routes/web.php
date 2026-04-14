@@ -42,6 +42,7 @@ Route::middleware(['auth'])->group(function () {
 
     // ── Employees ────────────────────────────────────────────────
     Route::resource('employees', EmployeeController::class);
+    Route::post('/employees/pull-from-api', [EmployeeController::class, 'pullFromApi'])->name('employees.pullFromApi');
 
     Route::get( '/employees/{employee}/deductions',
                 [EmployeeDeductionController::class, 'index'])->name('employees.deductions');
