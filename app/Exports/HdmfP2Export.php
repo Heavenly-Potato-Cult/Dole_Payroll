@@ -18,7 +18,7 @@ class HdmfP2Export implements FromCollection, WithTitle, WithEvents
     private const EMPLOYER_NAME = 'DEPARTMENT OF LABOR & EMPLOYMENT - Regional Office IX';
     private const ADDRESS       = 'Sta. Catalina ZC';
     private const PROGRAM_CODE  = 'M2-Modified Pag-IBIG 2';
-    private const CODE          = 'PAGIBIG_II';
+    private const CODE = 'HDMF_P2';
     private const LAST_COL      = 'K';
 
     private int    $year;

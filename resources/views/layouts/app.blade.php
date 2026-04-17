@@ -120,15 +120,11 @@
    class="nav-item {{ request()->routeIs('reports.hdmf*') ? 'active' : '' }}">
     <span class="nav-icon">🏧</span> HDMF / Pag-IBIG
 </a>
+<a href="{{ route('reports.remittances') }}"
+   class="nav-item {{ request()->routeIs('reports.remittances*') || request()->routeIs('reports.caress*') || request()->routeIs('reports.lbp*') || request()->routeIs('reports.mass*') || request()->routeIs('reports.provident*') || request()->routeIs('reports.btr*') || request()->routeIs('reports.phic*') || request()->routeIs('reports.sss*') ? 'active' : '' }}">
+    <span class="nav-icon">📑</span> All Remittances
+</a>
 @endrole
-
-            {{-- All Reports hub — payroll_officer + accountant + approving chain --}}
-            @role('payroll_officer|accountant|ard|chief_admin_officer')
-            <a href="{{ route('reports.index') }}"
-               class="nav-item {{ request()->routeIs('reports.index') ? 'active' : '' }}">
-                <span class="nav-icon">📋</span> All Reports
-            </a>
-            @endrole
 
             @endrole
 

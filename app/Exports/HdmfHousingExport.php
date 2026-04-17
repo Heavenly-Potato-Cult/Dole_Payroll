@@ -19,7 +19,7 @@ class HdmfHousingExport implements FromCollection, WithTitle, WithEvents
     private const ADDRESS       = 'Sta. Catalina ZC';
     private const LOAN_TYPE     = 'HL';
     private const POST_CODE     = 'R - Regular Amortization';
-    private const CODE          = 'HDMF_HOUSE_LOT';
+    private const CODE = 'HDMF_HOUSING';
     private const LAST_COL      = 'J';
 
     private int    $year;

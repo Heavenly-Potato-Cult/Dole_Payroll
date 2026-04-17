@@ -18,7 +18,7 @@ class HdmfP1Export implements FromCollection, WithTitle, WithEvents
     private const EMPLOYER_NAME = 'DEPARTMENT OF LABOR & EMPLOYMENT - Regional Office IX';
     private const ADDRESS       = 'Sta. Catalina ZC';
     private const PROGRAM_CODE  = 'F1-Pag-IBIG 1';
-    private const CODE          = 'PAGIBIG_I';
+    private const CODE = 'PAG_IBIG_1';
     private const LAST_COL      = 'K'; // 11 columns
 
     private int    $year;

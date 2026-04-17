@@ -19,7 +19,7 @@ class HdmfCalExport implements FromCollection, WithTitle, WithEvents
     private const ADDRESS       = 'Sta. Catalina ZC';
     private const FORM_REF      = "HQP-SLF-017\n(V03, 10/2019)";
     private const LOAN_TYPE     = 'CAL';
-    private const CODE          = 'HDMF_CALAMITY';
+    private const CODE = 'HDMF_CAL';
     private const LAST_COL      = 'I';
 
     private int    $year;

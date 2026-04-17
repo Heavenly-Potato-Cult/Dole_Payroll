@@ -235,12 +235,15 @@ Route::get('/reports/hdmf',          [ReportController::class, 'hdmfIndex'])->na
 Route::get('/reports/hdmf/download', [ReportController::class, 'hdmf'])->name('reports.hdmf-download');
 
     // ── Other remittances (Phase 3A Step 3) ─────────────────────────────
-    Route::get('/reports/caress-union',       [ReportController::class, 'caressUnion'])->name('reports.caress-union');
-    Route::get('/reports/caress-mortuary',    [ReportController::class, 'caressMortuary'])->name('reports.caress-mortuary');
-    Route::get('/reports/lbp-loan',           [ReportController::class, 'lbpLoan'])->name('reports.lbp-loan');
-    Route::get('/reports/mass',               [ReportController::class, 'mass'])->name('reports.mass');
-    Route::get('/reports/provident-fund',     [ReportController::class, 'providentFund'])->name('reports.provident-fund');
-    Route::get('/reports/btr-refund',         [ReportController::class, 'btrRefund'])->name('reports.btr-refund');
+    Route::get('/reports/remittances',     [ReportController::class, 'remittancesHub'])->name('reports.remittances');
+    Route::get('/reports/phic-csv',        [ReportController::class, 'phicCsv'])->name('reports.phic-csv');
+    Route::get('/reports/sss',             [ReportController::class, 'sssVoluntary'])->name('reports.sss');
+    Route::get('/reports/lbp-loan',        [ReportController::class, 'lbpLoan'])->name('reports.lbp-loan');
+    Route::get('/reports/caress-union',    [ReportController::class, 'caressUnion'])->name('reports.caress-union');
+    Route::get('/reports/caress-mortuary', [ReportController::class, 'caressMortuary'])->name('reports.caress-mortuary');
+    Route::get('/reports/mass',            [ReportController::class, 'mass'])->name('reports.mass');
+    Route::get('/reports/provident-fund',  [ReportController::class, 'providentFund'])->name('reports.provident-fund');
+    Route::get('/reports/btr-refund',      [ReportController::class, 'btrRefund'])->name('reports.btr-refund');
 
     // TEV PDF reports (Phase 2B Step 1)
     Route::get('/reports/tev/{tevRequest}/itinerary',
