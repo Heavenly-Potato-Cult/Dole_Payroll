@@ -1,0 +1,750 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DOLE Payroll System - Documentation</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f5f5f5;
+        }
+
+        .container {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        .sidebar {
+            width: 220px;
+            background: #2c3e50;
+            color: #ecf0f1;
+            padding: 20px 0;
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+            flex-shrink: 0;
+        }
+
+        .sidebar h2 {
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #95a5a6;
+            margin: 20px 20px 10px;
+            font-weight: 600;
+        }
+
+        .sidebar a {
+            display: block;
+            padding: 8px 20px;
+            color: #ecf0f1;
+            text-decoration: none;
+            font-size: 14px;
+            transition: background 0.2s;
+        }
+
+        .sidebar a:hover {
+            background: #34495e;
+        }
+
+        .sidebar a.active {
+            background: #3498db;
+            font-weight: 500;
+        }
+
+        .main-content {
+            margin-left: 220px;
+            padding: 40px 60px;
+            flex: 1;
+            max-width: 1200px;
+        }
+
+        .section {
+            display: none;
+        }
+
+        .section.active {
+            display: block;
+        }
+
+        h1 {
+            font-size: 32px;
+            margin-bottom: 10px;
+            color: #2c3e50;
+        }
+
+        h2 {
+            font-size: 24px;
+            margin-top: 40px;
+            margin-bottom: 15px;
+            color: #2c3e50;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 5px;
+        }
+
+        h3 {
+            font-size: 18px;
+            margin-top: 25px;
+            margin-bottom: 10px;
+            color: #34495e;
+        }
+
+        h4 {
+            font-size: 16px;
+            margin-top: 20px;
+            margin-bottom: 8px;
+            color: #34495e;
+        }
+
+        p {
+            margin-bottom: 15px;
+        }
+
+        ul, ol {
+            margin-bottom: 15px;
+            padding-left: 25px;
+        }
+
+        li {
+            margin-bottom: 8px;
+        }
+
+        code {
+            font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, Courier, monospace;
+            background: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 13px;
+            color: #e74c3c;
+        }
+
+        pre {
+            background: #2c3e50;
+            color: #ecf0f1;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            margin: 15px 0;
+        }
+
+        pre code {
+            background: none;
+            color: #ecf0f1;
+            padding: 0;
+            font-size: 13px;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 3px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .badge-green {
+            background: #27ae60;
+            color: white;
+        }
+
+        .badge-amber {
+            background: #f39c12;
+            color: white;
+        }
+
+        .badge-red {
+            background: #e74c3c;
+            color: white;
+        }
+
+        .badge-blue {
+            background: #3498db;
+            color: white;
+        }
+
+        .callout {
+            padding: 15px 20px;
+            margin: 20px 0;
+            border-left: 4px solid;
+            border-radius: 3px;
+        }
+
+        .callout-warning {
+            background: #fff3cd;
+            border-color: #ffc107;
+            color: #856404;
+        }
+
+        .callout-danger {
+            background: #f8d7da;
+            border-color: #dc3545;
+            color: #721c24;
+        }
+
+        .callout-note {
+            background: #d1ecf1;
+            border-color: #17a2b8;
+            color: #0c5460;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+        }
+
+        th, td {
+            padding: 10px 12px;
+            text-align: left;
+            border: 1px solid #ddd;
+        }
+
+        th {
+            background: #2c3e50;
+            color: white;
+            font-weight: 500;
+        }
+
+        tr:nth-child(even) {
+            background: #f8f9fa;
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 100%;
+                height: auto;
+                position: relative;
+            }
+
+            .main-content {
+                margin-left: 0;
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <aside class="sidebar">
+            <h2>Overview</h2>
+            <a href="#overview" class="nav-link active">Project Overview</a>
+            <a href="#tech-stack" class="nav-link">Tech Stack</a>
+
+            <h2>Setup</h2>
+            <a href="#local-setup" class="nav-link">Local Setup</a>
+            <a href="#environment" class="nav-link">Environment Variables</a>
+
+            <h2>Architecture</h2>
+            <a href="#folder-structure" class="nav-link">Folder Structure</a>
+            <a href="#key-modules" class="nav-link">Key Modules</a>
+
+            <h2>Operations</h2>
+            <a href="#quirks" class="nav-link">Quirks & Decisions</a>
+            <a href="#deployment" class="nav-link">Deployment</a>
+            <a href="#known-issues" class="nav-link">Known Issues</a>
+        </aside>
+
+        <main class="main-content">
+            <section id="overview" class="section active">
+                <h1>DOLE Payroll System</h1>
+                <p><strong>DOLE Regional Office 9 Payroll Management System</strong></p>
+                <p>A Laravel-based payroll system for DOLE RO9 that handles regular payroll processing, special payroll types (newly hired, salary differential, NOSI/NOSA), travel expense vouchers (TEV), office orders, and government remittance reports.</p>
+
+                <h2>Who Uses It</h2>
+                <p>The system serves multiple roles with specific permissions:</p>
+                <ul>
+                    <li><code>payroll_officer</code> — Creates and computes payroll batches, manages employees</li>
+                    <li><code>hrmo</code> — Manages employees, office orders, TEV requests, files liquidations</li>
+                    <li><code>accountant</code> — Certifies payroll funds, reviews TEV requests</li>
+                    <li><code>ard</code> / <code>chief_admin_officer</code> — Approves payroll and TEV requests</li>
+                    <li><code>cashier</code> — Releases payroll, handles TEV cash advances and liquidations</li>
+                    <li><code>budget_officer</code> — Monitors TEV submissions for reference</li>
+                </ul>
+
+                <h2>Main Features</h2>
+                <ul>
+                    <li><strong>Regular Payroll</strong> — Semi-monthly payroll (1st and 2nd cutoff) with full workflow: draft → compute → submit → certify → approve → lock</li>
+                    <li><strong>Special Payroll</strong> — Newly hired pro-rated payroll, salary differential, NOSI/NOSA</li>
+                    <li><strong>TEV Management</strong> — Travel expense vouchers with itinerary, approval workflow, cash advance tracking, and liquidation</li>
+                    <li><strong>Office Orders</strong> — Authorization documents for official travel</li>
+                    <li><strong>Employee Management</strong> — Employee records with HRIS API sync, deduction enrollments, promotion history</li>
+                    <li><strong>Government Remittances</strong> — GSIS, HDMF/Pag-IBIG, PHIC, SSS, and various loan remittances (LBP, CARESS, MASS, Provident Fund, BTR)</li>
+                    <li><strong>Reports</strong> — Payroll register, payslips, TEV reports, remittance exports</li>
+                </ul>
+            </section>
+
+            <section id="tech-stack" class="section">
+                <h1>Tech Stack</h1>
+                <table>
+                    <tr>
+                        <th>Component</th>
+                        <th>Version/Package</th>
+                    </tr>
+                    <tr>
+                        <td>Framework</td>
+                        <td>Laravel 11.0</td>
+                    </tr>
+                    <tr>
+                        <td>PHP</td>
+                        <td>^8.2</td>
+                    </tr>
+                    <tr>
+                        <td>Database</td>
+                        <td>MySQL (via PDO)</td>
+                    </tr>
+                    <tr>
+                        <td>Authentication</td>
+                        <td>Laravel Sanctum 4.3</td>
+                    </tr>
+                    <tr>
+                        <td>Authorization</td>
+                        <td>Spatie Laravel Permission 6.25</td>
+                    </tr>
+                    <tr>
+                        <td>PDF Generation</td>
+                        <td>barryvdh/laravel-dompdf 3.1</td>
+                    </tr>
+                    <tr>
+                        <td>Excel Exports</td>
+                        <td>maatwebsite/excel 3.1</td>
+                    </tr>
+                    <tr>
+                        <td>Backups</td>
+                        <td>spatie/laravel-backup 9.3</td>
+                    </tr>
+                    <tr>
+                        <td>API Documentation</td>
+                        <td>knuckleswtf/scribe 5.8 (dev)</td>
+                    </tr>
+                    <tr>
+                        <td>IDE Helpers</td>
+                        <td>barryvdh/laravel-ide-helper 3.7 (dev)</td>
+                    </tr>
+                </table>
+            </section>
+
+            <section id="local-setup" class="section">
+                <h1>Local Setup</h1>
+                <p>The project supports two setup methods: XAMPP (recommended for Windows) and Docker (edge case for PCs without PHP).</p>
+
+                <h2>XAMPP Setup (Recommended)</h2>
+                <div class="callout-note">
+                    <strong>Note:</strong> An automated setup script is available: <code>setup-xampp.bat</code>
+                </div>
+
+                <ol>
+                    <li>Install XAMPP from <a href="https://www.apachefriends.org/" target="_blank">apachefriends.org</a></li>
+                    <li>Start Apache and MySQL services in XAMPP Control Panel</li>
+                    <li>Clone the repository</li>
+                    <li>Run <code>setup-xampp.bat</code> (this auto-detects XAMPP, creates database, runs migrations, imports data)</li>
+                    <li>Or manually:
+                        <ul>
+                            <li>Copy <code>.env.example</code> to <code>.env</code></li>
+                            <li>Run <code>php artisan key:generate</code></li>
+                            <li>Configure database in <code>.env</code> (XAMPP defaults: DB_HOST=127.0.0.1, DB_USERNAME=root, DB_PASSWORD=)</li>
+                            <li>Run <code>php artisan migrate</code></li>
+                            <li>Run <code>php artisan db:seed</code></li>
+                        </ul>
+                    </li>
+                    <li>Start the server: <code>php artisan serve</code></li>
+                    <li>Access at <code>http://localhost:8000</code></li>
+                </ol>
+
+                <h2>Docker Setup (Edge Case)</h2>
+                <div class="callout-warning">
+                    <strong>Warning:</strong> Docker is provided as an edge case for PCs that cannot install PHP locally. Use XAMPP setup if possible.
+                </div>
+
+                <ol>
+                    <li>Install Docker Desktop and ensure it's running</li>
+                    <li>Clone the repository</li>
+                    <li>Run <code>.\initial_start.bat</code> (Windows) or <code>docker compose up</code></li>
+                    <li>Access at <code>http://localhost:8000</code></li>
+                    <li>Adminer available at <code>http://localhost:8080</code> for database management</li>
+                </ol>
+
+                <h2>Common Pitfalls</h2>
+                <ul>
+                    <li><strong>XAMPP Path Detection:</strong> The setup script looks for XAMPP in common paths (C:\xampp, D:\xampp, C:\Program Files\xampp). If installed elsewhere, manual setup is required.</li>
+                    <li><strong>Database Creation:</strong> The <code>dole_payroll</code> database must exist before running migrations. The setup script handles this automatically.</li>
+                    <li><strong>.env Configuration:</strong> Ensure <code>SESSION_DRIVER=database</code>, <code>CACHE_STORE=database</code>, and <code>QUEUE_CONNECTION=database</code> are set for proper operation.</li>
+                    <li><strong>HRIS API:</strong> The HRIS API integration is currently stubbed with mock data. Configure <code>HRIS_API_URL</code> and <code>HRIS_API_KEY</code> in <code>.env</code> when the real API is available.</li>
+                </ul>
+            </section>
+
+            <section id="environment" class="section">
+                <h1>Environment Variables</h1>
+                <p>Beyond standard Laravel variables, these non-standard keys are used:</p>
+                <table>
+                    <tr>
+                        <th>Variable</th>
+                        <th>Purpose</th>
+                        <th>Required in Production</th>
+                    </tr>
+                    <tr>
+                        <td><code>HRIS_API_URL</code></td>
+                        <td>Base URL for HRIS employee and attendance API</td>
+                        <td><span class="badge badge-amber">Yes</span></td>
+                    </tr>
+                    <tr>
+                        <td><code>HRIS_API_KEY</code></td>
+                        <td>API key for HRIS authentication</td>
+                        <td><span class="badge badge-amber">Yes</span></td>
+                    </tr>
+                    <tr>
+                        <td><code>APP_TIMEZONE</code></td>
+                        <td>Set to <code>Asia/Manila</code> for Philippine timezone</td>
+                        <td><span class="badge badge-green">Yes</span></td>
+                    </tr>
+                    <tr>
+                        <td><code>SESSION_DRIVER</code></td>
+                        <td>Should be <code>database</code> (not file)</td>
+                        <td><span class="badge badge-green">Yes</span></td>
+                    </tr>
+                    <tr>
+                        <td><code>CACHE_STORE</code></td>
+                        <td>Should be <code>database</code></td>
+                        <td><span class="badge badge-green">Yes</span></td>
+                    </tr>
+                    <tr>
+                        <td><code>QUEUE_CONNECTION</code></td>
+                        <td>Should be <code>database</code></td>
+                        <td><span class="badge badge-green">Yes</span></td>
+                    </tr>
+                    <tr>
+                        <td><code>SANCTUM_STATEFUL_DOMAINS</code></td>
+                        <td>Set to <code>localhost:8000</code> for local development</td>
+                        <td><span class="badge badge-amber">Yes</span></td>
+                    </tr>
+                </table>
+
+                <div class="callout-warning">
+                    <strong>Important:</strong> The HRIS API variables are critical for production. Without them, the system falls back to mock data, meaning all employees will have perfect attendance (zero deductions) and YTD gross will always be 0, causing incorrect withholding tax calculations.
+                </div>
+            </section>
+
+            <section id="folder-structure" class="section">
+                <h1>Folder Structure</h1>
+                <p>Standard Laravel structure with these notable additions:</p>
+
+                <h3>app/Services/</h3>
+                <p>Business logic layer separating computation from controllers. Key services:</p>
+                <ul>
+                    <li><code>PayrollComputationService</code> — Core payroll calculation logic</li>
+                    <li><code>DeductionService</code> — Government and loan deduction computations</li>
+                    <li><code>AttendanceService</code> — HRIS attendance integration and LWOP/tardiness calculations</li>
+                    <li><code>HrisApiService</code> — HRIS API client with mock fallbacks</li>
+                    <li><code>NewlyHiredPayrollService</code> — Pro-rated payroll for new hires</li>
+                    <li><code>SalaryDifferentialService</code> — Salary differential and NOSI/NOSA calculations</li>
+                    <li><code>TevComputationService</code> — TEV total calculations</li>
+                    <li><code>ReportService</code> — <span class="badge badge-red">Empty stub</span></li>
+                </ul>
+
+                <h3>app/Traits/</h3>
+                <ul>
+                    <li><code>TableIVConverter</code> — Converts minutes to decimal day equivalents using DOLE Table IV lookup</li>
+                </ul>
+
+                <h3>app/Policies/</h3>
+                <ul>
+                    <li><code>PayrollPolicy</code> — Payroll batch authorization rules</li>
+                    <li><code>EmployeePolicy</code> — <span class="badge badge-red">Empty stub</span></li>
+                    <li><code>TevPolicy</code> — <span class="badge badge-red">Empty stub</span></li>
+                </ul>
+
+                <h3>app/Exports/</h3>
+                <p>Excel export classes for government remittances (GSIS, HDMF, PHIC, SSS, LBP, CARESS, MASS, Provident Fund, BTR, TEV Register)</p>
+
+                <h3>database/seeders/</h3>
+                <p>Seeders for initial data: roles, divisions, employees, deduction types, per diem rates, salary index tables</p>
+
+                <h3>resources/views/components/</h3>
+                <p>Blade components (currently stubbed TODOs: approval-timeline, alert, status-badge)</p>
+
+                <h3>Root-level scripts</h3>
+                <ul>
+                    <li><code>setup-xampp.bat</code> — Automated XAMPP setup</li>
+                    <li><code>initial_start.bat</code> — Docker initialization</li>
+                    <li><code>start.sh</code> — Docker startup script for Linux/Mac</li>
+                    <li><code>backup-data.bat</code> / <code>restore-data.bat</code> — Database backup/restore</li>
+                    <li><code>gdrive-*.bat</code> — Google Drive integration scripts (prepared but not configured)</li>
+                </ul>
+            </section>
+
+            <section id="key-modules" class="section">
+                <h1>Key Modules</h1>
+
+                <h2>Regular Payroll</h2>
+                <p><strong>Flow:</strong></p>
+                <ol>
+                    <li>Payroll Officer creates batch (year, month, cutoff: 1st or 2nd)</li>
+                    <li>System generates PayrollBatch in <code>draft</code> status</li>
+                    <li>Payroll Officer clicks "Compute" → PayrollComputationService processes all active employees:
+                        <ul>
+                            <li>Fetches attendance from HRIS API (LWOP days, late minutes, undertime minutes, YTD gross)</li>
+                            <li>Calculates gross income (basic + PERA + RATA, semi-monthly)</li>
+                            <li>Calculates attendance deductions (LWOP, tardiness using Table IV)</li>
+                            <li>Calculates government deductions (Pag-IBIG, PhilHealth, GSIS, WHT using annualized method)</li>
+                            <li>Applies enrolled loan deductions</li>
+                            <li>Computes net pay</li>
+                        </ul>
+                    </li>
+                    <li>Batch status changes to <code>computed</code></li>
+                    <li>Payroll Officer submits → <code>pending_accountant</code></li>
+                    <li>Accountant certifies funds → <code>pending_rd</code></li>
+                    <li>RD/ARD approves → <code>released</code></li>
+                    <li>Cashier locks after disbursement → <code>locked</code></li>
+                    <li>Force edit override allows reverting from locked to released (requires remarks)</li>
+                </ol>
+
+                <h2>Special Payroll</h2>
+                <p><strong>Types:</strong> Newly Hired (pro-rated), Salary Differential, NOSI (Non-Optimization of Salary Increase), NOSA (Non-Optimization of Salary Adjustment)</p>
+                <p><strong>Flow:</strong></p>
+                <ol>
+                    <li>HRMO creates special payroll batch with employee, effectivity dates, salary amounts</li>
+                    <li>Service computes pro-rated or differential amount based on working days</li>
+                    <li>Batch created in <code>draft</code> status</li>
+                    <li>Accountant approves → <code>approved</code></li>
+                    <li>RD/ARD releases → <code>released</code></li>
+                </ol>
+
+                <h2>TEV (Travel Expense Voucher)</h2>
+                <p><strong>Tracks:</strong> Cash Advance (requires liquidation) or Reimbursement</p>
+                <p><strong>Flow:</strong></p>
+                <ol>
+                    <li>HRMO creates Office Order (authorization for travel)</li>
+                    <li>HRMO creates TEV linked to approved Office Order with itinerary lines</li>
+                    <li>TEV auto-submits on creation (no draft state — HRMO files directly)</li>
+                    <li>Accountant certifies → <code>accountant_certified</code></li>
+                    <li>RD/ARD approves → <code>rd_approved</code></li>
+                    <li>Cashier releases:
+                        <ul>
+                            <li>Cash Advance: Records cash advance amount, status → <code>cashier_released</code></li>
+                            <li>Reimbursement: Status → <code>reimbursed</code></li>
+                        </ul>
+                    </li>
+                    <li>After travel, HRMO certifies travel completion (optional Annex A expenses)</li>
+                    <li>For Cash Advance: Employee or HRMO files liquidation with actual amount spent</li>
+                    <li>System calculates balance due (positive = refund, negative = additional payment)</li>
+                    <li>Cashier approves liquidation → <code>liquidated</code></li>
+                </ol>
+
+                <h2>Employee Management</h2>
+                <p><strong>Flow:</strong></p>
+                <ol>
+                    <li>Employees can be created manually or synced from HRIS API</li>
+                    <li>HRIS sync matches employees by <code>employee_no</code>, updates existing records, creates new ones</li>
+                    <li>Division matching uses <code>division_code</code> from API to local divisions</li>
+                    <li>Deduction enrollments track which loans/deductions apply per employee with effective dates</li>
+                    <li>Promotion history tracks salary changes over time</li>
+                </ol>
+
+                <h2>Government Remittances</h2>
+                <p><strong>Flow:</strong></p>
+                <ol>
+                    <li>User selects year, month, cutoff</li>
+                    <li>System queries payroll entries for the period</li>
+                    <li>Deduction amounts are aggregated by deduction type</li>
+                    <li>Excel export generated with proper formatting for each agency (GSIS summary/detailed, HDMF 5-sheet, PHIC CSV, etc.)</li>
+                </ol>
+            </section>
+
+            <section id="quirks" class="section">
+                <h1>Quirks & Decisions</h1>
+
+                <h2>HRIS API Stubbed</h2>
+                <div class="callout-danger">
+                    <strong>Critical:</strong> The HRIS API integration exists but returns mock data. All employees currently have perfect attendance (zero LWOP, zero tardiness) and YTD gross is always 0. This means withholding tax is under-computed for everyone.
+                </div>
+                <p>The <code>HrisApiService</code> has real API calls but falls back to mock data when the API fails or returns errors. The mock returns perfect attendance. This is intentional for development but must be resolved before production use.</p>
+
+                <h2>TEV Auto-Submission</h2>
+                <p>TEV requests are auto-submitted on creation. There is no draft state for TEVs. This is intentional because HRMO files TEVs on behalf of employees — the draft state was redundant. The <code>submit()</code> method exists but aborts with a 410 error if called.</p>
+
+                <h2>Payroll Force Edit Override</h2>
+                <p>Locked payroll batches can be force-edited back to <code>released</code> status by the Payroll Officer. This requires a mandatory remarks field (10-1000 characters) and is logged in the audit trail. This is a safety valve for post-disbursement corrections.</p>
+
+                <h2>Attribute Aliases in Employee Model</h2>
+                <p>The Employee model has attribute accessors that alias column names to match what services expect:</p>
+                <ul>
+                    <li><code>basic_monthly_salary</code> → <code>basic_salary</code> column</li>
+                    <li><code>pera_amount</code> → <code>pera</code> column</li>
+                </ul>
+                <p>This allows services to use consistent naming while the database uses shorter column names.</p>
+
+                <h2>SpecialPayrollBatch Single Table</h2>
+                <p>All special payroll types (newly_hired, salary_differential, nosi, nosa) share one table with a <code>type</code> column. This simplifies the schema but means some columns are only relevant for certain types (e.g., <code>pro_rated_days</code> only for newly_hired).</p>
+
+                <h2>Table IV Minute Conversion</h2>
+                <p>Tardiness and undertime minutes are converted to decimal days using a lookup table (DOLE Table IV), not a simple division. The <code>TableIVConverter</code> trait handles this. For example, 15 minutes = 0.031 days (from table), not 0.03125 computed.</p>
+
+                <h2>YTD Gross Tracking Not Implemented</h2>
+                <div class="callout-warning">
+                    <strong>Impact:</strong> Withholding tax uses an annualized method that requires YTD gross accumulation. Currently, YTD gross is hardcoded to 0, causing WHT to be under-computed.
+                </div>
+                <p>The <code>AttendanceService</code> has a TODO comment at line 125: <code>'ytd_gross' => 0, // TODO: Implement YTD gross tracking</code>. This is a known gap that affects tax computation accuracy.</p>
+
+                <h2>Working Day Denominator Fixed at 22</h2>
+                <p>All salary computations use a fixed 22 working days per month denominator, regardless of actual calendar days. This is per DOLE RO9 payroll rules and is hardcoded in multiple services.</p>
+
+                <h2>Net Pay Verification</h2>
+                <p>The <code>/payroll/{payroll}/verify</code> endpoint shows combined net pay for both cutoffs of a month, flags employees below ₱5,000 threshold, and identifies LBP loan deductions. This is for cashier verification before disbursement.</p>
+            </section>
+
+            <section id="deployment" class="section">
+                <h1>Deployment</h1>
+                <p>No formal deployment scripts or CI/CD configuration found in the codebase. Deployment would be manual:</p>
+
+                <h2>Manual Deployment Steps</h2>
+                <ol>
+                    <li>Clone repository to server</li>
+                    <li>Run <code>composer install --no-dev --optimize-autoloader</code></li>
+                    <li>Copy <code>.env.example</code> to <code>.env</code> and configure production values</li>
+                    <li>Run <code>php artisan key:generate</code></li>
+                    <li>Run <code>php artisan migrate --force</code></li>
+                    <li>Run <code>php artisan db:seed --force</code> (if seeders are production-ready)</li>
+                    <li>Set <code>APP_DEBUG=false</code> in <code>.env</code></li>
+                    <li>Set proper permissions for <code>storage</code> and <code>bootstrap/cache</code></li>
+                    <li>Configure web server (Apache/Nginx) to point to <code>public</code> directory</li>
+                </ol>
+
+                <h2>Docker Deployment</h2>
+                <p>The Docker setup is primarily for local development edge cases. For production Docker deployment:</p>
+                <ul>
+                    <li>Use <code>Dockerfile</code> and <code>docker-compose.yaml</code> as starting points</li>
+                    <li>Add production environment variables</li>
+                    <li>Configure persistent volumes for database and storage</li>
+                    <li>Consider using a separate database container (currently uses external DB via Adminer)</li>
+                </ul>
+
+                <h2>Backups</h2>
+                <p>Spatie Laravel Backup is configured. Use:</p>
+                <pre><code>php artisan backup:run</code></pre>
+                <p>Backup scripts (<code>backup-data.bat</code>, <code>restore-data.bat</code>) are available for Windows environments using Google Drive integration (not yet configured).</p>
+            </section>
+
+            <section id="known-issues" class="section">
+                <h1>Known Issues</h1>
+                <p>A comprehensive gap analysis was prepared on April 9, 2026 (see <code>SYSTEM-GAP-ANALYSIS.md</code>). Key issues:</p>
+
+                <h2>Critical Issues (Tier 1)</h2>
+                <div class="callout-danger">
+                    <strong>G-01:</strong> ReportController has 16 missing methods that are referenced in routes but not implemented. Accessing these routes causes 500 errors.
+                </div>
+                <div class="callout-danger">
+                    <strong>G-02:</strong> HRIS attendance integration is stubbed. All payroll computations assume perfect attendance (zero deductions).
+                </div>
+                <div class="callout-danger">
+                    <strong>G-03:</strong> YTD gross tracking is not implemented (hardcoded to 0). Withholding tax is under-computed for all employees.
+                </div>
+
+                <h2>High Impact Issues (Tier 2)</h2>
+                <div class="callout-warning">
+                    <strong>G-04:</strong> Seven government export classes (GSIS, HDMF, etc.) are empty stubs.
+                </div>
+                <div class="callout-warning">
+                    <strong>G-05:</strong> Zero automated test suite.
+                </div>
+                <div class="callout-warning">
+                    <strong>G-06:</strong> EmployeePolicy and TevPolicy are empty stubs — authorization checks are done inline in controllers instead.
+                </div>
+
+                <h2>TODO Stubs Throughout Codebase</h2>
+                <ul>
+                    <li><code>app/Services/ReportService.php</code> — Empty class</li>
+                    <li><code>app/Policies/EmployeePolicy.php</code> — Empty stub</li>
+                    <li><code>app/Policies/TevPolicy.php</code> — Empty stub</li>
+                    <li><code>app/Services/AttendanceService.php</code> — Line 125: YTD gross tracking TODO</li>
+                    <li><code>resources/views/components/approval-timeline.blade.php</code> — TODO stub</li>
+                    <li><code>resources/views/components/alert.blade.php</code> — TODO stub</li>
+                    <li><code>resources/views/components/status-badge.blade.php</code> — TODO stub</li>
+                    <li><code>resources/views/payroll/payslip.blade.php</code> — TODO stub</li>
+                    <li><code>resources/views/payroll/detail.blade.php</code> — TODO stub</li>
+                    <li><code>public/js/sit-lookup.js</code> — TODO stub</li>
+                    <li><code>public/js/tableIV.js</code> — TODO stub</li>
+                    <li><code>public/js/itinerary.js</code> — TODO stub</li>
+                    <li>Multiple FormRequest and Resource classes are empty stubs</li>
+                </ul>
+
+                <h2>Architectural Gaps (Tier 4)</h2>
+                <ul>
+                    <li>No repository layer — queries are scattered in controllers and services</li>
+                    <li>Only one Factory (UserFactory) — limited testability</li>
+                    <li>API Resource classes return raw data without transformation</li>
+                    <li>No reusable role-checking middleware — authorization is inline in controllers</li>
+                </ul>
+
+                <h2>Recommendation</h2>
+                <div class="callout-note">
+                    <strong>Priority:</strong> Address Tier 1 issues (G-01, G-02, G-03) before production deployment. These cause runtime errors or incorrect payroll calculations.
+                </div>
+                <p>Refer to <code>SYSTEM-GAP-ANALYSIS.md</code> for a detailed 6-phase implementation roadmap and risk register.</p>
+            </section>
+        </main>
+    </div>
+
+    <script>
+        const navLinks = document.querySelectorAll('.nav-link');
+        const sections = document.querySelectorAll('.section');
+
+        navLinks.forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                const targetId = link.getAttribute('href').substring(1);
+
+                // Update active nav link
+                navLinks.forEach(l => l.classList.remove('active'));
+                link.classList.add('active');
+
+                // Show target section
+                sections.forEach(section => {
+                    section.classList.remove('active');
+                    if (section.id === targetId) {
+                        section.classList.add('active');
+                    }
+                });
+
+                // Scroll to top of content
+                window.scrollTo(0, 0);
+            });
+        });
+
+        // Handle browser back/forward buttons
+        window.addEventListener('popstate', () => {
+            const hash = window.location.hash.substring(1);
+            if (hash) {
+                navLinks.forEach(l => l.classList.remove('active'));
+                const activeLink = document.querySelector(`.nav-link[href="#${hash}"]`);
+                if (activeLink) activeLink.classList.add('active');
+
+                sections.forEach(section => {
+                    section.classList.remove('active');
+                    if (section.id === hash) {
+                        section.classList.add('active');
+                    }
+                });
+            }
+        });
+
+        // Set initial state from URL hash
+        if (window.location.hash) {
+            const hash = window.location.hash.substring(1);
+            const activeLink = document.querySelector(`.nav-link[href="#${hash}"]`);
+            if (activeLink) {
+                activeLink.click();
+            }
+        }
+    </script>
+</body>
+</html>
