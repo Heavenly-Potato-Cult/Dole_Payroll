@@ -231,11 +231,11 @@
         <h1>Regular Payroll Batches</h1>
         <p>Semi-monthly payroll for all DOLE RO9 regular employees.</p>
     </div>
-    @role('payroll_officer|hrmo')
-    <a href="{{ route('payroll.create') }}" class="btn btn-primary">
-        + New Payroll Batch
-    </a>
-    @endrole
+@role('payroll_officer')
+<a href="{{ route('payroll.create') }}" class="btn btn-primary">
+    + New Payroll Batch
+</a>
+@endrole
 </div>
 
 {{-- ── Alerts ──────────────────────────────────────────────── --}}
@@ -401,7 +401,7 @@
                                     <a href="{{ route('payroll.show', $batch) }}"
                                        class="btn btn-outline btn-sm"
                                        onclick="event.stopPropagation();">View</a>
-                                    @role('payroll_officer|hrmo')
+                                    @role('payroll_officer')
                                         @if ($batch->status === 'draft')
                                             <form method="POST"
                                                   action="{{ route('payroll.destroy', $batch) }}"
@@ -459,7 +459,7 @@
                                 <div class="pr-detail-actions">
                                     <a href="{{ route('payroll.show', $batch) }}"
                                        class="btn btn-outline btn-sm">View</a>
-                                    @role('payroll_officer|hrmo')
+                                    @role('payroll_officer')
                                         @if ($batch->status === 'draft')
                                             <form method="POST"
                                                   action="{{ route('payroll.destroy', $batch) }}"
@@ -479,7 +479,7 @@
                         <tr>
                             <td colspan="9" style="text-align:center; padding:40px; color:var(--text-light);">
                                 No payroll batches found.
-                                @role('payroll_officer|hrmo')
+                                @role('payroll_officer')
                                     <a href="{{ route('payroll.create') }}">Create one now →</a>
                                 @endrole
                             </td>
