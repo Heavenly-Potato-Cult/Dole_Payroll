@@ -193,11 +193,14 @@ class ReportController extends Controller
             'GSIS_REAL_ESTATE'     => 'Real Estate Loan',
         ];
 
+        $currentYear = now()->year;
+        $months      = $this->monthNames();
+
         return view('reports.gsis', compact(
             'year', 'month', 'cutoff',
             'totals', 'labelMap', 'employeeCount', 'grandTotal',
             'currentYear', 'months'
-        ) + ['currentYear' => now()->year, 'months' => $this->monthNames()]);
+        ));
     }
 
     public function gsisSummary(Request $request)
@@ -265,11 +268,14 @@ class ReportController extends Controller
         // P1 covers the broadest set of contributors — used as the headline employee count
         $employeeCount = $p1->getCount();
 
+        $currentYear = now()->year;
+        $months      = $this->monthNames();
+
         return view('reports.hdmf', compact(
             'year', 'month', 'cutoff',
             'sheets', 'grandTotal', 'employeeCount',
             'currentYear', 'months'
-        ) + ['currentYear' => now()->year, 'months' => $this->monthNames()]);
+        ));
     }
 
     public function hdmf(Request $request)
