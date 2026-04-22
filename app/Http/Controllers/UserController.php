@@ -12,35 +12,52 @@ use Illuminate\Support\Facades\Auth;
 class UserController extends Controller
 {
     /**
-     * Only payroll_officer can manage users.
-     * Add this to your route group or use a policy.
+     * Restrict the entire controller to payroll officers.
+     *
+     * User management is a privileged operation — only payroll_officer may
+     * create, edit, or delete system accounts. This is enforced here rather
+     * than on individual routes so there is a single, hard-to-miss gate for
+     * the whole controller.
      */
-public function __construct()
-{
-    $this->middleware(function ($request, $next) {
-        /** @var \App\Models\User $user */
-        $user = Auth::user();
+    public function __construct()
+    {
+        $this->middleware(function ($request, $next) {
+            /** @var \App\Models\User $user */
+            $user = Auth::user();
 
-        if (!$user || !$user->hasRole('payroll_officer')) {
-            abort(403, 'Only Payroll Officers can manage system users.');
-        }
+            if (!$user || !$user->hasRole('payroll_officer')) {
+                abort(403, 'Only Payroll Officers can manage system users.');
+            }
 
-        return $next($request);
-    });
-}
+            return $next($request);
+        });
+    }
 
+    /**
+     * List all system users with their assigned roles.
+     */
     public function index()
     {
         $users = User::with('roles')->orderBy('name')->get();
         return view('users.index', compact('users'));
     }
 
+    /**
+     * Show the form for creating a new system user.
+     */
     public function create()
     {
         $roles = Role::orderBy('name')->get();
         return view('users.create', compact('roles'));
     }
 
+    /**
+     * Persist a new user and assign their initial role.
+     *
+     * New accounts are created with a verified email so the user can log in
+     * immediately without going through an email verification flow — accounts
+     * are provisioned by staff, not self-registered.
+     */
     public function store(Request $request)
     {
         $request->validate([
@@ -54,6 +71,7 @@ public function __construct()
             'name'              => $request->name,
             'email'             => $request->email,
             'password'          => Hash::make($request->password),
+            // Staff-provisioned accounts skip email verification
             'email_verified_at' => now(),
         ]);
 
@@ -63,12 +81,18 @@ public function __construct()
             ->with('success', "User {$user->name} created successfully with role: {$request->role}.");
     }
 
+    /**
+     * Display a single user's profile and role assignment.
+     */
     public function show(User $user)
     {
         $user->load('roles');
         return view('users.show', compact('user'));
     }
 
+    /**
+     * Show the form for editing an existing user.
+     */
     public function edit(User $user)
     {
         $roles = Role::orderBy('name')->get();
@@ -76,6 +100,14 @@ public function __construct()
         return view('users.edit', compact('user', 'roles'));
     }
 
+    /**
+     * Update a user's name, email, role, and optionally their password.
+     *
+     * Password is only updated when explicitly provided — leaving the field
+     * blank preserves the existing credential. syncRoles() is used instead
+     * of assignRole() to ensure any previously held roles are removed, keeping
+     * each user to exactly one role at a time.
+     */
     public function update(Request $request, User $user)
     {
         $request->validate([
@@ -90,31 +122,36 @@ public function __construct()
             'email' => $request->email,
         ]);
 
-        // Only update password if a new one was provided
         if ($request->filled('password')) {
             $user->update(['password' => Hash::make($request->password)]);
         }
 
-        // Sync role (remove old, assign new)
+        // syncRoles removes any previously held roles before assigning the new one
         $user->syncRoles([$request->role]);
 
         return redirect()->route('users.index')
             ->with('success', "User {$user->name} updated successfully.");
     }
 
-public function destroy(User $user)
-{
-    /** @var \App\Models\User $authUser */
-    $authUser = Auth::user();
+    /**
+     * Delete a user account.
+     *
+     * Self-deletion is blocked to prevent a payroll officer from accidentally
+     * locking everyone out of user management by removing their own account.
+     */
+    public function destroy(User $user)
+    {
+        /** @var \App\Models\User $authUser */
+        $authUser = Auth::user();
 
-    if ($user->id === $authUser->id) {
-        return back()->with('error', 'You cannot delete your own account.');
+        if ($user->id === $authUser->id) {
+            return back()->with('error', 'You cannot delete your own account.');
+        }
+
+        $name = $user->name;
+        $user->delete();
+
+        return redirect()->route('users.index')
+            ->with('success', "User {$name} has been removed.");
     }
-
-    $name = $user->name;
-    $user->delete();
-
-    return redirect()->route('users.index')
-        ->with('success', "User {$name} has been removed.");
-}
 }

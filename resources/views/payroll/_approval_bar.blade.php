@@ -8,7 +8,7 @@
         [
             'statuses' => ['draft', 'computed'],
             'label'    => 'HR Prepared',
-            'sub'      => 'Payroll Officer / HRMO',
+            'sub'      => 'Payroll Officer ',
             'icon'     => '✏',
         ],
         [

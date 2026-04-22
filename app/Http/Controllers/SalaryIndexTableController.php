@@ -9,21 +9,14 @@ use Illuminate\Http\Request;
 class SalaryIndexTableController extends Controller
 {
     /**
-     * GET /api/sit?sg={sg}&step={step}&year={year}
+     * Look up a salary amount from the Salary Index Table (SIT).
      *
-     * Returns the salary amount for the given SG / Step / Year combination.
-     * Used by the AJAX sit-lookup.js on the employee form.
+     * Called via AJAX by sit-lookup.js on the employee form.
+     * Year defaults to the latest available year in the table if omitted.
      *
-     * Query params:
-     *   sg    — integer 1–33  (required)
-     *   step  — integer 1–8   (required)
-     *   year  — integer       (optional; defaults to latest available year)
-     *
-     * Success response (200):
-     *   { "amount": "48313.00", "sg": 19, "step": 1, "year": 2021 }
-     *
-     * Error response (404 / 422):
-     *   { "error": "..." }
+     * Query params: sg (1–33), step (1–8), year (optional)
+     * Success: { "amount": "48313.00", "sg": 19, "step": 1, "year": 2021 }
+     * Failure: { "error": "..." } with 404
      */
     public function lookup(Request $request): JsonResponse
     {
@@ -35,8 +28,6 @@ class SalaryIndexTableController extends Controller
 
         $sg   = (int) $validated['sg'];
         $step = (int) $validated['step'];
-
-        // Default to the latest year in the table when not supplied
         $year = isset($validated['year'])
             ? (int) $validated['year']
             : SalaryIndexTable::max('year');

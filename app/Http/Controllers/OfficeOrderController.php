@@ -11,16 +11,11 @@ use Illuminate\Support\Facades\Auth;
 
 class OfficeOrderController extends Controller
 {
-    // ─────────────────────────────────────────────────────────────────────
-    //  Index
-    //  GET /office-orders
-    // ─────────────────────────────────────────────────────────────────────
     public function index(Request $request)
     {
-        $this->authorizeRole(['hrmo', 'accountant', 'budget_officer', 'ard', 'chief_admin_officer', 'cashier']); // index
+        $this->authorizeRole(['hrmo', 'accountant', 'budget_officer', 'ard', 'chief_admin_officer', 'cashier']);
 
-        $query = OfficeOrder::with('employee')
-            ->orderByDesc('id');
+        $query = OfficeOrder::with('employee')->orderByDesc('id');
 
         if ($request->filled('status')) {
             $query->where('status', $request->status);
@@ -36,13 +31,9 @@ class OfficeOrderController extends Controller
         return view('office-orders.index', compact('orders', 'currentYear'));
     }
 
-    // ─────────────────────────────────────────────────────────────────────
-    //  Create Form
-    //  GET /office-orders/create
-    // ─────────────────────────────────────────────────────────────────────
     public function create()
     {
-        $this->authorizeRole(['hrmo']); // create - hrmo only
+        $this->authorizeRole(['hrmo']);
 
         $employees = Employee::where('status', 'active')
             ->orderBy('last_name')
@@ -52,53 +43,35 @@ class OfficeOrderController extends Controller
         return view('office-orders.create', compact('employees'));
     }
 
-    // ─────────────────────────────────────────────────────────────────────
-    //  Store
-    //  POST /office-orders
-    // ─────────────────────────────────────────────────────────────────────
     public function store(StoreOfficeOrderRequest $request)
     {
-        $this->authorizeRole(['hrmo']); // store - hrmo only
+        $this->authorizeRole(['hrmo']);
 
         $order = OfficeOrder::create(array_merge(
             $request->validated(),
             ['status' => 'draft']
         ));
 
-        PayrollAuditLog::create([
-            'user_id'    => Auth::id(),
-            'action'     => 'Created Office Order: ' . $order->office_order_no,
-            'old_value'  => null,
-            'new_value'  => 'draft',
-            'ip_address' => $request->ip(),
-        ]);
+        $this->auditLog($request, 'Created Office Order: ' . $order->office_order_no, null, 'draft');
 
         return redirect()->route('office-orders.show', $order->id)
             ->with('success', 'Office Order ' . $order->office_order_no . ' created successfully.');
     }
 
-    // ─────────────────────────────────────────────────────────────────────
-    //  Show
-    //  GET /office-orders/{id}
-    // ─────────────────────────────────────────────────────────────────────
     public function show(int $id)
     {
-        $this->authorizeRole(['hrmo', 'accountant', 'budget_officer', 'ard', 'chief_admin_officer', 'cashier']); // show
+        $this->authorizeRole(['hrmo', 'accountant', 'budget_officer', 'ard', 'chief_admin_officer', 'cashier']);
 
-        $order = OfficeOrder::with(['employee', 'approver', 'tevRequests.employee'])
-            ->findOrFail($id);
+        $order = OfficeOrder::with(['employee', 'approver', 'tevRequests.employee'])->findOrFail($id);
 
         return view('office-orders.show', compact('order'));
     }
 
-    // ─────────────────────────────────────────────────────────────────────
-    //  Edit Form
-    //  GET /office-orders/{id}/edit
-    // ─────────────────────────────────────────────────────────────────────
     public function edit(int $id)
     {
-        $this->authorizeRole(['hrmo']); // edit - hrmo only
+        $this->authorizeRole(['hrmo']);
 
+        // Only draft orders are editable — approved/cancelled orders are immutable
         $order = OfficeOrder::where('status', 'draft')->findOrFail($id);
 
         $employees = Employee::where('status', 'active')
@@ -109,43 +82,29 @@ class OfficeOrderController extends Controller
         return view('office-orders.edit', compact('order', 'employees'));
     }
 
-    // ─────────────────────────────────────────────────────────────────────
-    //  Update
-    //  PUT /office-orders/{id}
-    // ─────────────────────────────────────────────────────────────────────
     public function update(StoreOfficeOrderRequest $request, int $id)
     {
-        $this->authorizeRole(['hrmo']); // update - hrmo only
+        $this->authorizeRole(['hrmo']);
 
         $order = OfficeOrder::where('status', 'draft')->findOrFail($id);
 
-        // Re-validate unique ignoring current record
+        // The form request enforces uniqueness on create; on update we re-validate
+        // with an ignore clause so the order's own number doesn't trigger a conflict
         $request->validate([
             'office_order_no' => [
                 'required', 'string', 'max:50',
-                \Illuminate\Validation\Rule::unique('office_orders', 'office_order_no')
-                    ->ignore($order->id),
+                \Illuminate\Validation\Rule::unique('office_orders', 'office_order_no')->ignore($order->id),
             ],
         ]);
 
         $order->update($request->validated());
 
-        PayrollAuditLog::create([
-            'user_id'    => Auth::id(),
-            'action'     => 'Updated Office Order: ' . $order->office_order_no,
-            'old_value'  => null,
-            'new_value'  => 'draft',
-            'ip_address' => $request->ip(),
-        ]);
+        $this->auditLog($request, 'Updated Office Order: ' . $order->office_order_no, null, 'draft');
 
         return redirect()->route('office-orders.show', $order->id)
             ->with('success', 'Office Order updated successfully.');
     }
 
-    // ─────────────────────────────────────────────────────────────────────
-    //  Approve
-    //  POST /office-orders/{id}/approve
-    // ─────────────────────────────────────────────────────────────────────
     public function approve(Request $request, int $id)
     {
         $this->authorizeRole(['hrmo', 'ard', 'chief_admin_officer']);
@@ -167,22 +126,18 @@ class OfficeOrderController extends Controller
             'remarks'     => $request->remarks ?? $order->remarks,
         ]);
 
-        PayrollAuditLog::create([
-            'user_id'    => Auth::id(),
-            'action'     => 'Approved Office Order: ' . $order->office_order_no,
-            'old_value'  => $old,
-            'new_value'  => 'approved',
-            'ip_address' => $request->ip(),
-        ]);
+        $this->auditLog($request, 'Approved Office Order: ' . $order->office_order_no, $old, 'approved');
 
         return redirect()->route('office-orders.show', $order->id)
             ->with('success', 'Office Order approved successfully.');
     }
 
-    // ─────────────────────────────────────────────────────────────────────
-    //  Cancel
-    //  POST /office-orders/{id}/cancel
-    // ─────────────────────────────────────────────────────────────────────
+    /**
+     * Cancel an office order.
+     *
+     * Cancellation is blocked if any TEV requests are linked to the order —
+     * those would be left without a parent and must be resolved first.
+     */
     public function cancel(Request $request, int $id)
     {
         $this->authorizeRole(['hrmo', 'ard', 'chief_admin_officer']);
@@ -206,35 +161,43 @@ class OfficeOrderController extends Controller
             'remarks' => $request->remarks ?? $order->remarks,
         ]);
 
-        PayrollAuditLog::create([
-            'user_id'    => Auth::id(),
-            'action'     => 'Cancelled Office Order: ' . $order->office_order_no,
-            'old_value'  => $old,
-            'new_value'  => 'cancelled',
-            'ip_address' => $request->ip(),
-        ]);
+        $this->auditLog($request, 'Cancelled Office Order: ' . $order->office_order_no, $old, 'cancelled');
 
         return redirect()->route('office-orders.show', $order->id)
             ->with('success', 'Office Order cancelled.');
     }
 
-    // ─────────────────────────────────────────────────────────────────────
-    //  Destroy (not used via resource — kept for completeness)
-    // ─────────────────────────────────────────────────────────────────────
+    /**
+     * Hard deletion is not permitted. Use cancel() to retire an order.
+     */
     public function destroy(int $id)
     {
-        // Intentionally left unimplemented.
-        // Soft-delete via cancel(); hard delete not permitted.
         abort(405);
     }
 
-    // ─────────────────────────────────────────────────────────────────────
-    //  Private helpers
-    // ─────────────────────────────────────────────────────────────────────
+    // ----------------------------------------------------------------
+    // Helpers
+    // ----------------------------------------------------------------
+
     private function authorizeRole(array $roles): void
     {
-        if (!Auth::user()->hasAnyRole($roles)) {
+        if (! Auth::user()->hasAnyRole($roles)) {
             abort(403);
         }
+    }
+
+    /**
+     * Write a standard audit log entry for any office order state change.
+     * Centralised here to keep action methods free of repetitive boilerplate.
+     */
+    private function auditLog(Request $request, string $action, ?string $oldValue, string $newValue): void
+    {
+        PayrollAuditLog::create([
+            'user_id'    => Auth::id(),
+            'action'     => $action,
+            'old_value'  => $oldValue,
+            'new_value'  => $newValue,
+            'ip_address' => $request->ip(),
+        ]);
     }
 }

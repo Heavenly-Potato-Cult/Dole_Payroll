@@ -26,10 +26,10 @@ use Maatwebsite\Excel\Facades\Excel;
 
 class ReportController extends Controller
 {
-    // ─────────────────────────────────────────────────────────────────────────
-    //  TEV — Itinerary of Travel (Appendix A)
-    //  GET /reports/tev/{tevRequest}/itinerary
-    // ─────────────────────────────────────────────────────────────────────────
+    // ----------------------------------------------------------------
+    // TEV printable documents
+    // ----------------------------------------------------------------
+
     public function tevItinerary(int $tevRequest)
     {
         $this->authorizeRole(['hrmo', 'accountant', 'budget_officer', 'ard', 'cashier', 'chief_admin_officer']);
@@ -44,10 +44,6 @@ class ReportController extends Controller
         return view('reports.tev-itinerary', compact('tev'));
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    //  TEV — Certification of Travel Completed
-    //  GET /reports/tev/{tevRequest}/travel-completed
-    // ─────────────────────────────────────────────────────────────────────────
     public function tevTravelCompleted(int $tevRequest)
     {
         $this->authorizeRole(['hrmo', 'accountant', 'budget_officer', 'ard', 'cashier', 'chief_admin_officer']);
@@ -62,10 +58,6 @@ class ReportController extends Controller
         return view('reports.tev-travel-completed', compact('tev'));
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    //  TEV — Annex A: Expenses Not Requiring Receipts
-    //  GET /reports/tev/{tevRequest}/annex-a
-    // ─────────────────────────────────────────────────────────────────────────
     public function tevAnnexA(int $tevRequest)
     {
         $this->authorizeRole(['hrmo', 'accountant', 'budget_officer', 'ard', 'cashier', 'chief_admin_officer']);
@@ -80,10 +72,11 @@ class ReportController extends Controller
         return view('reports.tev-annex-a', compact('tev'));
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    //  TEV — Liquidation / Disbursement Voucher  (printable HTML page)
-    //  GET /reports/tev/{tevRequest}/liquidation-dv
-    // ─────────────────────────────────────────────────────────────────────────
+    /**
+     * Liquidation Disbursement Voucher — only available for cash_advance TEVs
+     * that have already had liquidation filed. Reimbursement-track TEVs skip
+     * this step entirely and will 404 here.
+     */
     public function tevLiquidationDv(int $tevRequest)
     {
         $this->authorizeRole(['hrmo', 'accountant', 'budget_officer', 'ard', 'cashier', 'chief_admin_officer']);
@@ -93,24 +86,24 @@ class ReportController extends Controller
             'employee.division',
             'officeOrder',
             'certification',
-            'approvalLogs' => fn($q) => $q->with('user')->orderBy('performed_at'),
+            'approvalLogs' => fn ($q) => $q->with('user')->orderBy('performed_at'),
         ])->findOrFail($tevRequest);
 
         if ($tev->track !== 'cash_advance') {
             abort(404, 'Liquidation DV is only available for Cash Advance TEVs.');
         }
 
-        if (!in_array($tev->status, ['liquidation_filed', 'liquidated'])) {
+        if (! in_array($tev->status, ['liquidation_filed', 'liquidated'])) {
             abort(404, 'Liquidation has not been filed for this TEV yet.');
         }
 
         return view('reports.tev-liquidation-dv', compact('tev'));
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    //  TEV Register (HTML)
-    //  GET /reports/tev-register
-    // ─────────────────────────────────────────────────────────────────────────
+    // ----------------------------------------------------------------
+    // TEV register
+    // ----------------------------------------------------------------
+
     public function tevRegister(Request $request)
     {
         $this->authorizeRole(['payroll_officer', 'hrmo', 'accountant', 'ard', 'cashier']);
@@ -118,21 +111,11 @@ class ReportController extends Controller
         $query = TevRequest::with(['employee.division', 'officeOrder'])
             ->orderByDesc('travel_date_start');
 
-        if ($request->filled('year')) {
-            $query->whereYear('travel_date_start', $request->year);
-        }
-        if ($request->filled('month')) {
-            $query->whereMonth('travel_date_start', $request->month);
-        }
-        if ($request->filled('track')) {
-            $query->where('track', $request->track);
-        }
-        if ($request->filled('status')) {
-            $query->where('status', $request->status);
-        }
-        if ($request->filled('employee_id')) {
-            $query->where('employee_id', $request->employee_id);
-        }
+        if ($request->filled('year'))        $query->whereYear('travel_date_start',  $request->year);
+        if ($request->filled('month'))       $query->whereMonth('travel_date_start', $request->month);
+        if ($request->filled('track'))       $query->where('track',       $request->track);
+        if ($request->filled('status'))      $query->where('status',      $request->status);
+        if ($request->filled('employee_id')) $query->where('employee_id', $request->employee_id);
 
         $tevRequests = $query->paginate(30)->withQueryString();
         $grandTotal  = $query->getQuery()->clone()->sum('grand_total');
@@ -145,26 +128,16 @@ class ReportController extends Controller
         ));
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    //  TEV Register Excel Export
-    //  GET /reports/tev-register/export
-    // ─────────────────────────────────────────────────────────────────────────
     public function tevRegisterExport(Request $request)
     {
         $this->authorizeRole(['payroll_officer', 'hrmo', 'accountant', 'ard', 'cashier']);
 
-        $filters = $request->only(['year', 'month', 'track', 'status', 'employee_id']);
-
         return Excel::download(
-            new TevRegisterExport($filters),
+            new TevRegisterExport($request->only(['year', 'month', 'track', 'status', 'employee_id'])),
             'TEV-Register-' . now()->format('Ymd') . '.xlsx'
         );
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    //  Employee TEV History
-    //  GET /employees/{employee}/tev-history
-    // ─────────────────────────────────────────────────────────────────────────
     public function employeeTevHistory(Request $request, int $employee)
     {
         $this->authorizeRole(['payroll_officer', 'hrmo', 'accountant', 'ard', 'cashier']);
@@ -180,27 +153,26 @@ class ReportController extends Controller
         return view('employees.tev-history', compact('emp', 'tevRequests'));
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    //  Reports Index
-    //  GET /reports
-    // ─────────────────────────────────────────────────────────────────────────
+    // ----------------------------------------------------------------
+    // Reports index
+    // ----------------------------------------------------------------
+
     public function index()
     {
         $this->authorizeRole(['payroll_officer', 'hrmo', 'accountant', 'ard', 'cashier']);
+
         return view('reports.index');
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    //  GSIS — Filter / Preview page
-    //  GET /reports/gsis
-    // ─────────────────────────────────────────────────────────────────────────
+    // ----------------------------------------------------------------
+    // GSIS
+    // ----------------------------------------------------------------
+
     public function gsisIndex(Request $request)
     {
         $this->authorizeRole(['payroll_officer', 'hrmo', 'accountant']);
 
-        $year   = (int) $request->get('year',   now()->year);
-        $month  = (int) $request->get('month',  now()->month);
-        $cutoff = $request->get('cutoff', 'both');
+        [$year, $month, $cutoff] = $this->remittanceFilters();
 
         $summaryExport = new GsisSummaryExport($year, $month, $cutoff);
         $totals        = $summaryExport->getTotals();
@@ -222,7 +194,7 @@ class ReportController extends Controller
         ];
 
         $currentYear = now()->year;
-        $months = $this->monthNames();
+        $months      = $this->monthNames();
 
         return view('reports.gsis', compact(
             'year', 'month', 'cutoff',
@@ -231,10 +203,6 @@ class ReportController extends Controller
         ));
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    //  GSIS — Summary Excel Download
-    //  GET /reports/gsis-summary
-    // ─────────────────────────────────────────────────────────────────────────
     public function gsisSummary(Request $request)
     {
         $this->authorizeRole(['payroll_officer', 'hrmo', 'accountant']);
@@ -245,19 +213,14 @@ class ReportController extends Controller
             'cutoff' => ['nullable', 'in:1st,2nd,both'],
         ]);
 
-        $year   = (int) $request->year;
-        $month  = (int) $request->month;
-        $cutoff = $request->get('cutoff', 'both');
+        [$year, $month, $cutoff] = $this->remittanceFilters();
 
-        $filename = sprintf('GSIS-Summary-%04d-%02d-%s.xlsx', $year, $month, $cutoff);
-
-        return Excel::download(new GsisSummaryExport($year, $month, $cutoff), $filename);
+        return Excel::download(
+            new GsisSummaryExport($year, $month, $cutoff),
+            sprintf('GSIS-Summary-%04d-%02d-%s.xlsx', $year, $month, $cutoff)
+        );
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    //  GSIS — Detailed Excel Download
-    //  GET /reports/gsis-detailed
-    // ─────────────────────────────────────────────────────────────────────────
     public function gsisDetailed(Request $request)
     {
         $this->authorizeRole(['payroll_officer', 'hrmo', 'accountant']);
@@ -268,28 +231,24 @@ class ReportController extends Controller
             'cutoff' => ['nullable', 'in:1st,2nd,both'],
         ]);
 
-        $year   = (int) $request->year;
-        $month  = (int) $request->month;
-        $cutoff = $request->get('cutoff', 'both');
+        [$year, $month, $cutoff] = $this->remittanceFilters();
 
-        $filename = sprintf('GSIS-Detailed-%04d-%02d-%s.xlsx', $year, $month, $cutoff);
-
-        return Excel::download(new GsisDetailedExport($year, $month, $cutoff), $filename);
+        return Excel::download(
+            new GsisDetailedExport($year, $month, $cutoff),
+            sprintf('GSIS-Detailed-%04d-%02d-%s.xlsx', $year, $month, $cutoff)
+        );
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    //  HDMF — Filter / Preview page
-    //  GET /reports/hdmf
-    // ─────────────────────────────────────────────────────────────────────────
+    // ----------------------------------------------------------------
+    // HDMF / Pag-IBIG
+    // ----------------------------------------------------------------
+
     public function hdmfIndex(Request $request)
     {
         $this->authorizeRole(['payroll_officer', 'hrmo', 'accountant']);
 
-        $year   = (int) $request->get('year',   now()->year);
-        $month  = (int) $request->get('month',  now()->month);
-        $cutoff = $request->get('cutoff', 'both');
+        [$year, $month, $cutoff] = $this->remittanceFilters();
 
-        // Build per-sheet stats for the preview table
         $p1      = new HdmfP1Export($year, $month, $cutoff);
         $p2      = new HdmfP2Export($year, $month, $cutoff);
         $mpl     = new HdmfMplExport($year, $month, $cutoff);
@@ -297,15 +256,17 @@ class ReportController extends Controller
         $housing = new HdmfHousingExport($year, $month, $cutoff);
 
         $sheets = [
-            ['label' => 'Pag-IBIG I (P1)',        'program' => 'F1',  'count' => $p1->getCount(),      'total' => $p1->getTotal()],
-            ['label' => 'Modified Pag-IBIG II (P2)', 'program' => 'M2', 'count' => $p2->getCount(),   'total' => $p2->getTotal()],
-            ['label' => 'Multi-Purpose Loan (MPL)', 'program' => 'MPL', 'count' => $mpl->getCount(),  'total' => $mpl->getTotal()],
-            ['label' => 'Calamity Loan (CAL)',      'program' => 'CAL', 'count' => $cal->getCount(),  'total' => $cal->getTotal()],
-            ['label' => 'Housing Loan (HL)',         'program' => 'HL',  'count' => $housing->getCount(), 'total' => $housing->getTotal()],
+            ['label' => 'Pag-IBIG I (P1)',           'program' => 'F1',  'count' => $p1->getCount(),      'total' => $p1->getTotal()],
+            ['label' => 'Modified Pag-IBIG II (P2)',  'program' => 'M2',  'count' => $p2->getCount(),      'total' => $p2->getTotal()],
+            ['label' => 'Multi-Purpose Loan (MPL)',   'program' => 'MPL', 'count' => $mpl->getCount(),     'total' => $mpl->getTotal()],
+            ['label' => 'Calamity Loan (CAL)',        'program' => 'CAL', 'count' => $cal->getCount(),     'total' => $cal->getTotal()],
+            ['label' => 'Housing Loan (HL)',           'program' => 'HL',  'count' => $housing->getCount(), 'total' => $housing->getTotal()],
         ];
 
-        $grandTotal    = array_sum(array_column($sheets, 'total'));
-        $employeeCount = $p1->getCount(); // P1 is the broadest — use as headline count
+        $grandTotal = array_sum(array_column($sheets, 'total'));
+
+        // P1 covers the broadest set of contributors — used as the headline employee count
+        $employeeCount = $p1->getCount();
 
         $currentYear = now()->year;
         $months      = $this->monthNames();
@@ -317,10 +278,6 @@ class ReportController extends Controller
         ));
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    //  HDMF — Combined 5-sheet Excel Download
-    //  GET /reports/hdmf/download
-    // ─────────────────────────────────────────────────────────────────────────
     public function hdmf(Request $request)
     {
         $this->authorizeRole(['payroll_officer', 'hrmo', 'accountant']);
@@ -331,34 +288,23 @@ class ReportController extends Controller
             'cutoff' => ['nullable', 'in:1st,2nd,both'],
         ]);
 
-        $year   = (int) $request->year;
-        $month  = (int) $request->month;
-        $cutoff = $request->get('cutoff', 'both');
+        [$year, $month, $cutoff] = $this->remittanceFilters();
 
-        $filename = sprintf('HDMF-Remittance-%04d-%02d-%s.xlsx', $year, $month, $cutoff);
-
-        return Excel::download(new HdmfRemittanceExport($year, $month, $cutoff), $filename);
+        return Excel::download(
+            new HdmfRemittanceExport($year, $month, $cutoff),
+            sprintf('HDMF-Remittance-%04d-%02d-%s.xlsx', $year, $month, $cutoff)
+        );
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    //  PHASE 3A STEP 3 — NEW REMITTANCE METHODS
-    // ─────────────────────────────────────────────────────────────────────────
+    // ----------------------------------------------------------------
+    // Remittances hub and per-deduction report/download methods
+    //
+    // Each method below follows the same pattern:
+    //   - If ?download is present, stream an Excel file immediately.
+    //   - Otherwise, query the deduction rows and render the preview view.
+    // The deduction code used for each method is noted inline.
+    // ----------------------------------------------------------------
 
-    // ────────────────────────────────────────────────────────────────────────
-    // Shared helper: resolve filter params from request
-    // ────────────────────────────────────────────────────────────────────────
-    private function remittanceFilters(): array
-    {
-        $year   = (int) request('year',   now()->year);
-        $month  = (int) request('month',  now()->month);
-        $cutoff = request('cutoff', 'both');
-
-        return [$year, $month, $cutoff];
-    }
-
-    // ────────────────────────────────────────────────────────────────────────
-    // Master Remittances Hub
-    // ────────────────────────────────────────────────────────────────────────
     public function remittancesHub()
     {
         $this->authorizeRole(['payroll_officer', 'hrmo', 'accountant']);
@@ -374,9 +320,13 @@ class ReportController extends Controller
         ]);
     }
 
-    // ────────────────────────────────────────────────────────────────────────
-    // PHIC — stub (system-generated via portal)
-    // ────────────────────────────────────────────────────────────────────────
+    /**
+     * PhilHealth contributions CSV.
+     *
+     * PhilHealth does not accept a system-generated remittance file — the
+     * official PDF billing must be generated from the PHIC Employer Portal.
+     * This CSV is intended for manual reconciliation or upload preparation only.
+     */
     public function phicCsv()
     {
         $this->authorizeRole(['payroll_officer', 'hrmo', 'accountant']);
@@ -384,26 +334,7 @@ class ReportController extends Controller
         [$year, $month, $cutoff] = $this->remittanceFilters();
         $monthName = date('F', mktime(0, 0, 0, $month, 1));
 
-        // PhilHealth generates its own billing/remittance PDF from the employer
-        // portal. This endpoint produces a plain-text contribution list
-        // suitable for manual reconciliation or upload preparation.
-
-        $batches = \App\Models\PayrollBatch::query()
-            ->whereYear('period_start', $year)
-            ->whereMonth('period_start', $month)
-            ->when($cutoff === '1st', fn($q) => $q->whereDay('period_start', '<=', 15))
-            ->when($cutoff === '2nd', fn($q) => $q->whereDay('period_start', '>', 15))
-            ->pluck('id');
-
-        $deductionTypeId = \App\Models\DeductionType::where('code', 'PHIC')->value('id');
-
-        $rows = \App\Models\PayrollDeduction::with('payrollEntry.employee')
-            ->whereIn('payroll_entry_id', function ($q) use ($batches) {
-                $q->select('id')->from('payroll_entries')->whereIn('payroll_batch_id', $batches);
-            })
-            ->where('deduction_type_id', $deductionTypeId)
-            ->where('amount', '>', 0)
-            ->get()
+        $rows = $this->deductionRows('PHIC', $year, $month, $cutoff)
             ->map(function ($ded) {
                 $emp = $ded->payrollEntry->employee;
                 return [
@@ -413,12 +344,11 @@ class ReportController extends Controller
                     number_format($ded->amount, 2),
                 ];
             })
-            ->sortBy(fn($r) => $r[0])
+            ->sortBy(fn ($r) => $r[0])
             ->values();
 
         $filename = "PHIC_{$year}_{$month}_contributions.csv";
-
-        $headers = [
+        $headers  = [
             'Content-Type'        => 'text/csv',
             'Content-Disposition' => "attachment; filename=\"{$filename}\"",
         ];
@@ -426,23 +356,22 @@ class ReportController extends Controller
         $callback = function () use ($rows, $monthName, $year) {
             $out = fopen('php://output', 'w');
             fputcsv($out, ['PhilHealth Contributions — ' . $monthName . ' ' . $year]);
-            fputcsv($out, ['Note: Extracted from the system. Generate PDF Billing and PHIC Remittance from the PHIC Employer Portal.']);
+            fputcsv($out, ['Note: Generate PDF Billing and PHIC Remittance from the PHIC Employer Portal.']);
             fputcsv($out, []);
             fputcsv($out, ['NAME', 'PHILHEALTH NO.', 'BASIC MONTHLY SALARY', 'EE SHARE']);
-            foreach ($rows as $row) {
-                fputcsv($out, $row);
-            }
+            foreach ($rows as $row) fputcsv($out, $row);
             fputcsv($out, []);
-            fputcsv($out, ['TOTAL', '', '', number_format($rows->sum(fn($r) => (float) str_replace(',', '', $r[3])), 2)]);
+            fputcsv($out, ['TOTAL', '', '', number_format($rows->sum(fn ($r) => (float) str_replace(',', '', $r[3])), 2)]);
             fclose($out);
         };
 
         return response()->stream($callback, 200, $headers);
     }
 
-    // ────────────────────────────────────────────────────────────────────────
-    // SSS Voluntary — stub (system-generated via SSS portal)
-    // ────────────────────────────────────────────────────────────────────────
+    /**
+     * SSS Voluntary contributions CSV.
+     * Remittance itself is processed via the SSS Employer Portal.
+     */
     public function sssVoluntary()
     {
         $this->authorizeRole(['payroll_officer', 'hrmo', 'accountant']);
@@ -450,22 +379,7 @@ class ReportController extends Controller
         [$year, $month, $cutoff] = $this->remittanceFilters();
         $monthName = date('F', mktime(0, 0, 0, $month, 1));
 
-        $batches = \App\Models\PayrollBatch::query()
-            ->whereYear('period_start', $year)
-            ->whereMonth('period_start', $month)
-            ->when($cutoff === '1st', fn($q) => $q->whereDay('period_start', '<=', 15))
-            ->when($cutoff === '2nd', fn($q) => $q->whereDay('period_start', '>', 15))
-            ->pluck('id');
-
-        $deductionTypeId = \App\Models\DeductionType::where('code', 'SSS')->value('id');
-
-        $rows = \App\Models\PayrollDeduction::with('payrollEntry.employee')
-            ->whereIn('payroll_entry_id', function ($q) use ($batches) {
-                $q->select('id')->from('payroll_entries')->whereIn('payroll_batch_id', $batches);
-            })
-            ->where('deduction_type_id', $deductionTypeId)
-            ->where('amount', '>', 0)
-            ->get()
+        $rows = $this->deductionRows('SSS', $year, $month, $cutoff)
             ->map(function ($ded) {
                 $emp = $ded->payrollEntry->employee;
                 return [
@@ -474,12 +388,11 @@ class ReportController extends Controller
                     number_format($ded->amount, 2),
                 ];
             })
-            ->sortBy(fn($r) => $r[0])
+            ->sortBy(fn ($r) => $r[0])
             ->values();
 
         $filename = "SSS_Voluntary_{$year}_{$month}.csv";
-
-        $headers = [
+        $headers  = [
             'Content-Type'        => 'text/csv',
             'Content-Disposition' => "attachment; filename=\"{$filename}\"",
         ];
@@ -487,299 +400,147 @@ class ReportController extends Controller
         $callback = function () use ($rows, $monthName, $year) {
             $out = fopen('php://output', 'w');
             fputcsv($out, ['SSS Voluntary Contributions — ' . $monthName . ' ' . $year]);
-            fputcsv($out, ['Note: Extracted from the system and generates PDF Billing and SSS Remittance via SSS Employer Portal.']);
+            fputcsv($out, ['Note: Generate PDF Billing and SSS Remittance via SSS Employer Portal.']);
             fputcsv($out, []);
             fputcsv($out, ['NAME', 'SSS NO.', 'AMOUNT']);
-            foreach ($rows as $row) {
-                fputcsv($out, $row);
-            }
+            foreach ($rows as $row) fputcsv($out, $row);
             fputcsv($out, []);
-            fputcsv($out, ['TOTAL', '', number_format($rows->sum(fn($r) => (float) str_replace(',', '', $r[2])), 2)]);
+            fputcsv($out, ['TOTAL', '', number_format($rows->sum(fn ($r) => (float) str_replace(',', '', $r[2])), 2)]);
             fclose($out);
         };
 
         return response()->stream($callback, 200, $headers);
     }
 
-    // ────────────────────────────────────────────────────────────────────────
-    // LBP Loan
-    // ────────────────────────────────────────────────────────────────────────
+    // Deduction code: LBP_LOAN
     public function lbpLoan(Request $request)
     {
         $this->authorizeRole(['payroll_officer', 'hrmo', 'accountant']);
 
         [$year, $month, $cutoff] = $this->remittanceFilters();
-        $monthName = date('F', mktime(0, 0, 0, $month, 1));
 
         if ($request->has('download')) {
             return Excel::download(
                 new LbpLoanExport($year, $month, $cutoff),
-                "LBP_Loan_{$year}_{$monthName}.xlsx"
+                'LBP_Loan_' . $year . '_' . date('F', mktime(0, 0, 0, $month, 1)) . '.xlsx'
             );
         }
 
-        // Preview: fetch totals for the view
-        $batches = \App\Models\PayrollBatch::query()
-            ->whereYear('period_start', $year)
-            ->whereMonth('period_start', $month)
-            ->when($cutoff === '1st', fn($q) => $q->whereDay('period_start', '<=', 15))
-            ->when($cutoff === '2nd', fn($q) => $q->whereDay('period_start', '>', 15))
-            ->pluck('id');
+        $rows = $this->deductionRows('LBP_LOAN', $year, $month, $cutoff);
 
-        $deductionTypeId = \App\Models\DeductionType::where('code', 'LBP_LOAN')->value('id');
-
-        $rows = \App\Models\PayrollDeduction::with('payrollEntry.employee')
-            ->whereIn('payroll_entry_id', fn($q) => $q->select('id')->from('payroll_entries')->whereIn('payroll_batch_id', $batches))
-            ->where('deduction_type_id', $deductionTypeId)
-            ->where('amount', '>', 0)
-            ->get();
-
-        return view('reports.remittances', [
-            'year'          => $year,
-            'month'         => $month,
-            'cutoff'        => $cutoff,
-            'currentYear'   => now()->year,
-            'months'        => $this->monthNames(),
-            'activeReport'  => 'lbp',
-            'reportRows'    => $rows,
-            'grandTotal'    => $rows->sum('amount'),
-            'employeeCount' => $rows->count(),
-        ]);
+        return $this->remittancePreview($year, $month, $cutoff, 'lbp', $rows);
     }
 
-    // ────────────────────────────────────────────────────────────────────────
-    // CARESS IX Union Dues
-    // ────────────────────────────────────────────────────────────────────────
+    // Deduction code: CARESS_UNION
     public function caressUnion(Request $request)
     {
         $this->authorizeRole(['payroll_officer', 'hrmo', 'accountant']);
 
         [$year, $month, $cutoff] = $this->remittanceFilters();
-        $monthName = date('F', mktime(0, 0, 0, $month, 1));
 
         if ($request->has('download')) {
             return Excel::download(
                 new CaressUnionDuesExport($year, $month, $cutoff),
-                "CARESS_UnionDues_{$year}_{$monthName}.xlsx"
+                'CARESS_UnionDues_' . $year . '_' . date('F', mktime(0, 0, 0, $month, 1)) . '.xlsx'
             );
         }
 
-        $batches = \App\Models\PayrollBatch::query()
-            ->whereYear('period_start', $year)
-            ->whereMonth('period_start', $month)
-            ->when($cutoff === '1st', fn($q) => $q->whereDay('period_start', '<=', 15))
-            ->when($cutoff === '2nd', fn($q) => $q->whereDay('period_start', '>', 15))
-            ->pluck('id');
+        $rows = $this->deductionRows('CARESS_UNION', $year, $month, $cutoff);
 
-        $deductionTypeId = \App\Models\DeductionType::where('code', 'CARESS_UNION')->value('id');
-
-        $rows = \App\Models\PayrollDeduction::with('payrollEntry.employee')
-            ->whereIn('payroll_entry_id', fn($q) => $q->select('id')->from('payroll_entries')->whereIn('payroll_batch_id', $batches))
-            ->where('deduction_type_id', $deductionTypeId)
-            ->where('amount', '>', 0)
-            ->get();
-
-        return view('reports.remittances', [
-            'year'          => $year,
-            'month'         => $month,
-            'cutoff'        => $cutoff,
-            'currentYear'   => now()->year,
-            'months'        => $this->monthNames(),
-            'activeReport'  => 'caress_union',
-            'reportRows'    => $rows,
-            'grandTotal'    => $rows->sum('amount'),
-            'employeeCount' => $rows->count(),
-        ]);
+        return $this->remittancePreview($year, $month, $cutoff, 'caress_union', $rows);
     }
 
-    // ────────────────────────────────────────────────────────────────────────
-    // CARESS IX Mortuary
-    // ────────────────────────────────────────────────────────────────────────
+    // Deduction code: CARESS_MORTUARY
     public function caressMortuary(Request $request)
     {
         $this->authorizeRole(['payroll_officer', 'hrmo', 'accountant']);
 
         [$year, $month, $cutoff] = $this->remittanceFilters();
-        $monthName = date('F', mktime(0, 0, 0, $month, 1));
 
         if ($request->has('download')) {
             return Excel::download(
                 new CaressMortuaryExport($year, $month, $cutoff),
-                "CARESS_Mortuary_{$year}_{$monthName}.xlsx"
+                'CARESS_Mortuary_' . $year . '_' . date('F', mktime(0, 0, 0, $month, 1)) . '.xlsx'
             );
         }
 
-        $batches = \App\Models\PayrollBatch::query()
-            ->whereYear('period_start', $year)
-            ->whereMonth('period_start', $month)
-            ->when($cutoff === '1st', fn($q) => $q->whereDay('period_start', '<=', 15))
-            ->when($cutoff === '2nd', fn($q) => $q->whereDay('period_start', '>', 15))
-            ->pluck('id');
+        $rows = $this->deductionRows('CARESS_MORTUARY', $year, $month, $cutoff);
 
-        $deductionTypeId = \App\Models\DeductionType::where('code', 'CARESS_MORTUARY')->value('id');
-
-        $rows = \App\Models\PayrollDeduction::with('payrollEntry.employee')
-            ->whereIn('payroll_entry_id', fn($q) => $q->select('id')->from('payroll_entries')->whereIn('payroll_batch_id', $batches))
-            ->where('deduction_type_id', $deductionTypeId)
-            ->where('amount', '>', 0)
-            ->get();
-
-        return view('reports.remittances', [
-            'year'          => $year,
-            'month'         => $month,
-            'cutoff'        => $cutoff,
-            'currentYear'   => now()->year,
-            'months'        => $this->monthNames(),
-            'activeReport'  => 'caress_mortuary',
-            'reportRows'    => $rows,
-            'grandTotal'    => $rows->sum('amount'),
-            'employeeCount' => $rows->count(),
-        ]);
+        return $this->remittancePreview($year, $month, $cutoff, 'caress_mortuary', $rows);
     }
 
-    // ────────────────────────────────────────────────────────────────────────
-    // MASS
-    // ────────────────────────────────────────────────────────────────────────
+    // Deduction code: MASS
     public function mass(Request $request)
     {
         $this->authorizeRole(['payroll_officer', 'hrmo', 'accountant']);
 
         [$year, $month, $cutoff] = $this->remittanceFilters();
-        $monthName = date('F', mktime(0, 0, 0, $month, 1));
 
         if ($request->has('download')) {
             return Excel::download(
                 new MassExport($year, $month, $cutoff),
-                "MASS_{$year}_{$monthName}.xlsx"
+                'MASS_' . $year . '_' . date('F', mktime(0, 0, 0, $month, 1)) . '.xlsx'
             );
         }
 
-        $batches = \App\Models\PayrollBatch::query()
-            ->whereYear('period_start', $year)
-            ->whereMonth('period_start', $month)
-            ->when($cutoff === '1st', fn($q) => $q->whereDay('period_start', '<=', 15))
-            ->when($cutoff === '2nd', fn($q) => $q->whereDay('period_start', '>', 15))
-            ->pluck('id');
+        $rows = $this->deductionRows('MASS', $year, $month, $cutoff);
 
-        $deductionTypeId = \App\Models\DeductionType::where('code', 'MASS')->value('id');
-
-        $rows = \App\Models\PayrollDeduction::with('payrollEntry.employee')
-            ->whereIn('payroll_entry_id', fn($q) => $q->select('id')->from('payroll_entries')->whereIn('payroll_batch_id', $batches))
-            ->where('deduction_type_id', $deductionTypeId)
-            ->where('amount', '>', 0)
-            ->get();
-
-        return view('reports.remittances', [
-            'year'          => $year,
-            'month'         => $month,
-            'cutoff'        => $cutoff,
-            'currentYear'   => now()->year,
-            'months'        => $this->monthNames(),
-            'activeReport'  => 'mass',
-            'reportRows'    => $rows,
-            'grandTotal'    => $rows->sum('amount'),
-            'employeeCount' => $rows->count(),
-        ]);
+        return $this->remittancePreview($year, $month, $cutoff, 'mass', $rows);
     }
 
-    // ────────────────────────────────────────────────────────────────────────
-    // Provident Fund
-    // ────────────────────────────────────────────────────────────────────────
+    // Deduction code: PROVIDENT_FUND
     public function providentFund(Request $request)
     {
         $this->authorizeRole(['payroll_officer', 'hrmo', 'accountant']);
 
         [$year, $month, $cutoff] = $this->remittanceFilters();
-        $monthName = date('F', mktime(0, 0, 0, $month, 1));
 
         if ($request->has('download')) {
             return Excel::download(
                 new ProvidentFundExport($year, $month, $cutoff),
-                "ProvidentFund_{$year}_{$monthName}.xlsx"
+                'ProvidentFund_' . $year . '_' . date('F', mktime(0, 0, 0, $month, 1)) . '.xlsx'
             );
         }
 
-        $batches = \App\Models\PayrollBatch::query()
-            ->whereYear('period_start', $year)
-            ->whereMonth('period_start', $month)
-            ->when($cutoff === '1st', fn($q) => $q->whereDay('period_start', '<=', 15))
-            ->when($cutoff === '2nd', fn($q) => $q->whereDay('period_start', '>', 15))
-            ->pluck('id');
+        $rows = $this->deductionRows('PROVIDENT_FUND', $year, $month, $cutoff);
 
-        $deductionTypeId = \App\Models\DeductionType::where('code', 'PROVIDENT_FUND')->value('id');
-
-        $rows = \App\Models\PayrollDeduction::with('payrollEntry.employee')
-            ->whereIn('payroll_entry_id', fn($q) => $q->select('id')->from('payroll_entries')->whereIn('payroll_batch_id', $batches))
-            ->where('deduction_type_id', $deductionTypeId)
-            ->where('amount', '>', 0)
-            ->get();
-
-        return view('reports.remittances', [
-            'year'          => $year,
-            'month'         => $month,
-            'cutoff'        => $cutoff,
-            'currentYear'   => now()->year,
-            'months'        => $this->monthNames(),
-            'activeReport'  => 'provident_fund',
-            'reportRows'    => $rows,
-            'grandTotal'    => $rows->sum('amount'),
-            'employeeCount' => $rows->count(),
-        ]);
+        return $this->remittancePreview($year, $month, $cutoff, 'provident_fund', $rows);
     }
 
-    // ────────────────────────────────────────────────────────────────────────
-    // BTR Refund
-    // ────────────────────────────────────────────────────────────────────────
+    // Deduction codes: WHT + REFUND_VARIOUS (withheld tax and refunds remitted together to BTR)
     public function btrRefund(Request $request)
     {
         $this->authorizeRole(['payroll_officer', 'hrmo', 'accountant']);
 
         [$year, $month, $cutoff] = $this->remittanceFilters();
-        $monthName = date('F', mktime(0, 0, 0, $month, 1));
 
         if ($request->has('download')) {
             return Excel::download(
                 new BtrRefundExport($year, $month, $cutoff),
-                "BTR_Refund_{$year}_{$monthName}.xlsx"
+                'BTR_Refund_' . $year . '_' . date('F', mktime(0, 0, 0, $month, 1)) . '.xlsx'
             );
         }
 
-        $batches = \App\Models\PayrollBatch::query()
-            ->whereYear('period_start', $year)
-            ->whereMonth('period_start', $month)
-            ->when($cutoff === '1st', fn($q) => $q->whereDay('period_start', '<=', 15))
-            ->when($cutoff === '2nd', fn($q) => $q->whereDay('period_start', '>', 15))
-            ->pluck('id');
-
-        $deductionTypes = \App\Models\DeductionType::whereIn('code', ['WHT', 'REFUND_VARIOUS'])->pluck('id');
+        // BTR covers two deduction types — query them together
+        $batches         = $this->batchIdsForPeriod($year, $month, $cutoff);
+        $deductionTypes  = \App\Models\DeductionType::whereIn('code', ['WHT', 'REFUND_VARIOUS'])->pluck('id');
 
         $rows = \App\Models\PayrollDeduction::with(['payrollEntry.employee', 'deductionType'])
-            ->whereIn('payroll_entry_id', function ($q) use ($batches) {
-                $q->select('id')->from('payroll_entries')->whereIn('payroll_batch_id', $batches);
-            })
+            ->whereIn('payroll_entry_id', fn ($q) => $q->select('id')->from('payroll_entries')->whereIn('payroll_batch_id', $batches))
             ->whereIn('deduction_type_id', $deductionTypes)
             ->where('amount', '>', 0)
             ->get();
 
-        return view('reports.remittances', [
-            'year'          => $year,
-            'month'         => $month,
-            'cutoff'        => $cutoff,
-            'currentYear'   => now()->year,
-            'months'        => $this->monthNames(),
-            'activeReport'  => 'btr',
-            'reportRows'    => $rows,
-            'grandTotal'    => $rows->sum('amount'),
-            'employeeCount' => $rows->count(),
-        ]);
+        return $this->remittancePreview($year, $month, $cutoff, 'btr', $rows);
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    //  Private helpers
-    // ─────────────────────────────────────────────────────────────────────────
+    // ----------------------------------------------------------------
+    // Helpers
+    // ----------------------------------------------------------------
+
     private function authorizeRole(array $roles): void
     {
-        if (!Auth::user()->hasAnyRole($roles)) {
+        if (! Auth::user()->hasAnyRole($roles)) {
             abort(403);
         }
     }
@@ -787,10 +548,73 @@ class ReportController extends Controller
     private function monthNames(): array
     {
         return [
-            1 => 'January',   2 => 'February',  3 => 'March',
-            4 => 'April',     5 => 'May',        6 => 'June',
-            7 => 'July',      8 => 'August',     9 => 'September',
-            10 => 'October',  11 => 'November',  12 => 'December',
+            1 => 'January',  2 => 'February',  3 => 'March',
+            4 => 'April',    5 => 'May',        6 => 'June',
+            7 => 'July',     8 => 'August',     9 => 'September',
+            10 => 'October', 11 => 'November',  12 => 'December',
         ];
+    }
+
+    /**
+     * Resolve year/month/cutoff from the current request.
+     * All remittance methods share the same three filter params.
+     */
+    private function remittanceFilters(): array
+    {
+        return [
+            (int) request('year',   now()->year),
+            (int) request('month',  now()->month),
+            request('cutoff', 'both'),
+        ];
+    }
+
+    /**
+     * Resolve payroll batch IDs for a given period and cut-off.
+     * Extracted to avoid repeating the same query across every remittance method.
+     */
+    private function batchIdsForPeriod(int $year, int $month, string $cutoff)
+    {
+        return \App\Models\PayrollBatch::query()
+            ->whereYear('period_start',  $year)
+            ->whereMonth('period_start', $month)
+            ->when($cutoff === '1st', fn ($q) => $q->whereDay('period_start', '<=', 15))
+            ->when($cutoff === '2nd', fn ($q) => $q->whereDay('period_start', '>',  15))
+            ->pluck('id');
+    }
+
+    /**
+     * Fetch PayrollDeduction rows for a single deduction code and period.
+     * Used by every remittance preview/download method except btrRefund,
+     * which spans two codes and queries directly.
+     */
+    private function deductionRows(string $code, int $year, int $month, string $cutoff)
+    {
+        $batches         = $this->batchIdsForPeriod($year, $month, $cutoff);
+        $deductionTypeId = \App\Models\DeductionType::where('code', $code)->value('id');
+
+        return \App\Models\PayrollDeduction::with('payrollEntry.employee')
+            ->whereIn('payroll_entry_id', fn ($q) => $q->select('id')->from('payroll_entries')->whereIn('payroll_batch_id', $batches))
+            ->where('deduction_type_id', $deductionTypeId)
+            ->where('amount', '>', 0)
+            ->get();
+    }
+
+    /**
+     * Render the shared remittances preview view with per-report row data.
+     * All single-deduction remittance methods delegate their preview response here.
+     */
+    private function remittancePreview(int $year, int $month, string $cutoff, string $activeReport, $rows)
+    {
+        return view('reports.remittances', [
+            'year'          => $year,
+            'month'         => $month,
+            'cutoff'        => $cutoff,
+            'currentYear'   => now()->year,
+            'months'        => $this->monthNames(),
+            'activeReport'  => $activeReport,
+            'reportRows'    => $rows,
+            'grandTotal'    => $rows->sum('amount'),
+            'employeeCount' => $rows->count(),
+        ]);
     }
 }

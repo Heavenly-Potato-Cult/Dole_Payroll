@@ -10,17 +10,17 @@ use Illuminate\Http\Request;
 class EmployeeDeductionController extends Controller
 {
     /**
-     * GET /employees/{employee}/deductions
      * Show all deduction enrollments for an employee.
+     *
+     * Enrollments are keyed by deduction_type_id so the Blade view can do
+     * a direct lookup ($enrollments[$type->id]) instead of searching a flat list.
      */
     public function index(Employee $employee)
     {
         $employee->load(['division']);
 
-        // All active deduction types, ordered for display
         $deductionTypes = DeductionType::active()->ordered()->get();
 
-        // Current enrollments keyed by deduction_type_id for easy lookup in blade
         $enrollments = EmployeeDeductionEnrollment::where('employee_id', $employee->id)
             ->where('is_active', true)
             ->with('deductionType')
@@ -31,38 +31,40 @@ class EmployeeDeductionController extends Controller
     }
 
     /**
-     * POST /employees/{employee}/deductions
-     * Save the full deduction enrollment form (bulk upsert).
+     * Bulk-upsert deduction enrollments from the deductions form.
      *
-     * Form sends:
-     *   deductions[{deduction_type_id}][enrolled]  = 1|0
-     *   deductions[{deduction_type_id}][amount]    = numeric
-     *   deductions[{deduction_type_id}][effective_from] = date
-     *   deductions[{deduction_type_id}][effective_to]   = date|null
-     *   deductions[{deduction_type_id}][notes]     = string|null
+     * Each entry in the `deductions` array is keyed by deduction_type_id:
+     *   deductions[{id}][enrolled]       = 1|0
+     *   deductions[{id}][amount]         = numeric
+     *   deductions[{id}][effective_from] = date
+     *   deductions[{id}][effective_to]   = date|null
+     *   deductions[{id}][notes]          = string|null
+     *
+     * Computed deduction types (e.g. GSIS, PhilHealth) are skipped here —
+     * their amounts are derived by the payroll engine, not set manually by HR.
+     *
+     * Un-enrolling deactivates the record rather than deleting it
+     * to preserve the audit trail.
      */
     public function update(Request $request, Employee $employee)
     {
         $request->validate([
-            'deductions'                         => 'nullable|array',
-            'deductions.*.amount'                => 'nullable|numeric|min:0',
-            'deductions.*.effective_from'        => 'nullable|date',
-            'deductions.*.effective_to'          => 'nullable|date|after_or_equal:deductions.*.effective_from',
+            'deductions'                  => 'nullable|array',
+            'deductions.*.amount'         => 'nullable|numeric|min:0',
+            'deductions.*.effective_from' => 'nullable|date',
+            'deductions.*.effective_to'   => 'nullable|date|after_or_equal:deductions.*.effective_from',
         ]);
 
         $submitted = $request->input('deductions', []);
 
         foreach ($submitted as $typeId => $data) {
-            $enrolled = ! empty($data['enrolled']);
-            $amount   = $enrolled ? ($data['amount'] ?? 0) : 0;
-
-            // Skip computed deductions — amounts are set by the payroll engine, not HR
             $type = DeductionType::find($typeId);
+
+            // Amounts for computed types are owned by the payroll engine
             if (! $type || $type->is_computed) continue;
 
-            $existing = EmployeeDeductionEnrollment::where('employee_id', $employee->id)
-                ->where('deduction_type_id', $typeId)
-                ->first();
+            $enrolled = ! empty($data['enrolled']);
+            $amount   = $enrolled ? ($data['amount'] ?? 0) : 0;
 
             if ($enrolled && $amount > 0) {
                 EmployeeDeductionEnrollment::updateOrCreate(
@@ -78,9 +80,12 @@ class EmployeeDeductionController extends Controller
                         'notes'          => $data['notes'] ?? null,
                     ]
                 );
-            } elseif (! $enrolled && $existing) {
-                // Deactivate rather than delete — preserves audit trail
-                $existing->update(['is_active' => false]);
+            } else {
+                // Deactivate rather than delete to preserve audit trail
+                EmployeeDeductionEnrollment::where('employee_id', $employee->id)
+                    ->where('deduction_type_id', $typeId)
+                    ->where('is_active', true)
+                    ->update(['is_active' => false]);
             }
         }
 
