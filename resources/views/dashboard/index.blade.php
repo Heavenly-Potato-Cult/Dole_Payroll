@@ -12,68 +12,67 @@
 
 /* ── Greeting ─────────────────────────────────────────────────── */
 .db-greeting {
-    margin-bottom: 20px;
-    padding: 18px 20px;
-    background: linear-gradient(135deg, var(--navy) 0%, #1a2d6d 100%);
-    border-radius: var(--radius);
-    color: #fff;
+    margin-bottom: 32px;
+    padding: 0;
     position: relative;
-    overflow: hidden;
-}
-.db-greeting::after {
-    content: '';
-    position: absolute;
-    right: -30px; top: -30px;
-    width: 140px; height: 140px;
-    background: rgba(249,168,37,0.12);
-    border-radius: 50%;
 }
 .db-greeting h1 {
-    font-size: clamp(1.1rem, 3vw, 1.4rem);
-    margin: 0 0 3px;
-    font-weight: 700;
-    color: #fff;
+    font-size: 22px;
+    margin: 0 0 4px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    color: var(--navy);
 }
-.db-greeting p { margin: 0; font-size: 0.82rem; color: rgba(255,255,255,0.65); }
+.db-greeting p { margin: 0; font-size: 13px; font-weight: 400; letter-spacing: 0; color: #999; }
 .db-greeting .db-role-pill {
+    position: absolute;
+    top: 0;
+    right: 0;
     display: inline-block;
-    margin-top: 8px;
-    background: rgba(249,168,37,0.22);
-    border: 1px solid rgba(249,168,37,0.45);
-    color: var(--gold);
-    font-size: 0.7rem;
-    font-weight: 700;
+    background: transparent;
+    border: 1px solid #e0e0e0;
+    color: #666;
+    font-size: 11px;
+    font-weight: 500;
     letter-spacing: 0.06em;
     text-transform: uppercase;
-    padding: 3px 10px;
-    border-radius: 20px;
+    padding: 3px 9px;
+    border-radius: 12px;
 }
 
 /* ── Stat Grid ────────────────────────────────────────────────── */
 .db-stat-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 12px;
-    margin-bottom: 18px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0;
+    margin-bottom: 32px;
+    padding: 0;
 }
-@media (min-width: 480px) { .db-stat-grid { grid-template-columns: repeat(2, 1fr); } }
-@media (min-width: 768px) { .db-stat-grid { grid-template-columns: repeat(4, 1fr); } }
+@media (min-width: 768px) { .db-stat-grid { flex-wrap: nowrap; } }
 
 .db-stat {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 14px 15px 13px;
-    box-shadow: var(--shadow);
-    border-top: 3px solid var(--navy);
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    padding: 0 16px;
+    box-shadow: none;
     min-width: 0;
     position: relative;
-    overflow: hidden;
+    flex: 1;
 }
-.db-stat.gold  { border-top-color: var(--gold); }
-.db-stat.red   { border-top-color: var(--red); }
-.db-stat.green { border-top-color: var(--success); }
-.db-stat.teal  { border-top-color: #00838F; }
+.db-stat:not(:first-child) {
+    border-left: 1px solid #ebebeb;
+}
+@media (max-width: 767px) {
+    .db-stat {
+        border-left: none !important;
+        border-bottom: 1px solid #ebebeb;
+        padding: 16px 0;
+    }
+    .db-stat:last-child {
+        border-bottom: none;
+    }
+}
 
 .db-stat-icon {
     font-size: 1.4rem;
@@ -82,18 +81,19 @@
     display: block;
 }
 .db-stat-label {
-    font-size: 0.65rem;
-    font-weight: 700;
-    letter-spacing: 0.07em;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.08em;
     text-transform: uppercase;
     color: var(--text-light);
-    margin-bottom: 4px;
+    margin-bottom: 2px;
 }
 .db-stat-value {
-    font-size: clamp(1.55rem, 4vw, 1.9rem);
+    font-size: 1.7rem;
     font-weight: 700;
+    letter-spacing: -0.03em;
+    line-height: 1.1;
     color: var(--navy);
-    line-height: 1;
     margin-bottom: 4px;
     display: flex;
     align-items: center;
@@ -102,7 +102,9 @@
 .db-stat-value.is-alert { color: var(--red); }
 .db-stat-sub {
     font-size: 0.72rem;
-    color: var(--text-light);
+    font-weight: 400;
+    letter-spacing: 0;
+    color: #999;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -126,45 +128,47 @@
 .db-breakdown {
     display: flex;
     flex-wrap: wrap;
-    gap: 5px;
-    margin-top: 5px;
+    gap: 6px;
+    margin-top: 6px;
 }
 .db-breakdown-pill {
-    font-size: 0.65rem;
+    font-size: 11px;
     font-weight: 600;
-    padding: 2px 7px;
-    border-radius: 20px;
+    padding: 3px 9px;
+    border-radius: 12px;
     white-space: nowrap;
+    border: none;
 }
 .db-bp-payroll { background:#E3F2FD; color:#0D47A1; }
 .db-bp-tev     { background:#FFF9C4; color:#B45309; }
 .db-bp-liq     { background:#FCE4EC; color:#880E4F; }
 
 /* ── Layout ───────────────────────────────────────────────────── */
-.db-main { display: flex; flex-direction: column; gap: 16px; margin-bottom: 16px; }
+.db-main { display: flex; flex-direction: column; gap: 32px; margin-bottom: 32px; }
 
 .db-row {
     display: grid;
     grid-template-columns: 1fr;
-    gap: 16px;
+    gap: 32px;
 }
 @media (min-width: 768px) { .db-row { grid-template-columns: 1fr 1fr; } }
 
 /* ── Cards ───────────────────────────────────────────────────── */
 .db-card {
     background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    box-shadow: var(--shadow);
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
     overflow: hidden;
     display: flex;
     flex-direction: column;
     min-width: 0;
+    border-top: 0.5px solid rgba(0,0,0,0.08);
 }
 .db-card-head {
-    padding: 11px 16px;
-    border-bottom: 1px solid var(--border);
-    background: #FAFBFF;
+    padding: 16px 20px 12px;
+    border-bottom: 0.5px solid rgba(0,0,0,0.08);
+    background: transparent;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -172,15 +176,17 @@
     flex-shrink: 0;
 }
 .db-card-head h3 {
-    font-size: 0.88rem;
-    font-weight: 600;
+    font-size: 11px;
+    font-weight: 500;
     margin: 0;
-    color: var(--navy);
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: #999;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
 }
-.db-card-body { flex: 1; }
+.db-card-body { flex: 1; padding: 0 20px 16px; }
 
 /* ── List rows ───────────────────────────────────────────────── */
 .db-list { list-style: none; width: 100%; }
@@ -188,13 +194,13 @@
     display: flex;
     align-items: center;
     gap: 10px;
-    padding: 9px 16px;
-    border-bottom: 1px solid var(--border);
+    padding: 12px 0;
+    border-bottom: 0.5px solid rgba(0,0,0,0.08);
     min-width: 0;
     transition: background 0.1s;
 }
 .db-list-item:last-child { border-bottom: none; }
-.db-list-item:hover { background: var(--navy-light); }
+.db-list-item:hover { background: transparent; }
 .db-list-main { flex: 1; min-width: 0; }
 .db-list-title {
     font-size: 0.83rem;
@@ -231,13 +237,14 @@
 /* ── Badges ──────────────────────────────────────────────────── */
 .db-badge {
     display: inline-block;
-    padding: 2px 7px;
-    border-radius: 20px;
-    font-size: 0.62rem;
-    font-weight: 700;
-    letter-spacing: 0.03em;
+    padding: 3px 9px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
     text-transform: uppercase;
     white-space: nowrap;
+    border: none;
 }
 .db-b-draft    { background: #ECEFF1; color: #607D8B; }
 .db-b-computed { background: #E3F2FD; color: #0D47A1; }
@@ -259,28 +266,28 @@
 .db-empty-icon { font-size: 1.5rem; margin-bottom: 6px; }
 
 /* ── Quick Actions ───────────────────────────────────────────── */
-.db-actions { padding: 12px 14px 14px; display: flex; flex-direction: column; gap: 7px; }
+.db-actions { padding: 16px 0; display: flex; flex-direction: column; gap: 8px; }
 .db-action-btn {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 9px 13px;
-    border-radius: 6px;
-    border: 1.5px solid var(--border);
-    background: white;
+    padding: 10px 0;
+    border-radius: 0;
+    border: none;
+    background: transparent;
     color: var(--navy);
-    font-size: 0.83rem;
+    font-size: 14px;
     font-weight: 500;
     text-decoration: none;
-    transition: background 0.12s, border-color 0.12s;
+    transition: background 0.12s;
     gap: 8px;
     min-width: 0;
 }
-.db-action-btn:hover { background: var(--navy-light); border-color: var(--navy); color: var(--navy); text-decoration: none; }
-.db-action-btn.primary { background: var(--navy); color: #fff; border-color: var(--navy); }
-.db-action-btn.primary:hover { background: #1a2d6d; color: #fff; }
-.db-action-btn.gold-btn { background: var(--gold); color: #fff; border-color: var(--gold); }
-.db-action-btn.gold-btn:hover { background: #e5961f; color: #fff; }
+.db-action-btn:hover { background: transparent; color: var(--navy-mid); text-decoration: none; }
+.db-action-btn.primary { background: transparent; color: var(--navy); border: none; }
+.db-action-btn.primary:hover { color: var(--navy-mid); }
+.db-action-btn.gold-btn { background: transparent; color: var(--gold); border: none; }
+.db-action-btn.gold-btn:hover { color: var(--gold-dark); }
 .db-action-left {
     display: flex; align-items: center; gap: 7px;
     min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
@@ -296,29 +303,28 @@
     animation: dbpulse 1.8s ease-in-out infinite;
 }
 .db-action-sep {
-    font-size: 0.65rem;
-    font-weight: 700;
+    font-size: 11px;
+    font-weight: 600;
     text-transform: uppercase;
-    letter-spacing: 0.07em;
+    letter-spacing: 0.06em;
     color: var(--text-light);
-    padding: 4px 2px 2px;
+    padding: 0 0 8px;
 }
 
 /* ── Quick Actions 2-column variant ─────────────────────────── */
 .db-actions-2col {
     flex-direction: column;
-    gap: 0;
+    gap: 24px;
     padding: 0;
 }
 .db-actions-2col .db-actions-col {
     width: 100%;
-    padding: 12px 14px 14px;
-    border-bottom: 1px solid var(--border);
+    padding: 0;
+    border-bottom: none;
     display: flex;
     flex-direction: column;
-    gap: 7px;
+    gap: 8px;
 }
-.db-actions-2col .db-actions-col:last-child { border-bottom: none; }
 @media (min-width: 480px) {
     .db-actions-2col {
         flex-direction: row;
@@ -328,25 +334,24 @@
         flex: 1;
         min-width: 0;
         border-bottom: none;
-        border-right: 1px solid var(--border);
-        padding: 12px 12px 14px;
+        border-right: none;
+        padding: 0;
     }
-    .db-actions-2col .db-actions-col:last-child { border-right: none; }
 }
 
 /* ── Quick Actions 3-column variant ─────────────────────────── */
 .db-actions-3col {
     flex-direction: column;
-    gap: 0;
+    gap: 24px;
     padding: 0;
 }
 .db-actions-col {
     width: 100%;
-    padding: 12px 14px 14px;
-    border-bottom: 1px solid var(--border);
+    padding: 0;
+    border-bottom: none;
     display: flex;
     flex-direction: column;
-    gap: 7px;
+    gap: 8px;
 }
 .db-actions-col:last-child { border-bottom: none; }
 @media (min-width: 640px) {
@@ -358,15 +363,14 @@
         flex: 1;
         min-width: 0;
         border-bottom: none;
-        border-right: 1px solid var(--border);
-        padding: 12px 10px 14px;
+        border-right: none;
+        padding: 0;
     }
-    .db-actions-col:last-child { border-right: none; }
 }
 
 /* ── Chart ───────────────────────────────────────────────────── */
 .db-chart-body {
-    padding: 12px 16px 16px;
+    padding: 16px 0;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -374,14 +378,14 @@
 .db-chart-wrap { position: relative; width: 100%; max-height: 190px; }
 
 /* ── System info ─────────────────────────────────────────────── */
-.db-sysinfo { padding: 14px 16px; }
+.db-sysinfo { padding: 0; }
 .db-sysinfo-row {
     display: flex;
     align-items: baseline;
     gap: 10px;
-    padding: 5px 0;
-    border-bottom: 1px solid var(--border);
-    font-size: 0.83rem;
+    padding: 10px 0;
+    border-bottom: 0.5px solid rgba(0,0,0,0.08);
+    font-size: 14px;
     flex-wrap: wrap;
 }
 .db-sysinfo-row:last-child { border-bottom: none; }
@@ -390,22 +394,22 @@
     color: var(--text-light);
     flex-shrink: 0;
     width: 110px;
-    font-size: 0.75rem;
+    font-size: 13px;
 }
 .db-sysinfo-val { color: var(--text); min-width: 0; word-break: break-word; }
 
 /* ── TEV Summary mini-table ─────────────────────────────────── */
 .db-mini-table { width: 100%; border-collapse: collapse; }
 .db-mini-table td {
-    padding: 7px 16px;
-    font-size: 0.82rem;
-    border-bottom: 1px solid var(--border);
+    padding: 10px 0;
+    font-size: 14px;
+    border-bottom: 0.5px solid rgba(0,0,0,0.08);
     vertical-align: middle;
 }
 .db-mini-table tr:last-child td { border-bottom: none; }
-.db-mini-table .db-mt-label { color: var(--text-light); font-size: 0.75rem; }
-.db-mini-table .db-mt-val { font-weight: 700; color: var(--navy); text-align: right; }
-.db-mini-table tr:hover td { background: var(--navy-light); }
+.db-mini-table .db-mt-label { color: var(--text-light); font-size: 13px; }
+.db-mini-table .db-mt-val { font-weight: 600; color: var(--navy); text-align: right; }
+.db-mini-table tr:hover td { background: transparent; }
 </style>
 @endsection
 
@@ -547,7 +551,7 @@
         {{-- Recent Payroll Batches --}}
         <div class="db-card">
             <div class="db-card-head">
-                <h3>💰 Recent Payroll Batches</h3>
+                <h3>Recent Payroll Batches</h3>
                 <a href="{{ route('payroll.index') }}" class="btn btn-outline btn-sm" style="flex-shrink:0;">View All</a>
             </div>
             <div class="db-card-body">
@@ -581,7 +585,7 @@
         {{-- Recent TEV Requests --}}
         <div class="db-card">
             <div class="db-card-head">
-                <h3>✈ Recent TEV Requests</h3>
+                <h3>Recent TEV Requests</h3>
                 <a href="{{ route('tev.index') }}" class="btn btn-outline btn-sm" style="flex-shrink:0;">View All</a>
             </div>
             <div class="db-card-body">
@@ -622,7 +626,7 @@
 
         @if($recentPayroll->isNotEmpty())
         <div class="db-card">
-            <div class="db-card-head"><h3>📊 Payroll Status Overview</h3></div>
+            <div class="db-card-head"><h3>Payroll Status Overview</h3></div>
             <div class="db-chart-body">
                 <div class="db-chart-wrap"><canvas id="payrollChart"></canvas></div>
             </div>
@@ -630,7 +634,7 @@
         @endif
 
         <div class="db-card">
-            <div class="db-card-head"><h3>⚡ Quick Actions</h3></div>
+            <div class="db-card-head"><h3>Quick Actions</h3></div>
             <div class="db-actions db-actions-2col">
                 <div class="db-actions-col">
                     <div class="db-action-sep">Payroll</div>
@@ -681,7 +685,7 @@
         {{-- Recent Regular Payroll Batches --}}
         <div class="db-card">
             <div class="db-card-head">
-                <h3>💰 Recent Payroll Batches</h3>
+                <h3>Recent Payroll Batches</h3>
                 <a href="{{ route('payroll.index') }}" class="btn btn-outline btn-sm" style="flex-shrink:0;">View All</a>
             </div>
             <div class="db-card-body">
@@ -715,7 +719,7 @@
         {{-- Special Payroll Overview --}}
         <div class="db-card">
             <div class="db-card-head">
-                <h3>📋 Special Payroll Overview</h3>
+                <h3>Special Payroll Overview</h3>
             </div>
             <div class="db-card-body">
                 @php
@@ -767,7 +771,7 @@
 
         @if($recentPayroll->isNotEmpty())
         <div class="db-card">
-            <div class="db-card-head"><h3>📊 Payroll Status Overview</h3></div>
+            <div class="db-card-head"><h3>Payroll Status Overview</h3></div>
             <div class="db-chart-body">
                 <div class="db-chart-wrap"><canvas id="payrollChart"></canvas></div>
             </div>
@@ -775,7 +779,7 @@
         @endif
 
         <div class="db-card">
-            <div class="db-card-head"><h3>⚡ Quick Actions</h3></div>
+            <div class="db-card-head"><h3>Quick Actions</h3></div>
             <div class="db-actions db-actions-3col">
 
                 <div class="db-actions-col">
@@ -835,7 +839,7 @@
         {{-- Payroll Queue --}}
         <div class="db-card">
             <div class="db-card-head">
-                <h3>💰 Payroll Awaiting Certification</h3>
+                <h3>Payroll Awaiting Certification</h3>
                 <a href="{{ route('payroll.index') }}?status=pending_accountant" class="btn btn-outline btn-sm" style="flex-shrink:0;">View All</a>
             </div>
             <div class="db-card-body">
@@ -867,7 +871,7 @@
         {{-- TEV Certification Queue --}}
         <div class="db-card">
             <div class="db-card-head">
-                <h3>✈ TEV for Certification</h3>
+                <h3>TEV for Certification</h3>
                 <a href="{{ route('tev.index') }}?status=submitted" class="btn btn-outline btn-sm" style="flex-shrink:0;">View All</a>
             </div>
             <div class="db-card-body">
@@ -904,14 +908,14 @@
     <div class="db-row">
         @if($recentPayroll->isNotEmpty())
         <div class="db-card">
-            <div class="db-card-head"><h3>📊 Payroll Status Overview</h3></div>
+            <div class="db-card-head"><h3>Payroll Status Overview</h3></div>
             <div class="db-chart-body">
                 <div class="db-chart-wrap"><canvas id="payrollChart"></canvas></div>
             </div>
         </div>
         @endif
         <div class="db-card">
-            <div class="db-card-head"><h3>⚡ Quick Actions</h3></div>
+            <div class="db-card-head"><h3>Quick Actions</h3></div>
             <div class="db-actions db-actions-2col">
                 <div class="db-actions-col">
                     <div class="db-action-sep">Payroll</div>
@@ -949,7 +953,7 @@
 
         <div class="db-card">
             <div class="db-card-head">
-                <h3>💰 Payroll Awaiting Approval</h3>
+                <h3>Payroll Awaiting Approval</h3>
                 <a href="{{ route('payroll.index') }}?status=pending_rd" class="btn btn-outline btn-sm" style="flex-shrink:0;">View All</a>
             </div>
             <div class="db-card-body">
@@ -978,7 +982,7 @@
 
         <div class="db-card">
             <div class="db-card-head">
-                <h3>✈ TEV Awaiting Approval</h3>
+                <h3>TEV Awaiting Approval</h3>
                 <a href="{{ route('tev.index') }}?status=accountant_certified" class="btn btn-outline btn-sm" style="flex-shrink:0;">View All</a>
             </div>
             <div class="db-card-body">
@@ -1013,14 +1017,14 @@
     <div class="db-row">
         @if($recentPayroll->isNotEmpty())
         <div class="db-card">
-            <div class="db-card-head"><h3>📊 Payroll Status Overview</h3></div>
+            <div class="db-card-head"><h3>Payroll Status Overview</h3></div>
             <div class="db-chart-body">
                 <div class="db-chart-wrap"><canvas id="payrollChart"></canvas></div>
             </div>
         </div>
         @endif
         <div class="db-card">
-            <div class="db-card-head"><h3>⚡ Quick Actions</h3></div>
+            <div class="db-card-head"><h3>Quick Actions</h3></div>
             <div class="db-actions db-actions-2col">
                 <div class="db-actions-col">
                     <div class="db-action-sep">Payroll</div>
@@ -1060,7 +1064,7 @@
         {{-- TEV for Release (rd_approved) --}}
         <div class="db-card">
             <div class="db-card-head">
-                <h3>💵 TEV for Release</h3>
+                <h3>TEV for Release</h3>
                 <a href="{{ route('tev.index') }}?status=rd_approved" class="btn btn-outline btn-sm" style="flex-shrink:0;">View All</a>
             </div>
             <div class="db-card-body">
@@ -1093,7 +1097,7 @@
         {{-- Liquidations Pending (liquidation_filed) --}}
         <div class="db-card">
             <div class="db-card-head">
-                <h3>🗂 Liquidations to Approve</h3>
+                <h3>Liquidations to Approve</h3>
                 <a href="{{ route('tev.index') }}?status=liquidation_filed" class="btn btn-outline btn-sm" style="flex-shrink:0;">View All</a>
             </div>
             <div class="db-card-body">
@@ -1124,7 +1128,7 @@
 
     <div class="db-row">
         <div class="db-card">
-            <div class="db-card-head"><h3>⚡ Quick Actions</h3></div>
+            <div class="db-card-head"><h3>Quick Actions</h3></div>
             <div class="db-actions">
                 <a href="{{ route('tev.index') }}?status=rd_approved" class="db-action-btn primary">
                     <span class="db-action-left">💵 TEV for Release
@@ -1143,7 +1147,7 @@
         </div>
         {{-- TEV summary mini-table for cashier --}}
         <div class="db-card">
-            <div class="db-card-head"><h3>📊 TEV Status Summary</h3></div>
+            <div class="db-card-head"><h3>TEV Status Summary</h3></div>
             <div class="db-card-body">
                 <table class="db-mini-table">
                     @foreach(['submitted'=>'Submitted','accountant_certified'=>'Acct. Certified','rd_approved'=>'RD Approved','cashier_released'=>'CA Released','liquidation_filed'=>'Liq. Filed','liquidated'=>'Liquidated','reimbursed'=>'Reimbursed'] as $key=>$label)
@@ -1169,7 +1173,7 @@
 
         <div class="db-card">
             <div class="db-card-head">
-                <h3>✈ Recent TEV Requests</h3>
+                <h3>Recent TEV Requests</h3>
                 <a href="{{ route('tev.index') }}" class="btn btn-outline btn-sm" style="flex-shrink:0;">View All</a>
             </div>
             <div class="db-card-body">
@@ -1204,7 +1208,7 @@
         </div>
 
         <div class="db-card">
-            <div class="db-card-head"><h3>📊 TEV Status Summary</h3></div>
+            <div class="db-card-head"><h3>TEV Status Summary</h3></div>
             <div class="db-card-body">
                 <table class="db-mini-table">
                     @foreach(['submitted'=>'Submitted','accountant_certified'=>'Acct. Certified','rd_approved'=>'RD Approved','cashier_released'=>'CA Released','liquidation_filed'=>'Liq. Filed','liquidated'=>'Liquidated','reimbursed'=>'Reimbursed'] as $key=>$label)
@@ -1221,7 +1225,7 @@
 
     <div class="db-row">
         <div class="db-card">
-            <div class="db-card-head"><h3>⚡ Quick Actions</h3></div>
+            <div class="db-card-head"><h3>Quick Actions</h3></div>
             <div class="db-actions">
                 <a href="{{ route('tev.index') }}?status=submitted" class="db-action-btn primary">
                     <span class="db-action-left">📥 TEV Submissions
@@ -1243,8 +1247,8 @@
 </div>{{-- /.db-main --}}
 
 {{-- ── System Info ─────────────────────────────────────────────── --}}
-<div class="db-card" style="margin-bottom:16px;">
-    <div class="db-card-head"><h3>⚙ System Information</h3></div>
+<div style="margin-bottom:32px;">
+    <h3 style="font-size:11px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:var(--text-light);margin:0 0 12px;">System Information</h3>
     <div class="db-sysinfo">
         <div class="db-sysinfo-row">
             <span class="db-sysinfo-key">Laravel</span>
