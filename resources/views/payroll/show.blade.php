@@ -213,11 +213,13 @@
     $isLocked   = $payroll->status === 'locked';
     $isComputed = ! in_array($payroll->status, ['draft']);
 
+    // CHANGED: hrmo removed — only payroll_officer may compute / re-compute
     $canCompute = in_array($payroll->status, ['draft', 'computed'])
-               && auth()->user()->hasAnyRole(['payroll_officer', 'hrmo']);
+               && auth()->user()->hasRole('payroll_officer');
 
     $nextAction = null;
-    if (auth()->user()->hasAnyRole(['payroll_officer', 'hrmo'])
+    // CHANGED: hrmo removed — only payroll_officer submits to Accountant
+    if (auth()->user()->hasRole('payroll_officer')
         && in_array($payroll->status, ['draft', 'computed'])) {
         $nextAction = [
             'label'  => 'Submit to Accountant',
