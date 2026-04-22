@@ -198,7 +198,7 @@
     $canRelease = auth()->user()->hasAnyRole(['ard', 'chief_admin_officer']) && $batch->status === 'approved';
 
     $spSteps = [
-        ['label' => 'HR Prepared',  'sub' => 'Payroll Officer / HRMO', 'icon' => '✏'],
+        ['label' => 'HR Prepared',  'sub' => 'Payroll Officer', 'icon' => '✏'],
         ['label' => 'Accountant',   'sub' => 'Certify & Approve',       'icon' => '💼'],
         ['label' => 'RD / ARD',     'sub' => 'Released',                'icon' => '🏛'],
     ];

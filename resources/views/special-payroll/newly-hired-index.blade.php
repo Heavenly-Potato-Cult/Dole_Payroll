@@ -225,11 +225,11 @@
         <h1>Pro-Rated Payroll — Newly Hired / Transferee</h1>
         <p>Individual payroll records for employees who started mid-period.</p>
     </div>
-    @if (auth()->user()->hasAnyRole(['payroll_officer', 'hrmo']))
-        <a href="{{ route('special-payroll.newly-hired.create') }}" class="btn btn-primary">
-            + New Entry
-        </a>
-    @endif
+@if (auth()->user()->hasRole('payroll_officer'))
+    <a href="{{ route('special-payroll.newly-hired.create') }}" class="btn btn-primary">
+        + New Entry
+    </a>
+@endif
 </div>
 
 {{-- ── Alerts ── --}}
@@ -368,8 +368,8 @@
                                     <a href="{{ route('special-payroll.newly-hired.show', $batch->id) }}"
                                        class="btn btn-outline btn-sm"
                                        onclick="event.stopPropagation();">View</a>
-                                    @if (auth()->user()->hasAnyRole(['payroll_officer', 'hrmo']))
-                                        @if ($batch->status === 'draft')
+@if (auth()->user()->hasRole('payroll_officer'))
+    @if ($batch->status === 'draft')
                                             <form method="POST"
                                                   action="{{ route('special-payroll.newly-hired.destroy', $batch->id) }}"
                                                   onsubmit="event.stopPropagation(); return confirm('Delete this payroll record for {{ addslashes($batch->employee->last_name ?? '') }}? This cannot be undone.')">
@@ -429,8 +429,8 @@
                                 <div class="nh-detail-actions">
                                     <a href="{{ route('special-payroll.newly-hired.show', $batch->id) }}"
                                        class="btn btn-outline btn-sm">View</a>
-                                    @if (auth()->user()->hasAnyRole(['payroll_officer', 'hrmo']))
-                                        @if ($batch->status === 'draft')
+@if (auth()->user()->hasRole('payroll_officer'))
+    @if ($batch->status === 'draft')
                                             <form method="POST"
                                                   action="{{ route('special-payroll.newly-hired.destroy', $batch->id) }}"
                                                   style="flex:1;"
@@ -449,11 +449,11 @@
                         <tr>
                             <td colspan="10" style="text-align:center; padding:40px; color:var(--text-light);">
                                 No records found.
-                                @if (auth()->user()->hasAnyRole(['payroll_officer', 'hrmo']))
-                                    <a href="{{ route('special-payroll.newly-hired.create') }}">
-                                        Create one now →
-                                    </a>
-                                @endif
+@if (auth()->user()->hasRole('payroll_officer'))
+    <a href="{{ route('special-payroll.newly-hired.create') }}">
+        Create one now →
+    </a>
+@endif
                             </td>
                         </tr>
                     @endforelse
