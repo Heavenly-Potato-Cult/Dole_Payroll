@@ -75,8 +75,8 @@ class BtrRefundExport implements FromCollection, WithTitle, WithColumnWidths, Wi
 
     public function columnWidths(): array
     {
-        // A=NO, B=NAME (merged B:C), C=cont, D=AMOUNT
-        return ['A' => 5.5, 'B' => 40.0, 'C' => 18.0, 'D' => 16.0, 'E' => 4.0];
+        // A=spacer (DOLE logo), B=NO, C=NAME (merged C:D), D=cont, E=AMOUNT (BP logo)
+        return ['A' => 9.0, 'B' => 5.5, 'C' => 36.5, 'D' => 18.0, 'E' => 16.0];
     }
 
     public function registerEvents(): array
@@ -94,18 +94,26 @@ class BtrRefundExport implements FromCollection, WithTitle, WithColumnWidths, Wi
 
                 // ── LOGOS ────────────────────────────────────────────────
                 $logoLeft = new Drawing();
-                $logoLeft->setName('Bagong Pilipinas')->setDescription('Bagong Pilipinas Logo')
-                    ->setPath(public_path('assets/img/bagong_pilipinas_logo.png'))
-                    ->setHeight(60)->setCoordinates('A1')->setOffsetX(2)->setOffsetY(2)
-                    ->setWorksheet($sheet);
+                $logoLeft->setName('DOLE Logo');
+                $logoLeft->setDescription('DOLE Logo');
+                $logoLeft->setPath(public_path('assets/img/dole_logo.png'));
+                $logoLeft->setHeight(60);
+                $logoLeft->setCoordinates('A1');
+                $logoLeft->setOffsetX(2);
+                $logoLeft->setOffsetY(2);
+                $logoLeft->setWorksheet($sheet);
 
                 $logoRight = new Drawing();
-                $logoRight->setName('DOLE Logo')->setDescription('DOLE Logo')
-                    ->setPath(public_path('assets/img/dole_logo.png'))
-                    ->setHeight(60)->setCoordinates('D1')->setOffsetX(2)->setOffsetY(2)
-                    ->setWorksheet($sheet);
+                $logoRight->setName('Bagong Pilipinas');
+                $logoRight->setDescription('Bagong Pilipinas Logo');
+                $logoRight->setPath(public_path('assets/img/bagong_pilipinas_logo.png'));
+                $logoRight->setHeight(60);
+                $logoRight->setCoordinates('E1');
+                $logoRight->setOffsetX(2);
+                $logoRight->setOffsetY(2);
+                $logoRight->setWorksheet($sheet);
 
-                // ── Agency header (rows 1–5, merged A:D) ──────────────────
+                // ── Agency header (rows 1–5, merged A:E) ──────────────────
                 $agencyHeaders = [
                     1 => ['Republic of the Philippines',                  false, 11],
                     2 => ['DEPARTMENT OF LABOR AND EMPLOYMENT',           true,  13],
@@ -114,7 +122,7 @@ class BtrRefundExport implements FromCollection, WithTitle, WithColumnWidths, Wi
                     5 => ['Barangay Sta. Catalina, Zamboanga City',       false, 10],
                 ];
                 foreach ($agencyHeaders as $r => [$text, $bold, $sz]) {
-                    $sheet->mergeCells("A{$r}:D{$r}");
+                    $sheet->mergeCells("A{$r}:E{$r}");
                     $sheet->setCellValue("A{$r}", $text);
                     $sheet->getStyle("A{$r}")->applyFromArray([
                         'font'      => ['bold' => $bold, 'name' => 'Arial', 'size' => $sz],
@@ -123,9 +131,9 @@ class BtrRefundExport implements FromCollection, WithTitle, WithColumnWidths, Wi
                 }
 
                 // ── Document title (rows 7–8) ─────────────────────────────
-                $sheet->mergeCells('A7:D7');
-                $sheet->setCellValue('A7', 'LANDBANK OF THE PHILIPPINES LOANS');
-                $sheet->mergeCells('A8:D8');
+                $sheet->mergeCells('A7:E7');
+                $sheet->setCellValue('A7', 'BTR REFUND');
+                $sheet->mergeCells('A8:E8');
                 $sheet->setCellValue('A8', 'FOR THE MONTH OF ' . strtoupper($monthName) . ' ' . $this->year);
                 foreach (['A7', 'A8'] as $cell) {
                     $sheet->getStyle($cell)->applyFromArray([
@@ -136,11 +144,11 @@ class BtrRefundExport implements FromCollection, WithTitle, WithColumnWidths, Wi
 
                 // ── Column header row 10 ──────────────────────────────────
                 $headerRow = 10;
-                $sheet->setCellValue("A{$headerRow}", 'NO.');
-                $sheet->mergeCells("B{$headerRow}:C{$headerRow}");
-                $sheet->setCellValue("B{$headerRow}", 'NAME');
-                $sheet->setCellValue("D{$headerRow}", 'AMOUNT');
-                $sheet->getStyle("A{$headerRow}:D{$headerRow}")->applyFromArray([
+                $sheet->setCellValue("B{$headerRow}", 'NO.');
+                $sheet->mergeCells("C{$headerRow}:D{$headerRow}");
+                $sheet->setCellValue("C{$headerRow}", 'NAME');
+                $sheet->setCellValue("E{$headerRow}", 'AMOUNT');
+                $sheet->getStyle("B{$headerRow}:E{$headerRow}")->applyFromArray([
                     'font'      => ['bold' => true, 'name' => 'Arial', 'size' => 11],
                     'fill'      => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => 'BDD7EE']],
                     'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER, 'vertical' => Alignment::VERTICAL_CENTER],
@@ -154,21 +162,21 @@ class BtrRefundExport implements FromCollection, WithTitle, WithColumnWidths, Wi
                     $r  = $dataStart + $idx;
                     $no = $idx + 1;
                     $sheet->getRowDimension($r)->setRowHeight(18);
-                    $sheet->setCellValue("A{$r}", $no);
-                    $sheet->mergeCells("B{$r}:C{$r}");
-                    $sheet->setCellValue("B{$r}", $row['name']);
-                    $sheet->setCellValue("D{$r}", $row['amount']);
+                    $sheet->setCellValue("B{$r}", $no);
+                    $sheet->mergeCells("C{$r}:D{$r}");
+                    $sheet->setCellValue("C{$r}", $row['name']);
+                    $sheet->setCellValue("E{$r}", $row['amount']);
 
-                    $sheet->getStyle("A{$r}:D{$r}")->applyFromArray([
+                    $sheet->getStyle("B{$r}:E{$r}")->applyFromArray([
                         'font'    => ['name' => 'Arial', 'size' => 10],
                         'borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN]],
                     ]);
-                    $sheet->getStyle("A{$r}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
-                    $sheet->getStyle("D{$r}")->getNumberFormat()->setFormatCode($numFmt);
-                    $sheet->getStyle("D{$r}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
+                    $sheet->getStyle("B{$r}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+                    $sheet->getStyle("E{$r}")->getNumberFormat()->setFormatCode($numFmt);
+                    $sheet->getStyle("E{$r}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
 
                     if ($no % 2 === 0) {
-                        $sheet->getStyle("A{$r}:D{$r}")->getFill()
+                        $sheet->getStyle("B{$r}:E{$r}")->getFill()
                             ->setFillType(Fill::FILL_SOLID)->getStartColor()->setRGB('F2F2F2');
                     }
                 }
@@ -177,32 +185,32 @@ class BtrRefundExport implements FromCollection, WithTitle, WithColumnWidths, Wi
                 $lastData = $dataStart + $count - 1;
                 $totalRow = $dataStart + $count;
                 $sheet->getRowDimension($totalRow)->setRowHeight(20);
-                $sheet->mergeCells("A{$totalRow}:C{$totalRow}");
-                $sheet->setCellValue("A{$totalRow}", 'GRAND TOTAL');
-                $sheet->setCellValue("D{$totalRow}", "=SUM(D{$dataStart}:D{$lastData})");
-                $sheet->getStyle("A{$totalRow}:D{$totalRow}")->applyFromArray([
+                $sheet->mergeCells("B{$totalRow}:D{$totalRow}");
+                $sheet->setCellValue("B{$totalRow}", 'GRAND TOTAL');
+                $sheet->setCellValue("E{$totalRow}", "=SUM(E{$dataStart}:E{$lastData})");
+                $sheet->getStyle("B{$totalRow}:E{$totalRow}")->applyFromArray([
                     'font'      => ['bold' => true, 'name' => 'Arial', 'size' => 11],
                     'fill'      => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => 'BDD7EE']],
                     'borders'   => ['allBorders' => ['borderStyle' => Border::BORDER_MEDIUM]],
                 ]);
-                $sheet->getStyle("A{$totalRow}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
-                $sheet->getStyle("D{$totalRow}")->getNumberFormat()->setFormatCode($numFmt);
-                $sheet->getStyle("D{$totalRow}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
+                $sheet->getStyle("B{$totalRow}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
+                $sheet->getStyle("E{$totalRow}")->getNumberFormat()->setFormatCode($numFmt);
+                $sheet->getStyle("E{$totalRow}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
 
                 // ── Signature block ───────────────────────────────────────
                 $sigRow  = $totalRow + 3;
                 $nameRow = $sigRow + 4;
-                $sheet->setCellValue("A{$sigRow}", 'PREPARED BY:');
-                $sheet->setCellValue("C{$sigRow}", 'CERTIFIED BY:');
-                $sheet->getStyle("A{$sigRow}:D{$sigRow}")->getFont()->setName('Arial')->setSize(10);
-                $sheet->getStyle("A{$nameRow}:B{$nameRow}")->getBorders()->getBottom()->setBorderStyle(Border::BORDER_THIN);
-                $sheet->getStyle("C{$nameRow}:D{$nameRow}")->getBorders()->getBottom()->setBorderStyle(Border::BORDER_THIN);
-                $sheet->setCellValue("A" . ($nameRow + 1), 'NAME');
-                $sheet->setCellValue("A" . ($nameRow + 2), 'Payroll-in-charge');
-                $sheet->setCellValue("C" . ($nameRow + 1), 'NAME');
-                $sheet->setCellValue("C" . ($nameRow + 2), 'Position');
-                $sheet->setCellValue("C" . ($nameRow + 3), 'HRMO / HRMO Designate');
-                foreach (['A', 'C'] as $col) {
+                $sheet->setCellValue("B{$sigRow}", 'PREPARED BY:');
+                $sheet->setCellValue("D{$sigRow}", 'CERTIFIED BY:');
+                $sheet->getStyle("B{$sigRow}:E{$sigRow}")->getFont()->setName('Arial')->setSize(10);
+                $sheet->getStyle("B{$nameRow}:C{$nameRow}")->getBorders()->getBottom()->setBorderStyle(Border::BORDER_THIN);
+                $sheet->getStyle("D{$nameRow}:E{$nameRow}")->getBorders()->getBottom()->setBorderStyle(Border::BORDER_THIN);
+                $sheet->setCellValue("B" . ($nameRow + 1), 'NAME');
+                $sheet->setCellValue("B" . ($nameRow + 2), 'Payroll-in-charge');
+                $sheet->setCellValue("D" . ($nameRow + 1), 'NAME');
+                $sheet->setCellValue("D" . ($nameRow + 2), 'Position');
+                $sheet->setCellValue("D" . ($nameRow + 3), 'HRMO / HRMO Designate');
+                foreach (['B', 'D'] as $col) {
                     $sheet->getStyle("{$col}" . ($nameRow + 1))->getFont()->setName('Arial')->setSize(10)->setBold(true);
                     $sheet->getStyle("{$col}" . ($nameRow + 2))->getFont()->setName('Arial')->setSize(10);
                     $sheet->getStyle("{$col}" . ($nameRow + 3))->getFont()->setName('Arial')->setSize(10);

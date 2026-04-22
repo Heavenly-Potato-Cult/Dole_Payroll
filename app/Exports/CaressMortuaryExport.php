@@ -127,16 +127,24 @@ class CaressMortuaryExport implements FromCollection, WithTitle, WithColumnWidth
 
                 // ── LOGOS ────────────────────────────────────────────────
                 $logoLeft = new Drawing();
-                $logoLeft->setName('Bagong Pilipinas')->setDescription('Bagong Pilipinas Logo')
-                    ->setPath(public_path('assets/img/bagong_pilipinas_logo.png'))
-                    ->setHeight(60)->setCoordinates('A1')->setOffsetX(2)->setOffsetY(2)
-                    ->setWorksheet($sheet);
+                $logoLeft->setName('DOLE Logo');
+                $logoLeft->setDescription('DOLE Logo');
+                $logoLeft->setPath(public_path('assets/img/dole_logo.png'));
+                $logoLeft->setHeight(60);
+                $logoLeft->setCoordinates('A1');
+                $logoLeft->setOffsetX(2);
+                $logoLeft->setOffsetY(2);
+                $logoLeft->setWorksheet($sheet);
 
                 $logoRight = new Drawing();
-                $logoRight->setName('DOLE Logo')->setDescription('DOLE Logo')
-                    ->setPath(public_path('assets/img/dole_logo.png'))
-                    ->setHeight(60)->setCoordinates('H1')->setOffsetX(2)->setOffsetY(2)
-                    ->setWorksheet($sheet);
+                $logoRight->setName('Bagong Pilipinas');
+                $logoRight->setDescription('Bagong Pilipinas Logo');
+                $logoRight->setPath(public_path('assets/img/bagong_pilipinas_logo.png'));
+                $logoRight->setHeight(60);
+                $logoRight->setCoordinates('H1');
+                $logoRight->setOffsetX(2);
+                $logoRight->setOffsetY(2);
+                $logoRight->setWorksheet($sheet);
 
                 // ── Agency header (rows 1–5, merged A:H) ─────────────────
                 $agencyHeaders = [

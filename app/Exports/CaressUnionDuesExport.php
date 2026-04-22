@@ -98,22 +98,22 @@ class CaressUnionDuesExport implements FromCollection, WithTitle, WithColumnWidt
                 $sheet->getRowDimension(11)->setRowHeight(18);
                 $sheet->getRowDimension(12)->setRowHeight(22);
 
-                // ── LOGO – left (Bagong Pilipinas) ────────────────────────
+                // ── LOGO – left (DOLE) ───────────────────────────────────
                 $logoLeft = new Drawing();
-                $logoLeft->setName('Bagong Pilipinas');
-                $logoLeft->setDescription('Bagong Pilipinas Logo');
-                $logoLeft->setPath(public_path('assets/img/bagong_pilipinas_logo.png'));
+                $logoLeft->setName('DOLE Logo');
+                $logoLeft->setDescription('DOLE Logo');
+                $logoLeft->setPath(public_path('assets/img/dole_logo.png'));
                 $logoLeft->setHeight(60);
                 $logoLeft->setCoordinates('B1');
                 $logoLeft->setOffsetX(2);
                 $logoLeft->setOffsetY(2);
                 $logoLeft->setWorksheet($sheet);
 
-                // ── LOGO – right (DOLE) ───────────────────────────────────
+                // ── LOGO – right (Bagong Pilipinas) ────────────────────────
                 $logoRight = new Drawing();
-                $logoRight->setName('DOLE Logo');
-                $logoRight->setDescription('DOLE Logo');
-                $logoRight->setPath(public_path('assets/img/dole_logo.png'));
+                $logoRight->setName('Bagong Pilipinas');
+                $logoRight->setDescription('Bagong Pilipinas Logo');
+                $logoRight->setPath(public_path('assets/img/bagong_pilipinas_logo.png'));
                 $logoRight->setHeight(60);
                 $logoRight->setCoordinates('F1');
                 $logoRight->setOffsetX(2);
