@@ -12,10 +12,16 @@ class TevItineraryController extends Controller
 {
     public function __construct(private TevComputationService $tevService) {}
 
-    // ─────────────────────────────────────────────────────────────────────
-    //  Store — add one itinerary line
-    //  POST /tev/{tevRequest}/itinerary
-    // ─────────────────────────────────────────────────────────────────────
+    // =====================================================================
+    //  STORE / UPDATE / DESTROY
+    // =====================================================================
+
+    /**
+     * Append a new itinerary line to a draft TEV.
+     *
+     * Totals are recomputed after every mutation so the TEV header always
+     * reflects the current set of lines without a separate save step.
+     */
     public function store(Request $request, int $tevRequest)
     {
         $tev = TevRequest::findOrFail($tevRequest);
@@ -46,10 +52,12 @@ class TevItineraryController extends Controller
             ->with('success', 'Itinerary line added.');
     }
 
-    // ─────────────────────────────────────────────────────────────────────
-    //  Update — edit one itinerary line
-    //  PUT /tev/{tevRequest}/itinerary/{line}
-    // ─────────────────────────────────────────────────────────────────────
+    /**
+     * Update an existing itinerary line on a draft TEV.
+     *
+     * The line is scoped to the parent TEV to prevent cross-TEV tampering
+     * via a manipulated line ID in the URL.
+     */
     public function update(Request $request, int $tevRequest, int $line)
     {
         $tev      = TevRequest::findOrFail($tevRequest);
@@ -81,10 +89,12 @@ class TevItineraryController extends Controller
             ->with('success', 'Itinerary line updated.');
     }
 
-    // ─────────────────────────────────────────────────────────────────────
-    //  Destroy — remove one itinerary line
-    //  DELETE /tev/{tevRequest}/itinerary/{line}
-    // ─────────────────────────────────────────────────────────────────────
+    /**
+     * Remove an itinerary line from a draft TEV.
+     *
+     * As with update(), the line is scoped to its parent TEV before deletion.
+     * Totals are recomputed so the TEV header stays consistent.
+     */
     public function destroy(int $tevRequest, int $line)
     {
         $tev      = TevRequest::findOrFail($tevRequest);
@@ -101,10 +111,16 @@ class TevItineraryController extends Controller
             ->with('success', 'Itinerary line removed.');
     }
 
-    // ─────────────────────────────────────────────────────────────────────
+    // =====================================================================
     //  Private helpers
-    // ─────────────────────────────────────────────────────────────────────
+    // =====================================================================
 
+    /**
+     * Abort with 403 if the TEV is no longer in draft status.
+     *
+     * Itinerary lines are locked once a TEV is submitted to prevent
+     * modifications to a record already under review.
+     */
     private function assertDraft(TevRequest $tev): void
     {
         if ($tev->status !== 'draft') {
@@ -112,10 +128,17 @@ class TevItineraryController extends Controller
         }
     }
 
+    /**
+     * Abort with 403 if the current user is neither HRMO staff nor the
+     * employee who owns the TEV.
+     *
+     * payroll_officer is intentionally excluded — TEV is managed by a
+     * separate department and payroll staff have no filing authority here.
+     */
     private function authorizeEdit(TevRequest $tev): void
     {
         $user    = Auth::user();
-        $isStaff = $user->hasAnyRole(['hrmo']); // payroll_officer excluded: TEV is a separate department
+        $isStaff = $user->hasAnyRole(['hrmo']);
         $isOwner = $tev->employee && $tev->employee->user_id === $user->id;
 
         if (!$isStaff && !$isOwner) {

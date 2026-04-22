@@ -22,10 +22,16 @@ use Illuminate\Support\Facades\Auth;
  */
 class SpecialPayrollController extends Controller
 {
-    // ─────────────────────────────────────────────────────────────────────
-    //  Newly Hired — Index
-    //  GET /special-payroll/newly-hired
-    // ─────────────────────────────────────────────────────────────────────
+    // =====================================================================
+    //  NEWLY HIRED
+    // =====================================================================
+
+    /**
+     * List all newly hired pro-rated payroll batches.
+     *
+     * Supports optional filtering by year and status via query string.
+     * Accessible to all payroll-related roles for visibility.
+     */
     public function newHireIndex(Request $request)
     {
         $this->authorizeRole(['payroll_officer', 'hrmo', 'accountant', 'ard', 'cashier']);
@@ -47,10 +53,12 @@ class SpecialPayrollController extends Controller
         return view('special-payroll.newly-hired-index', compact('batches', 'currentYear'));
     }
 
-    // ─────────────────────────────────────────────────────────────────────
-    //  Newly Hired — Create Form
-    //  GET /special-payroll/newly-hired/create
-    // ─────────────────────────────────────────────────────────────────────
+    /**
+     * Show the form for creating a new pro-rated payroll entry.
+     *
+     * Only active employees are listed — inactive or separated employees
+     * are not eligible for newly hired payroll processing.
+     */
     public function newHireCreate()
     {
         $this->authorizeRole(['payroll_officer', 'hrmo']);
@@ -64,10 +72,14 @@ class SpecialPayrollController extends Controller
         return view('special-payroll.newly-hired-create', compact('employees'));
     }
 
-    // ─────────────────────────────────────────────────────────────────────
-    //  Newly Hired — Store
-    //  POST /special-payroll/newly-hired
-    // ─────────────────────────────────────────────────────────────────────
+    /**
+     * Compute and persist a newly hired pro-rated payroll batch.
+     *
+     * Delegates the pro-ration logic to NewlyHiredPayrollService, which
+     * calculates earned pay based on the employee's effectivity date within
+     * the cutoff window. The computed result is also stashed in the session
+     * so the show page can render it without re-computing on redirect.
+     */
     public function newHireStore(StoreSpecialPayrollRequest $request)
     {
         $employee = Employee::findOrFail($request->employee_id);
@@ -108,6 +120,7 @@ class SpecialPayrollController extends Controller
             'remarks'           => $request->remarks,
         ]);
 
+        // Stash result in session to avoid re-computing on the redirect
         session(['newly_hired_result_' . $batch->id => $result]);
 
         PayrollAuditLog::create([
@@ -122,10 +135,13 @@ class SpecialPayrollController extends Controller
             ->with('success', "Pro-rated payroll created for {$employee->last_name}, {$employee->first_name}.");
     }
 
-    // ─────────────────────────────────────────────────────────────────────
-    //  Newly Hired — Show
-    //  GET /special-payroll/newly-hired/{id}
-    // ─────────────────────────────────────────────────────────────────────
+    /**
+     * Display a single newly hired payroll batch with its computed breakdown.
+     *
+     * The service is re-invoked here using the batch's stored inputs so the
+     * view always reflects the latest computation logic, even if the record
+     * was created before a service update.
+     */
     public function newHireShow(int $id)
     {
         $this->authorizeRole(['payroll_officer', 'hrmo', 'accountant', 'ard', 'cashier']);
@@ -151,10 +167,15 @@ class SpecialPayrollController extends Controller
         return view('special-payroll.newly-hired-show', compact('batch', 'employee', 'result'));
     }
 
-    // ─────────────────────────────────────────────────────────────────────
-    //  Newly Hired — Approve / Release
-    //  POST /special-payroll/newly-hired/{id}/approve
-    // ─────────────────────────────────────────────────────────────────────
+    /**
+     * Advance a newly hired payroll batch through its approval workflow.
+     *
+     * Two-step flow:
+     *   draft     → approved   (accountant only)
+     *   approved  → released   (ard or chief_admin_officer only)
+     *
+     * Any other status is a terminal state and cannot be advanced further.
+     */
     public function newHireApprove(Request $request, int $id)
     {
         $batch = SpecialPayrollBatch::where('type', 'newly_hired')->findOrFail($id);
@@ -197,10 +218,12 @@ class SpecialPayrollController extends Controller
             ->with('success', "Payroll record {$label} successfully.");
     }
 
-    // ─────────────────────────────────────────────────────────────────────
-    //  Newly Hired — Destroy (draft only)
-    //  DELETE /special-payroll/newly-hired/{id}
-    // ─────────────────────────────────────────────────────────────────────
+    /**
+     * Delete a newly hired payroll batch.
+     *
+     * Hard deletion is only permitted while the record is still in draft.
+     * Approved or released records are immutable to protect the audit trail.
+     */
     public function newHireDestroy(int $id)
     {
         $this->authorizeRole(['payroll_officer', 'hrmo']);
@@ -215,32 +238,15 @@ class SpecialPayrollController extends Controller
             ->with('success', 'Payroll record deleted.');
     }
 
-
-    // ─────────────────────────────────────────────────────────────────────
-//  Differential — Destroy (draft only)
-//  DELETE /special-payroll/differential/{id}
-// ─────────────────────────────────────────────────────────────────────
-public function differentialDestroy(int $id)
-{
-    $this->authorizeRole(['payroll_officer', 'hrmo']);
-
-    $batch = SpecialPayrollBatch::where('type', 'salary_differential')
-        ->where('status', 'draft')
-        ->findOrFail($id);
-
-    $batch->delete();
-
-    return redirect()->route('special-payroll.differential.index')
-        ->with('success', 'Record deleted.');
-}
-    // ═════════════════════════════════════════════════════════════════════
+    // =====================================================================
     //  SALARY DIFFERENTIAL
-    // ═════════════════════════════════════════════════════════════════════
+    // =====================================================================
 
-    // ─────────────────────────────────────────────────────────────────────
-    //  Differential — Index
-    //  GET /special-payroll/differential
-    // ─────────────────────────────────────────────────────────────────────
+    /**
+     * List all salary differential payroll batches.
+     *
+     * Supports optional filtering by year and status via query string.
+     */
     public function differentialIndex(Request $request)
     {
         $this->authorizeRole(['payroll_officer', 'hrmo', 'accountant', 'ard', 'cashier']);
@@ -262,10 +268,11 @@ public function differentialDestroy(int $id)
         return view('special-payroll.differential-index', compact('batches', 'currentYear'));
     }
 
-    // ─────────────────────────────────────────────────────────────────────
-    //  Differential — Create Form
-    //  GET /special-payroll/differential/create
-    // ─────────────────────────────────────────────────────────────────────
+    /**
+     * Show the form for creating a new salary differential record.
+     *
+     * Only active employees are eligible for salary differential processing.
+     */
     public function differentialCreate()
     {
         $this->authorizeRole(['payroll_officer', 'hrmo']);
@@ -273,16 +280,19 @@ public function differentialDestroy(int $id)
         $employees = Employee::where('status', 'active')
             ->orderBy('last_name')
             ->orderBy('first_name')
-->get(['id', 'last_name', 'first_name', 'middle_name',
-       'position_title', 'basic_salary']);
+            ->get(['id', 'last_name', 'first_name', 'middle_name',
+                   'position_title', 'basic_salary']);
 
         return view('special-payroll.differential-create', compact('employees'));
     }
 
-    // ─────────────────────────────────────────────────────────────────────
-    //  Differential — Store
-    //  POST /special-payroll/differential
-    // ─────────────────────────────────────────────────────────────────────
+    /**
+     * Compute and persist a salary differential payroll batch.
+     *
+     * Delegates the month-by-month differential calculation to
+     * SalaryDifferentialService. The new salary must exceed the old salary —
+     * downward adjustments are not handled by this flow.
+     */
     public function differentialStore(Request $request)
     {
         $this->authorizeRole(['payroll_officer', 'hrmo']);
@@ -348,10 +358,12 @@ public function differentialDestroy(int $id)
             ->with('success', "Salary differential created for {$employee->last_name}, {$employee->first_name}.");
     }
 
-    // ─────────────────────────────────────────────────────────────────────
-    //  Differential — Show
-    //  GET /special-payroll/differential/{id}
-    // ─────────────────────────────────────────────────────────────────────
+    /**
+     * Display a single salary differential batch with its per-month breakdown.
+     *
+     * The service is re-invoked from the batch's stored inputs so the view
+     * always reflects the current computation logic.
+     */
     public function differentialShow(int $id)
     {
         $this->authorizeRole(['payroll_officer', 'hrmo', 'accountant', 'ard', 'cashier']);
@@ -377,10 +389,13 @@ public function differentialDestroy(int $id)
         return view('special-payroll.differential-show', compact('batch', 'employee', 'result'));
     }
 
-    // ─────────────────────────────────────────────────────────────────────
-    //  Differential — Approve / Release
-    //  POST /special-payroll/differential/{id}/approve
-    // ─────────────────────────────────────────────────────────────────────
+    /**
+     * Advance a salary differential batch through its approval workflow.
+     *
+     * Two-step flow:
+     *   draft     → approved   (accountant only)
+     *   approved  → released   (ard or chief_admin_officer only)
+     */
     public function differentialApprove(Request $request, int $id)
     {
         $batch = SpecialPayrollBatch::where('type', 'salary_differential')->findOrFail($id);
@@ -423,18 +438,45 @@ public function differentialDestroy(int $id)
             ->with('success', "Salary differential record {$label} successfully.");
     }
 
-       // ─────────────────────────────────────────────────────────────────────
-    //  NOSI/NOSA — Index
-    //  GET /special-payroll/nosi-nosa
-    // ─────────────────────────────────────────────────────────────────────
+    /**
+     * Delete a salary differential batch.
+     *
+     * Hard deletion is only permitted while the record is still in draft.
+     * Approved or released records are immutable to protect the audit trail.
+     */
+    public function differentialDestroy(int $id)
+    {
+        $this->authorizeRole(['payroll_officer', 'hrmo']);
+
+        $batch = SpecialPayrollBatch::where('type', 'salary_differential')
+            ->where('status', 'draft')
+            ->findOrFail($id);
+
+        $batch->delete();
+
+        return redirect()->route('special-payroll.differential.index')
+            ->with('success', 'Record deleted.');
+    }
+
+    // =====================================================================
+    //  NOSI / NOSA
+    // =====================================================================
+
+    /**
+     * List all NOSI and NOSA payroll batches.
+     *
+     * Supports optional filtering by year, status, and type (nosi|nosa)
+     * via query string. Both types are shown together since they share the
+     * same computation logic and approval workflow.
+     */
     public function nosiNosaIndex(Request $request)
     {
         $this->authorizeRole(['payroll_officer', 'hrmo', 'accountant', 'ard', 'cashier']);
- 
+
         $query = SpecialPayrollBatch::with('employee')
             ->whereIn('type', ['nosi', 'nosa'])
             ->orderByDesc('id');
- 
+
         if ($request->filled('year')) {
             $query->where('year', $request->year);
         }
@@ -444,38 +486,44 @@ public function differentialDestroy(int $id)
         if ($request->filled('type')) {
             $query->where('type', $request->type);
         }
- 
+
         $batches     = $query->paginate(20)->withQueryString();
         $currentYear = now()->year;
- 
+
         return view('special-payroll.nosi-nosa-index', compact('batches', 'currentYear'));
     }
- 
-    // ─────────────────────────────────────────────────────────────────────
-    //  NOSI/NOSA — Create Form
-    //  GET /special-payroll/nosi-nosa/create
-    // ─────────────────────────────────────────────────────────────────────
+
+    /**
+     * Show the form for creating a new NOSI or NOSA record.
+     *
+     * The type (nosi|nosa) is selected by the user on the form itself.
+     * Only active employees are eligible.
+     */
     public function nosiNosaCreate()
     {
         $this->authorizeRole(['payroll_officer', 'hrmo']);
- 
+
         $employees = Employee::where('status', 'active')
             ->orderBy('last_name')
             ->orderBy('first_name')
             ->get(['id', 'last_name', 'first_name', 'middle_name',
                    'position_title', 'basic_salary']);
- 
+
         return view('special-payroll.nosi-nosa-create', compact('employees'));
     }
- 
-    // ─────────────────────────────────────────────────────────────────────
-    //  NOSI/NOSA — Store
-    //  POST /special-payroll/nosi-nosa
-    // ─────────────────────────────────────────────────────────────────────
+
+    /**
+     * Compute and persist a NOSI or NOSA payroll batch.
+     *
+     * NOSI (Notice of Step Increment) and NOSA (Notice of Salary Adjustment)
+     * both follow the same differential computation logic via
+     * SalaryDifferentialService — the type field distinguishes them for
+     * reporting and approval routing purposes.
+     */
     public function nosiNosaStore(Request $request)
     {
         $this->authorizeRole(['payroll_officer', 'hrmo']);
- 
+
         $request->validate([
             'type'                 => ['required', 'in:nosi,nosa'],
             'employee_id'          => ['required', 'integer', 'exists:employees,id'],
@@ -488,12 +536,12 @@ public function differentialDestroy(int $id)
             'new_salary.gt' => 'New salary must be greater than the old salary.',
             'type.in'       => 'Type must be either NOSI or NOSA.',
         ]);
- 
+
         $employee = Employee::findOrFail($request->employee_id);
- 
+
         /** @var SalaryDifferentialService $service */
         $service = app(SalaryDifferentialService::class);
- 
+
         $result = $service->compute(
             employee:              $employee,
             effectivity_date_from: $request->effectivity_date_from,
@@ -501,15 +549,15 @@ public function differentialDestroy(int $id)
             old_salary:            (float) $request->old_salary,
             new_salary:            (float) $request->new_salary,
         );
- 
+
         $from      = Carbon::parse($request->effectivity_date_from);
         $to        = Carbon::parse($request->effectivity_date_to);
         $typeLabel = strtoupper($request->type);
- 
+
         $title = $typeLabel . ' — '
             . $employee->last_name . ', ' . $employee->first_name
             . ' (' . $from->format('M d, Y') . ' – ' . $to->format('M d, Y') . ')';
- 
+
         $batch = SpecialPayrollBatch::create([
             'type'                => $request->type,
             'title'               => $title,
@@ -528,7 +576,7 @@ public function differentialDestroy(int $id)
             'status'              => 'draft',
             'remarks'             => $request->remarks,
         ]);
- 
+
         PayrollAuditLog::create([
             'user_id'    => Auth::id(),
             'action'     => 'Created ' . $typeLabel . ': ' . $employee->last_name . ', ' . $employee->first_name,
@@ -536,28 +584,30 @@ public function differentialDestroy(int $id)
             'new_value'  => 'draft',
             'ip_address' => $request->ip(),
         ]);
- 
+
         return redirect()->route('special-payroll.nosi-nosa.show', $batch->id)
             ->with('success', $typeLabel . " record created for {$employee->last_name}, {$employee->first_name}.");
     }
- 
-    // ─────────────────────────────────────────────────────────────────────
-    //  NOSI/NOSA — Show
-    //  GET /special-payroll/nosi-nosa/{id}
-    // ─────────────────────────────────────────────────────────────────────
+
+    /**
+     * Display a single NOSI or NOSA batch with its computed breakdown.
+     *
+     * The service is re-invoked from the batch's stored inputs so the view
+     * always reflects the current computation logic.
+     */
     public function nosiNosaShow(int $id)
     {
         $this->authorizeRole(['payroll_officer', 'hrmo', 'accountant', 'ard', 'cashier']);
- 
+
         $batch = SpecialPayrollBatch::with('employee', 'approver')
             ->whereIn('type', ['nosi', 'nosa'])
             ->findOrFail($id);
- 
+
         $employee = $batch->employee;
- 
+
         /** @var SalaryDifferentialService $service */
         $service = app(SalaryDifferentialService::class);
- 
+
         $result = $service->compute(
             employee:              $employee,
             effectivity_date_from: $batch->period_start->toDateString(),
@@ -565,21 +615,24 @@ public function differentialDestroy(int $id)
             old_salary:            (float) $batch->old_basic_salary,
             new_salary:            (float) $batch->new_basic_salary,
         );
- 
+
         return view('special-payroll.nosi-nosa-show', compact('batch', 'employee', 'result'));
     }
- 
-    // ─────────────────────────────────────────────────────────────────────
-    //  NOSI/NOSA — Approve / Release
-    //  POST /special-payroll/nosi-nosa/{id}/approve
-    // ─────────────────────────────────────────────────────────────────────
+
+    /**
+     * Advance a NOSI or NOSA batch through its approval workflow.
+     *
+     * Two-step flow:
+     *   draft     → approved   (accountant only)
+     *   approved  → released   (ard or chief_admin_officer only)
+     */
     public function nosiNosaApprove(Request $request, int $id)
     {
         $batch = SpecialPayrollBatch::whereIn('type', ['nosi', 'nosa'])->findOrFail($id);
- 
+
         $old       = $batch->status;
         $typeLabel = strtoupper($batch->type);
- 
+
         if ($batch->status === 'draft') {
             $this->authorizeRole(['accountant']);
             $new    = 'approved';
@@ -591,16 +644,16 @@ public function differentialDestroy(int $id)
         } else {
             return back()->with('error', 'This record cannot be advanced further.');
         }
- 
+
         $request->validate(['remarks' => ['nullable', 'string', 'max:500']]);
- 
+
         $batch->update([
             'status'      => $new,
             'approved_by' => Auth::id(),
             'approved_at' => now(),
             'remarks'     => $request->remarks ?? $batch->remarks,
         ]);
- 
+
         PayrollAuditLog::create([
             'payroll_batch_id' => null,
             'user_id'          => Auth::id(),
@@ -609,34 +662,40 @@ public function differentialDestroy(int $id)
             'new_value'        => $new,
             'ip_address'       => $request->ip(),
         ]);
- 
+
         $label = $new === 'approved' ? 'approved' : 'approved and released';
- 
+
         return redirect()->route('special-payroll.nosi-nosa.show', $batch->id)
             ->with('success', $typeLabel . " record {$label} successfully.");
     }
- 
-    // ─────────────────────────────────────────────────────────────────────
-    //  NOSI/NOSA — Destroy (draft only)
-    //  DELETE /special-payroll/nosi-nosa/{id}
-    // ─────────────────────────────────────────────────────────────────────
+
+    /**
+     * Delete a NOSI or NOSA batch.
+     *
+     * Hard deletion is only permitted while the record is still in draft.
+     * Approved or released records are immutable to protect the audit trail.
+     */
     public function nosiNosaDestroy(int $id)
     {
         $this->authorizeRole(['payroll_officer', 'hrmo']);
- 
+
         $batch = SpecialPayrollBatch::whereIn('type', ['nosi', 'nosa'])
             ->where('status', 'draft')
             ->findOrFail($id);
- 
+
         $batch->delete();
- 
+
         return redirect()->route('special-payroll.nosi-nosa.index')
             ->with('success', 'Record deleted.');
     }
 
-    // ─────────────────────────────────────────────────────────────────────
+    // =====================================================================
     //  Private helpers
-    // ─────────────────────────────────────────────────────────────────────
+    // =====================================================================
+
+    /**
+     * Abort with 403 if the authenticated user does not hold any of the given roles.
+     */
     private function authorizeRole(array $roles): void
     {
         if (!Auth::user()->hasAnyRole($roles)) {

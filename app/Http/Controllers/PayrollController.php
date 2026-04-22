@@ -14,45 +14,37 @@ use Illuminate\Support\Facades\DB;
 
 class PayrollController extends Controller
 {
-    // ─────────────────────────────────────────────────────────────────────
-    //  Status labels (for display only — not the transition logic)
-    // ─────────────────────────────────────────────────────────────────────
+    // Display labels for the payroll pipeline statuses — used in views only,
+    // transition logic lives in PayrollPolicy and the individual action methods
     const STATUS_LABELS = [
-        'draft'                => 'Draft',
-        'computed'             => 'Computed',
-        'pending_accountant'   => 'Pending Accountant',
-        'pending_rd'           => 'Pending RD/ARD',
-        'released'             => 'Released',
-        'locked'               => 'Locked',
+        'draft'              => 'Draft',
+        'computed'           => 'Computed',
+        'pending_accountant' => 'Pending Accountant',
+        'pending_rd'         => 'Pending RD/ARD',
+        'released'           => 'Released',
+        'locked'             => 'Locked',
     ];
 
-    // ─────────────────────────────────────────────────────────────────────
-    //  index
-    // ─────────────────────────────────────────────────────────────────────
-public function index(Request $request)
-{
-    $query = PayrollBatch::with('creator')
-        ->withCount('entries')
-        ->withSum('entries', 'gross_income')
-        ->withSum('entries', 'total_deductions')
-        ->withSum('entries', 'net_amount')
-        ->orderByDesc('period_year')
-        ->orderByDesc('period_month')
-        ->orderByDesc('id');
+    public function index(Request $request)
+    {
+        $query = PayrollBatch::with('creator')
+            ->withCount('entries')
+            ->withSum('entries', 'gross_income')
+            ->withSum('entries', 'total_deductions')
+            ->withSum('entries', 'net_amount')
+            ->orderByDesc('period_year')
+            ->orderByDesc('period_month')
+            ->orderByDesc('id');
 
-    if ($request->filled('year'))   $query->where('period_year',  $request->year);
-    if ($request->filled('month'))  $query->where('period_month', $request->month);
-    if ($request->filled('status')) $query->where('status',       $request->status);
+        if ($request->filled('year'))   $query->where('period_year',  $request->year);
+        if ($request->filled('month'))  $query->where('period_month', $request->month);
+        if ($request->filled('status')) $query->where('status',       $request->status);
 
-    $batches = $query->paginate(15)->withQueryString();
+        $batches = $query->paginate(15)->withQueryString();
 
-    return view('payroll.index', compact('batches'));
-    // statusLabels removed — index.blade.php builds its own map inline
-}
+        return view('payroll.index', compact('batches'));
+    }
 
-    // ─────────────────────────────────────────────────────────────────────
-    //  create / store
-    // ─────────────────────────────────────────────────────────────────────
     public function create()
     {
         $this->authorizeRole(['payroll_officer', 'hrmo']);
@@ -81,6 +73,7 @@ public function index(Request $request)
                 ->with('error', "A {$cutoff} cut-off payroll batch for {$request->periodLabel()} already exists.");
         }
 
+        // 1st cut-off covers days 1–15; 2nd covers day 16 to end of month
         $periodStart = $cutoff === '1st'
             ? \Carbon\Carbon::create($year, $month, 1)
             : \Carbon\Carbon::create($year, $month, 16);
@@ -105,9 +98,6 @@ public function index(Request $request)
             ->with('success', "Payroll batch created for {$request->periodLabel()}. Click 'Compute' to calculate all entries.");
     }
 
-    // ─────────────────────────────────────────────────────────────────────
-    //  show
-    // ─────────────────────────────────────────────────────────────────────
     public function show(PayrollBatch $payroll)
     {
         $payroll->load(['entries.employee', 'entries.deductions', 'creator', 'auditLogs.user']);
@@ -126,20 +116,15 @@ public function index(Request $request)
         ));
     }
 
-    // ─────────────────────────────────────────────────────────────────────
-    //  compute
-    // ─────────────────────────────────────────────────────────────────────
     public function compute(Request $request, PayrollBatch $payroll)
     {
         $this->authorize('compute', $payroll);
 
-        /** @var PayrollComputationService $service */
-        $service       = app(PayrollComputationService::class);
-        $attendance    = app(AttendanceService::class);
-        $attendanceMap = $attendance->getAttendanceForBatch($payroll);
+        $attendanceMap = app(AttendanceService::class)->getAttendanceForBatch($payroll);
+        $result        = app(PayrollComputationService::class)->computeBatch($payroll, $attendanceMap);
 
-        $result = $service->computeBatch($payroll, $attendanceMap);
-
+        // Status only advances on the first compute run; re-computing a computed batch
+        // recalculates entries without resetting downstream workflow state
         if ($payroll->status === 'draft') {
             $payroll->update(['status' => 'computed']);
             $this->log($payroll, 'computed', 'draft', 'computed');
@@ -147,28 +132,20 @@ public function index(Request $request)
 
         $message = "Computation complete: {$result['computed']} employee(s) processed.";
 
-        if (!empty($result['errors'])) {
-            $errList = implode('; ', $result['errors']);
+        if (! empty($result['errors'])) {
             return redirect()->route('payroll.show', $payroll)
-                ->with('warning', "{$message} Errors: {$errList}");
+                ->with('warning', "{$message} Errors: " . implode('; ', $result['errors']));
         }
 
-        return redirect()->route('payroll.show', $payroll)
-            ->with('success', $message);
+        return redirect()->route('payroll.show', $payroll)->with('success', $message);
     }
 
-    // ─────────────────────────────────────────────────────────────────────
-    //  submit  — HR → Accountant
-    //  POST /payroll/{payroll}/submit
-    //  draft | computed  →  pending_accountant
-    // ─────────────────────────────────────────────────────────────────────
+    // Pipeline transition: HR → Accountant review
     public function submit(Request $request, PayrollBatch $payroll)
     {
         $this->authorize('submit', $payroll);
 
-        $request->validate([
-            'remarks' => ['nullable', 'string', 'max:500'],
-        ]);
+        $request->validate(['remarks' => ['nullable', 'string', 'max:500']]);
 
         $old = $payroll->status;
 
@@ -184,18 +161,12 @@ public function index(Request $request)
             ->with('success', 'Payroll batch submitted to the Accountant for review.');
     }
 
-    // ─────────────────────────────────────────────────────────────────────
-    //  certify  — Accountant certifies funds → RD/ARD
-    //  POST /payroll/{payroll}/certify
-    //  pending_accountant  →  pending_rd
-    // ─────────────────────────────────────────────────────────────────────
+    // Pipeline transition: Accountant certifies funds → RD/ARD
     public function certify(Request $request, PayrollBatch $payroll)
     {
         $this->authorize('certify', $payroll);
 
-        $request->validate([
-            'remarks' => ['nullable', 'string', 'max:500'],
-        ]);
+        $request->validate(['remarks' => ['nullable', 'string', 'max:500']]);
 
         $old = $payroll->status;
 
@@ -212,18 +183,12 @@ public function index(Request $request)
             ->with('success', 'Payroll certified. Forwarded to RD/ARD for approval.');
     }
 
-    // ─────────────────────────────────────────────────────────────────────
-    //  approve  — RD/ARD approves → released
-    //  POST /payroll/{payroll}/approve
-    //  pending_rd  →  released
-    // ─────────────────────────────────────────────────────────────────────
+    // Pipeline transition: RD/ARD approves → released for disbursement
     public function approve(Request $request, PayrollBatch $payroll)
     {
         $this->authorize('approve', $payroll);
 
-        $request->validate([
-            'remarks' => ['nullable', 'string', 'max:500'],
-        ]);
+        $request->validate(['remarks' => ['nullable', 'string', 'max:500']]);
 
         $old = $payroll->status;
 
@@ -241,18 +206,12 @@ public function index(Request $request)
             ->with('success', 'Payroll approved and released.');
     }
 
-    // ─────────────────────────────────────────────────────────────────────
-    //  lock  — Cashier locks after disbursement
-    //  POST /payroll/{payroll}/lock
-    //  released  →  locked
-    // ─────────────────────────────────────────────────────────────────────
+    // Pipeline transition: Cashier locks after disbursement — no further edits allowed
     public function lock(Request $request, PayrollBatch $payroll)
     {
         $this->authorize('lock', $payroll);
 
-        $request->validate([
-            'remarks' => ['nullable', 'string', 'max:500'],
-        ]);
+        $request->validate(['remarks' => ['nullable', 'string', 'max:500']]);
 
         $old = $payroll->status;
 
@@ -268,9 +227,10 @@ public function index(Request $request)
             ->with('success', 'Payroll batch locked. Disbursement complete.');
     }
 
-    // ─────────────────────────────────────────────────────────────────────
-    //  destroy  — delete draft only
-    // ─────────────────────────────────────────────────────────────────────
+    /**
+     * Delete a draft payroll batch along with all its entries, deductions, and audit logs.
+     * The policy gate ensures only draft batches can be deleted.
+     */
     public function destroy(PayrollBatch $payroll)
     {
         $this->authorize('delete', $payroll);
@@ -288,22 +248,118 @@ public function index(Request $request)
             ->with('success', 'Draft payroll batch deleted.');
     }
 
-    // ─────────────────────────────────────────────────────────────────────
-    //  Private helpers
-    // ─────────────────────────────────────────────────────────────────────
+    /**
+     * Side-by-side net pay verification view, equivalent to the "New Net Pay" sheet.
+     *
+     * Pairs each entry in the current batch with its counterpart in the sibling
+     * cut-off batch (same period, opposite cut-off) so reviewers can see both
+     * halves of the month at once. Flags employees whose net pay in either
+     * cut-off falls below ₱5,000, and highlights entries with an LBP loan deduction.
+     */
+    public function verify(PayrollBatch $payroll)
+    {
+        $this->authorize('view', $payroll);
+
+        $payroll->load(['entries.employee', 'entries.deductions']);
+
+        // Fetch the sibling batch (same period, opposite cut-off) for comparison
+        $siblingCutoff = $payroll->cutoff === '1st' ? '2nd' : '1st';
+        $siblingBatch  = PayrollBatch::with(['entries.employee', 'entries.deductions'])
+            ->where('period_year',  $payroll->period_year)
+            ->where('period_month', $payroll->period_month)
+            ->where('cutoff',       $siblingCutoff)
+            ->first();
+
+        // Key sibling entries by employee_id for O(1) lookup inside the map below
+        $siblingEntries = $siblingBatch
+            ? $siblingBatch->entries->keyBy('employee_id')
+            : collect();
+
+        $verifyRows = $payroll->entries
+            ->sortBy(fn ($e) => optional($e->employee)->last_name . optional($e->employee)->first_name)
+            ->map(function ($entry) use ($siblingEntries) {
+                $sibling    = $siblingEntries->get($entry->employee_id);
+                $netCurrent = (float) $entry->net_amount;
+                $netSibling = $sibling ? (float) $sibling->net_amount : null;
+
+                $hasLbpLoan = $entry->deductions->contains(
+                    fn ($d) => stripos($d->code ?? '', 'lbp') !== false
+                            || stripos($d->name ?? '', 'lbp') !== false
+                );
+
+                return (object) [
+                    'employee'        => $entry->employee,
+                    'entry_current'   => $entry,
+                    'entry_sibling'   => $sibling,
+                    'net_current'     => $netCurrent,
+                    'net_sibling'     => $netSibling,
+                    'total_net'       => $netCurrent + ($netSibling ?? 0),
+                    'has_lbp_loan'    => $hasLbpLoan,
+                    // Flagged if either cut-off net drops below the ₱5,000 minimum threshold
+                    'below_threshold' => $netCurrent < 5000 || ($netSibling !== null && $netSibling < 5000),
+                ];
+            })
+            ->values();
+
+        [$totalNet1st, $totalNet2nd] = $payroll->cutoff === '1st'
+            ? [$payroll->entries->sum('net_amount'), $siblingBatch?->entries->sum('net_amount') ?? 0]
+            : [$siblingBatch?->entries->sum('net_amount') ?? 0, $payroll->entries->sum('net_amount')];
+
+        $totalCombined       = $totalNet1st + $totalNet2nd;
+        $belowThresholdCount = $verifyRows->filter(fn ($r) => $r->below_threshold)->count();
+
+        return view('payroll.verify', compact(
+            'payroll',
+            'siblingBatch',
+            'verifyRows',
+            'totalNet1st',
+            'totalNet2nd',
+            'totalCombined',
+            'belowThresholdCount'
+        ));
+    }
 
     /**
-     * Quick role gate for actions not yet covered by policy.
+     * Override a locked batch back to released so corrections can be made.
+     * Requires a mandatory remarks justification (min 10 chars) for the audit trail.
+     */
+    public function forceEdit(Request $request, PayrollBatch $payroll)
+    {
+        $this->authorize('forceEdit', $payroll);
+
+        $request->validate([
+            'remarks' => ['required', 'string', 'min:10', 'max:1000'],
+        ]);
+
+        $old = $payroll->status;
+
+        $payroll->update([
+            'status'  => 'released',
+            'remarks' => $request->input('remarks'),
+        ]);
+
+        $this->log($payroll, 'Force Edit Override', $old, 'released');
+
+        return redirect()->route('payroll.show', $payroll)
+            ->with('success', 'Payroll batch unlocked. Status reverted to Released for corrections.');
+    }
+
+    // ----------------------------------------------------------------
+    // Helpers
+    // ----------------------------------------------------------------
+
+    /**
+     * Role gate for actions not yet covered by a dedicated policy.
      */
     private function authorizeRole(array $roles): void
     {
-        if (!Auth::user()->hasAnyRole($roles)) {
+        if (! Auth::user()->hasAnyRole($roles)) {
             abort(403);
         }
     }
 
     /**
-     * Write an immutable audit log entry.
+     * Write an immutable audit log entry for any payroll batch state change.
      */
     private function log(PayrollBatch $batch, string $action, ?string $old, ?string $new): void
     {
@@ -315,126 +371,5 @@ public function index(Request $request)
             'new_value'        => $new,
             'ip_address'       => request()->ip(),
         ]);
-    }
-
-     // ─────────────────────────────────────────────────────────────────────
-    //  verify  — Net Pay Verification (New Net Pay sheet equivalent)
-    //  GET /payroll/{payroll}/verify
-    // ─────────────────────────────────────────────────────────────────────
-    public function verify(PayrollBatch $payroll)
-    {
-        $this->authorize('view', $payroll);
- 
-        $payroll->load(['entries.employee', 'entries.deductions']);
- 
-        // Find the sibling batch (same period, opposite cut-off)
-        $siblingCutoff = $payroll->cutoff === '1st' ? '2nd' : '1st';
-        $siblingBatch  = PayrollBatch::with(['entries.employee', 'entries.deductions'])
-            ->where('period_year',  $payroll->period_year)
-            ->where('period_month', $payroll->period_month)
-            ->where('cutoff',       $siblingCutoff)
-            ->first();
- 
-        // Index sibling entries by employee_id for O(1) lookup
-        $siblingEntries = collect();
-        if ($siblingBatch) {
-            $siblingEntries = $siblingBatch->entries->keyBy('employee_id');
-        }
- 
-        // Build verify rows — one per employee in the current batch
-        $verifyRows = $payroll->entries
-            ->sortBy(function ($entry) {
-                return optional($entry->employee)->last_name . optional($entry->employee)->first_name;
-            })
-            ->map(function ($entry) use ($siblingEntries) {
-                $employee      = $entry->employee;
-                $entrySibling  = $siblingEntries->get($entry->employee_id);
- 
-                $netCurrent = (float) $entry->net_amount;
-                $netSibling = $entrySibling ? (float) $entrySibling->net_amount : null;
-                $totalNet   = $netCurrent + ($netSibling ?? 0);
- 
-                // Check LBP Loan deduction in current entry
-                $hasLbpLoan = $entry->deductions
-                    ->contains(function ($ded) {
-                        return stripos($ded->code ?? '', 'lbp') !== false
-                            || stripos($ded->name ?? '', 'lbp') !== false;
-                    });
- 
-                // Flag if either cut-off net is below ₱5,000
-                $belowThreshold = $netCurrent < 5000
-                    || ($netSibling !== null && $netSibling < 5000);
- 
-                return (object) [
-                    'employee'        => $employee,
-                    'entry_current'   => $entry,
-                    'entry_sibling'   => $entrySibling,
-                    'net_current'     => $netCurrent,
-                    'net_sibling'     => $netSibling,
-                    'total_net'       => $totalNet,
-                    'has_lbp_loan'    => $hasLbpLoan,
-                    'below_threshold' => $belowThreshold,
-                ];
-            })
-            ->values();
- 
-        // Determine which cut-off is 1st and which is 2nd for totals
-        if ($payroll->cutoff === '1st') {
-            $totalNet1st    = $payroll->entries->sum('net_amount');
-            $totalNet2nd    = $siblingBatch ? $siblingBatch->entries->sum('net_amount') : 0;
-        } else {
-            $totalNet2nd    = $payroll->entries->sum('net_amount');
-            $totalNet1st    = $siblingBatch ? $siblingBatch->entries->sum('net_amount') : 0;
-        }
- 
-        $totalCombined       = $totalNet1st + $totalNet2nd;
-        $belowThresholdCount = $verifyRows->filter(function ($row) {
-            return $row->below_threshold;
-        })->count();
- 
-        return view('payroll.verify', compact(
-            'payroll',
-            'siblingBatch',
-            'verifyRows',
-            'totalNet1st',
-            'totalNet2nd',
-            'totalCombined',
-            'belowThresholdCount'
-        ));
-    }
- 
-    // ─────────────────────────────────────────────────────────────────────
-    //  forceEdit  — Payroll Officer overrides locked status back to released
-    //  POST /payroll/{payroll}/force-edit
-    // ─────────────────────────────────────────────────────────────────────
-    public function forceEdit(Request $request, PayrollBatch $payroll)
-    {
-        $this->authorize('forceEdit', $payroll);
- 
-        $request->validate([
-            'remarks' => ['required', 'string', 'min:10', 'max:1000'],
-        ]);
- 
-        $old = $payroll->status;
- 
-        $payroll->update([
-            'status'  => 'released',
-            'remarks' => $request->input('remarks'),
-        ]);
- 
-        PayrollAuditLog::create([
-            'payroll_batch_id' => $payroll->id,
-            'user_id'          => Auth::id(),
-            'action'           => 'Force Edit Override',
-            'old_value'        => $old,
-            'new_value'        => 'released',
-            'ip_address'       => $request->ip(),
-            // Store remarks in the audit log via the remarks field if the table has one,
-            // or append to action string. Adjust if your table has a 'notes' column:
-            // 'notes'         => $request->input('remarks'),
-        ]);
- 
-        return redirect()->route('payroll.show', $payroll)
-            ->with('success', 'Payroll batch unlocked. Status reverted to Released for corrections.');
     }
 }

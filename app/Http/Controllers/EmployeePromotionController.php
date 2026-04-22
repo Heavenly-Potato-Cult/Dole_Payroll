@@ -11,8 +11,7 @@ use Illuminate\Validation\Rule;
 class EmployeePromotionController extends Controller
 {
     /**
-     * GET /employees/{employee}/promotions
-     * Timeline of all promotion/step records.
+     * Timeline of all promotion and step increment records for an employee.
      */
     public function index(Employee $employee)
     {
@@ -24,17 +23,22 @@ class EmployeePromotionController extends Controller
         return view('employees.promotions.index', compact('employee', 'history'));
     }
 
-    /**
-     * GET /employees/{employee}/promotions/create
-     */
     public function create(Employee $employee)
     {
         $sitYears = [2022, 2021];
+
         return view('employees.promotions.create', compact('employee', 'sitYears'));
     }
 
     /**
-     * POST /employees/{employee}/promotions
+     * Validate and record a promotion, then update the employee's live SG/Step/Salary.
+     *
+     * Two business rules enforced beyond standard validation:
+     *   1. Only one promotion record is allowed per calendar month.
+     *   2. The new salary must be >= the employee's current salary.
+     *
+     * On success, both the history record and the employee's current record are written
+     * atomically — the history row snapshots old values before they are overwritten.
      */
     public function store(Request $request, Employee $employee)
     {
@@ -42,9 +46,8 @@ class EmployeePromotionController extends Controller
             'effective_date' => [
                 'required',
                 'date',
-                // No two promotions in the same calendar month
                 function ($attr, $value, $fail) use ($employee) {
-                    $month = \Carbon\Carbon::parse($value)->format('Y-m');
+                    $month  = \Carbon\Carbon::parse($value)->format('Y-m');
                     $exists = EmployeePromotionHistory::where('employee_id', $employee->id)
                         ->whereRaw("DATE_FORMAT(effective_date, '%Y-%m') = ?", [$month])
                         ->exists();
@@ -53,15 +56,14 @@ class EmployeePromotionController extends Controller
                     }
                 },
             ],
-            'new_sg'         => 'required|integer|min:1|max:33',
-            'new_step'       => 'required|integer|min:1|max:8',
-            'sit_year'       => 'required|integer|min:2021',
-            'new_salary'     => 'required|numeric|min:1',
-            'type'           => ['required', Rule::in(array_keys(EmployeePromotionHistory::TYPES))],
-            'remarks'        => 'nullable|string|max:500',
+            'new_sg'     => 'required|integer|min:1|max:33',
+            'new_step'   => 'required|integer|min:1|max:8',
+            'sit_year'   => 'required|integer|min:2021',
+            'new_salary' => 'required|numeric|min:1',
+            'type'       => ['required', Rule::in(array_keys(EmployeePromotionHistory::TYPES))],
+            'remarks'    => 'nullable|string|max:500',
         ]);
 
-        // Validate: new salary must be >= old salary
         if ((float) $validated['new_salary'] < (float) $employee->basic_salary) {
             return back()->withErrors([
                 'new_salary' => 'New salary (₱' . number_format($validated['new_salary'], 2) . ') '
@@ -69,7 +71,7 @@ class EmployeePromotionController extends Controller
             ])->withInput();
         }
 
-        // Create the history record
+        // Snapshot current values into history before overwriting
         EmployeePromotionHistory::create([
             'employee_id'    => $employee->id,
             'effective_date' => $validated['effective_date'],
@@ -84,7 +86,6 @@ class EmployeePromotionController extends Controller
             'created_by'     => auth()->id(),
         ]);
 
-        // Update the employee's current record
         $employee->update([
             'salary_grade'        => $validated['new_sg'],
             'step'                => $validated['new_step'],
@@ -98,8 +99,10 @@ class EmployeePromotionController extends Controller
     }
 
     /**
-     * DELETE /employees/{employee}/promotions/{promotion}
-     * Only the most recent record can be deleted (to prevent history corruption).
+     * Delete a promotion record and roll back the employee's current SG/Step/Salary.
+     *
+     * Only the most recent record can be deleted. Removing an older entry would leave
+     * the employee's current values inconsistent with the remaining history chain.
      */
     public function destroy(Employee $employee, EmployeePromotionHistory $promotion)
     {
@@ -111,7 +114,7 @@ class EmployeePromotionController extends Controller
             return back()->with('error', 'Only the most recent promotion record can be deleted.');
         }
 
-        // Restore previous salary to employee record
+        // Restore the values that were snapshotted when this record was created
         $employee->update([
             'salary_grade' => $promotion->old_sg,
             'step'         => $promotion->old_step,

@@ -20,9 +20,15 @@ class TevController extends Controller
 {
     public function __construct(private TevComputationService $tevService) {}
 
-    // ─────────────────────────────────────────────────────────────────────
-    //  Index  GET /tev
-    // ─────────────────────────────────────────────────────────────────────
+    // =====================================================================
+    //  INDEX
+    // =====================================================================
+
+    /**
+     * List all TEV requests with optional filtering by track, status, and year.
+     *
+     * Accessible to all roles involved in the TEV approval pipeline.
+     */
     public function index(Request $request)
     {
         $this->authorizeRole(['hrmo', 'accountant', 'budget_officer', 'ard', 'chief_admin_officer', 'cashier']);
@@ -39,9 +45,18 @@ class TevController extends Controller
         return view('tev.index', compact('tevRequests', 'currentYear'));
     }
 
-    // ─────────────────────────────────────────────────────────────────────
-    //  Create  GET /tev/create
-    // ─────────────────────────────────────────────────────────────────────
+    // =====================================================================
+    //  CREATE / STORE
+    // =====================================================================
+
+    /**
+     * Show the form for filing a new TEV request.
+     *
+     * Only approved office orders are eligible as the basis for a TEV —
+     * unapproved orders have not yet been authorised for travel.
+     * Per diem rates are grouped by travel type for use in the itinerary
+     * line builder on the form.
+     */
     public function create()
     {
         $this->authorizeRole(['hrmo']);
@@ -56,11 +71,14 @@ class TevController extends Controller
         return view('tev.create', compact('approvedOrders', 'perDiemRates'));
     }
 
-    // ─────────────────────────────────────────────────────────────────────
-    //  Store  POST /tev
-    //  NOTE: TEV is auto-submitted on creation (no manual submit step needed).
-    //  HRMO always files on behalf of employees, so draft is redundant.
-    // ─────────────────────────────────────────────────────────────────────
+    /**
+     * Persist a new TEV request and auto-submit it to the accountant queue.
+     *
+     * TEVs are always filed by HRMO on behalf of employees, so there is no
+     * separate draft/submit step — the record enters 'submitted' status
+     * immediately on creation. The itinerary lines and totals are created
+     * within a single transaction to keep the record consistent.
+     */
     public function store(StoreTevRequest $request)
     {
         $this->authorizeRole(['hrmo']);
@@ -79,7 +97,7 @@ class TevController extends Controller
                 'travel_date_start'    => $validated['travel_date_start'],
                 'travel_date_end'      => $validated['travel_date_end'],
                 'total_other_expenses' => 0,
-                // ── Auto-submitted: HRMO files directly to accountant queue ──
+                // Auto-submitted: HRMO files directly to the accountant queue
                 'status'               => 'submitted',
                 'submitted_by'         => Auth::id(),
                 'submitted_at'         => now(),
@@ -104,7 +122,7 @@ class TevController extends Controller
 
             $this->tevService->computeTotals($tev);
 
-            // Log the auto-submission in the approval timeline
+            // Record the auto-submission as the first entry in the approval timeline
             TevApprovalLog::create([
                 'tev_request_id' => $tev->id,
                 'user_id'        => Auth::id(),
@@ -129,11 +147,21 @@ class TevController extends Controller
             ->with('success', 'TEV created and submitted to the Accountant for review.');
     }
 
+    // Holds the ID of the record created inside the transaction so the
+    // redirect after store() can reference it outside the closure scope.
     private int $lastCreatedId;
 
-    // ─────────────────────────────────────────────────────────────────────
-    //  Show  GET /tev/{id}
-    // ─────────────────────────────────────────────────────────────────────
+    // =====================================================================
+    //  SHOW
+    // =====================================================================
+
+    /**
+     * Display a single TEV request with its full approval timeline.
+     *
+     * Approval logs are eager-loaded in chronological order so the view can
+     * render the complete history. resolveApproval() determines whether the
+     * current user has an actionable next step to present.
+     */
     public function show(int $id)
     {
         $this->authorizeRole(['hrmo', 'accountant', 'budget_officer', 'ard', 'chief_admin_officer', 'cashier']);
@@ -151,34 +179,51 @@ class TevController extends Controller
         return view('tev.show', compact('tev', 'canApprove', 'nextAction'));
     }
 
-    // ─────────────────────────────────────────────────────────────────────
-    //  submit() — kept for legacy safety but should not be reachable.
-    //  TEVs are now auto-submitted on creation. This method aborts if called.
-    // ─────────────────────────────────────────────────────────────────────
+    // =====================================================================
+    //  SUBMIT (legacy — disabled)
+    // =====================================================================
+
+    /**
+     * Manual submission is no longer part of the TEV workflow.
+     *
+     * TEVs are auto-submitted on creation by HRMO. This method is retained
+     * only to prevent a 404 if a stale link is followed, and always returns
+     * 410 Gone to signal that the endpoint has been intentionally retired.
+     */
     public function submit(Request $request, int $tevRequest)
     {
-        // TEVs are auto-submitted on creation — manual submit is no longer used.
         abort(410, 'Manual submission is no longer required. TEVs are automatically submitted on creation.');
     }
 
-    // ─────────────────────────────────────────────────────────────────────
-    //  Approve (generic role-based transition)  POST /tev/{tevRequest}/approve
-    // ─────────────────────────────────────────────────────────────────────
-public function approve(Request $request, int $tevRequest)
-{
-    $tev = TevRequest::findOrFail($tevRequest);
-    $request->validate(['remarks' => ['nullable', 'string', 'max:500']]);
+    // =====================================================================
+    //  APPROVE
+    // =====================================================================
 
-    [$newStatus, $stepLabel] = $this->resolveTransition($tev);
-    $old = $tev->status;
+    /**
+     * Advance a TEV through its role-based approval workflow.
+     *
+     * The next status and audit label are resolved by resolveTransition(),
+     * which enforces that the current user's role matches the expected step.
+     * When a cashier releases a cash advance, the grand total is also
+     * recorded as the cash_advance_amount for later liquidation reconciliation.
+     */
+    public function approve(Request $request, int $tevRequest)
+    {
+        $tev = TevRequest::findOrFail($tevRequest);
+        $request->validate(['remarks' => ['nullable', 'string', 'max:500']]);
 
-    // ── When cashier releases a CA, record the advance amount ──
-    $updateData = ['status' => $newStatus];
-    if ($newStatus === 'cashier_released') {
-        $updateData['cash_advance_amount'] = $tev->grand_total;
-    }
+        [$newStatus, $stepLabel] = $this->resolveTransition($tev);
+        $old = $tev->status;
 
-    $tev->update($updateData);
+        $updateData = ['status' => $newStatus];
+
+        // Record the grand total as the advance amount when the cashier releases a CA,
+        // so the liquidation step has a fixed baseline to reconcile against.
+        if ($newStatus === 'cashier_released') {
+            $updateData['cash_advance_amount'] = $tev->grand_total;
+        }
+
+        $tev->update($updateData);
 
         TevApprovalLog::create([
             'tev_request_id' => $tev->id,
@@ -201,9 +246,17 @@ public function approve(Request $request, int $tevRequest)
             ->with('success', 'TEV ' . $stepLabel . ' successfully.');
     }
 
-    // ─────────────────────────────────────────────────────────────────────
-    //  Reject  POST /tev/{tevRequest}/reject
-    // ─────────────────────────────────────────────────────────────────────
+    // =====================================================================
+    //  REJECT
+    // =====================================================================
+
+    /**
+     * Reject a TEV at the current user's responsible step.
+     *
+     * Each role may only reject at the step they own — this mirrors the
+     * $canReject logic in the Blade view and must be kept in sync with it.
+     * A rejection reason is mandatory to maintain a meaningful audit trail.
+     */
     public function reject(Request $request, int $tevRequest)
     {
         $tev = TevRequest::findOrFail($tevRequest);
@@ -213,8 +266,6 @@ public function approve(Request $request, int $tevRequest)
             ['remarks.required' => 'A reason is required when rejecting a TEV.']
         );
 
-        // Each role may only reject at the step they are responsible for.
-        // This mirrors the blade $canReject logic and must stay in sync.
         $user = Auth::user();
         $authorized = (
             ($tev->status === 'submitted'            && $user->hasAnyRole(['accountant'])) ||
@@ -250,9 +301,20 @@ public function approve(Request $request, int $tevRequest)
             ->with('error', 'TEV has been rejected.');
     }
 
-    // ─────────────────────────────────────────────────────────────────────
-    //  Certify (post-travel certification)  POST /tev/{tevRequest}/certify
-    // ─────────────────────────────────────────────────────────────────────
+    // =====================================================================
+    //  CERTIFY
+    // =====================================================================
+
+    /**
+     * Save post-travel certification details for a TEV.
+     *
+     * Certification confirms that travel actually took place and captures
+     * supporting details (agency visited, Annex A amounts, etc.). It is
+     * available once the TEV reaches rd_approved or any later status, since
+     * the employee will have returned from travel by that point.
+     * updateOrCreate is used so the form can be re-submitted to correct
+     * certification details without creating duplicate records.
+     */
     public function certify(Request $request, int $tevRequest)
     {
         $this->authorizeRole(['hrmo', 'accountant']);
@@ -296,10 +358,19 @@ public function approve(Request $request, int $tevRequest)
             ->with('success', 'TEV certification saved.');
     }
 
-    // ─────────────────────────────────────────────────────────────────────
-    //  File Liquidation  POST /tev/{tevRequest}/liquidate
-    //  HRMO files actual expenses after CA release
-    // ─────────────────────────────────────────────────────────────────────
+    // =====================================================================
+    //  LIQUIDATION
+    // =====================================================================
+
+    /**
+     * File actual expenses against a released cash advance TEV.
+     *
+     * Only applies to cash_advance track TEVs after the cashier has released
+     * the advance. The balance_due is derived as advance minus actual spend:
+     * a positive value means the employee owes a refund; a negative value
+     * means DOLE owes the employee an additional payment.
+     * Both the employee themselves and HRMO staff may file on their behalf.
+     */
     public function fileLiquidation(Request $request, int $tevRequest)
     {
         $tev  = TevRequest::findOrFail($tevRequest);
@@ -332,7 +403,7 @@ public function approve(Request $request, int $tevRequest)
         $actualAmount  = (float) $data['actual_amount'];
         $advanceAmount = (float) ($tev->cash_advance_amount ?? $tev->grand_total);
 
-        // Positive = employee owes a refund; Negative = DOLE owes employee additional payment
+        // Positive = employee owes a refund; negative = DOLE owes employee additional payment
         $balanceDue = round($advanceAmount - $actualAmount, 2);
 
         $tev->update([
@@ -365,10 +436,12 @@ public function approve(Request $request, int $tevRequest)
             ->with('success', 'Liquidation filed successfully. Awaiting cashier approval.');
     }
 
-    // ─────────────────────────────────────────────────────────────────────
-    //  Approve Liquidation  POST /tev/{tevRequest}/liquidation/approve
-    //  Cashier finalises the liquidation
-    // ─────────────────────────────────────────────────────────────────────
+    /**
+     * Finalise a liquidation filing as the cashier.
+     *
+     * This is the terminal step for cash advance TEVs. The cashier confirms
+     * the actual expenses are correct and moves the record to 'liquidated'.
+     */
     public function approveLiquidation(Request $request, int $tevRequest)
     {
         $this->authorizeRole(['cashier']);
@@ -408,18 +481,33 @@ public function approve(Request $request, int $tevRequest)
             ->with('success', 'Liquidation approved. TEV is now fully liquidated.');
     }
 
-    // ─────────────────────────────────────────────────────────────────────
-    //  destroy() — not permitted
-    // ─────────────────────────────────────────────────────────────────────
+    // =====================================================================
+    //  DESTROY (not permitted)
+    // =====================================================================
+
+    /**
+     * TEV records may not be deleted.
+     *
+     * Once filed, a TEV is part of the financial audit trail and must be
+     * retained. Rejection or liquidation are the appropriate terminal states.
+     */
     public function destroy(int $id)
     {
         abort(405);
     }
 
-    // ─────────────────────────────────────────────────────────────────────
+    // =====================================================================
     //  Private helpers
-    // ─────────────────────────────────────────────────────────────────────
+    // =====================================================================
 
+    /**
+     * Determine whether the current user can act on a TEV, and what the
+     * action label should be for the button in the view.
+     *
+     * Returns [bool $canApprove, string $nextAction]. The map covers every
+     * status that has a pending approval step; any other status returns
+     * [false, ''] so the view knows to hide the action button.
+     */
     private function resolveApproval(TevRequest $tev): array
     {
         $user   = Auth::user();
@@ -440,6 +528,13 @@ public function approve(Request $request, int $tevRequest)
         return [$user->hasAnyRole($roles), $label];
     }
 
+    /**
+     * Resolve the next status and audit label for the current user's approval step.
+     *
+     * Aborts with 403 if the user's role does not match the expected step for
+     * the TEV's current status, ensuring the transition map is the single
+     * source of truth for workflow progression.
+     */
     private function resolveTransition(TevRequest $tev): array
     {
         $user   = Auth::user();
@@ -460,6 +555,9 @@ public function approve(Request $request, int $tevRequest)
         abort(403, 'You are not authorized to approve this TEV at its current status.');
     }
 
+    /**
+     * Abort with 403 if the authenticated user does not hold any of the given roles.
+     */
     private function authorizeRole(array $roles): void
     {
         if (!Auth::user()->hasAnyRole($roles)) {
