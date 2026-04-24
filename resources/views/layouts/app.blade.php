@@ -70,11 +70,11 @@
                style="padding-left:28px;">
                 <span class="nav-icon">📈</span> Salary Differential
             </a>
-            {{-- <a href="{{ route('special-payroll.nosi-nosa.index') }}"
+            <a href="{{ route('special-payroll.nosi-nosa.index') }}"
                class="nav-item {{ request()->routeIs('special-payroll.nosi-nosa.*') ? 'active' : '' }}"
                style="padding-left:28px;">
                 <span class="nav-icon">📑</span> NOSI / NOSA
-            </a> --}}
+            </a>
             @endrole
 
             @endrole

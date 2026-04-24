@@ -217,6 +217,9 @@
     $canCompute = in_array($payroll->status, ['draft', 'computed'])
                && auth()->user()->hasRole('payroll_officer');
 
+    $canPullAttendance = in_array($payroll->status, ['draft', 'computed'])
+                  && auth()->user()->hasRole('payroll_officer');           
+
     $nextAction = null;
     // CHANGED: hrmo removed — only payroll_officer submits to Accountant
     if (auth()->user()->hasRole('payroll_officer')
@@ -270,15 +273,34 @@
     <div class="d-flex gap-2 flex-wrap payroll-show-actions">
         <a href="{{ route('payroll.index') }}" class="btn btn-outline btn-sm">← All Batches</a>
 
-        @if ($canCompute)
-            <form method="POST" action="{{ route('payroll.compute', $payroll) }}"
-                  onsubmit="return confirm('Run payroll computation for all active employees?\n\nExisting entries will be overwritten.')">
-                @csrf
-                <button class="btn btn-gold btn-sm">
-                    ⚙ {{ $payroll->status === 'draft' ? 'Compute Payroll' : 'Re-compute' }}
-                </button>
-            </form>
+@if ($canPullAttendance)
+    <form method="POST" action="{{ route('payroll.pullAttendance', $payroll) }}"
+          onsubmit="return confirm('{{ $snapshotCount > 0 ? 'Re-pulling will reset any manual HR corrections. Continue?' : 'Pull attendance from HRIS for all active employees?' }}')">
+        @csrf
+        <button class="btn btn-outline btn-sm">
+            {{ $snapshotCount > 0 ? '🔄 Re-pull Attendance' : '📥 Pull Attendance' }}
+            @if ($snapshotCount > 0)
+                <span style="font-size:0.72rem; opacity:0.8;">({{ $snapshotCount }}/{{ $activeCount }})</span>
+            @endif
+        </button>
+    </form>
+@endif
+
+@if ($canCompute)
+    <form method="POST" action="{{ route('payroll.compute', $payroll) }}"
+          onsubmit="return confirm('Run payroll computation for all active employees?\n\nExisting entries will be overwritten.')">
+        @csrf
+        @if ($snapshotCount === 0)
+            <button class="btn btn-gold btn-sm" disabled title="Pull attendance first">
+                ⚙ {{ $payroll->status === 'draft' ? 'Compute Payroll' : 'Re-compute' }}
+            </button>
+        @else
+            <button class="btn btn-gold btn-sm">
+                ⚙ {{ $payroll->status === 'draft' ? 'Compute Payroll' : 'Re-compute' }}
+            </button>
         @endif
+    </form>
+@endif
 
         @if ($nextAction)
             <form method="POST" action="{{ $nextAction['route'] }}"
@@ -346,6 +368,98 @@
         <div class="stat-sub">Gross − Total Deductions</div>
     </div>
 </div>
+
+{{-- ═══════════════════════════════════════════════════════════════
+     ATTENDANCE PANEL (draft / computed only)
+═══════════════════════════════════════════════════════════════ --}}
+@if (in_array($payroll->status, ['draft', 'computed']))
+<div class="card" style="margin-bottom:20px;">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h3>📋 Attendance Data</h3>
+        @if ($snapshotCount > 0)
+            <span class="badge badge-computed" style="font-size:0.75rem;">
+                {{ $snapshotCount }}/{{ $activeCount }} pulled
+                @if ($correctedCount > 0) · {{ $correctedCount }} corrected @endif
+            </span>
+        @else
+            <span class="badge badge-draft" style="font-size:0.75rem;">Not pulled yet</span>
+        @endif
+    </div>
+    <div class="card-body">
+
+        @if ($snapshotCount === 0)
+            <div class="alert alert-warning" style="margin-bottom:0;">
+                <strong>⚠ Attendance has not been pulled yet.</strong>
+                The Compute button is disabled until attendance is pulled.
+                Without this step all employees would be computed with zero tardiness and zero LWOP.
+            </div>
+        @elseif ($snapshotCount < $activeCount)
+            <div class="alert alert-warning" style="margin-bottom:12px;">
+                <strong>⚠ Partial pull:</strong> {{ $snapshotCount }} of {{ $activeCount }} employees have attendance data. Consider re-pulling.
+            </div>
+        @else
+            <div class="alert" style="background:#F1FAF5; border-color:#A8D5B5; margin-bottom:12px;">
+                ✅ Attendance pulled for all {{ $snapshotCount }} employees.
+                @if ($correctedCount > 0)
+                    <strong>{{ $correctedCount }} record(s) manually corrected by HR.</strong>
+                @endif
+                Review below, then compute.
+            </div>
+        @endif
+
+        @if ($snapshots->count() > 0)
+            <button type="button" class="btn btn-outline btn-sm" style="margin-bottom:12px;"
+                    onclick="this.nextElementSibling.style.display = this.nextElementSibling.style.display === 'none' ? 'block' : 'none'">
+                👁 Show / Hide Attendance Records ({{ $snapshots->count() }})
+            </button>
+            <div style="display:none; overflow-x:auto;">
+                <table style="font-size:0.82rem; min-width:600px; width:100%;">
+                    <thead>
+                        <tr>
+                            <th>Employee</th>
+                            <th class="text-center">Days Present</th>
+                            <th class="text-center">LWOP Days</th>
+                            <th class="text-center">Late (min)</th>
+                            <th class="text-center">Undertime (min)</th>
+                            <th class="text-center">Source</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach ($snapshots as $snap)
+                            <tr style="{{ $snap->is_corrected ? 'background:#FFF8E1;' : '' }}">
+                                <td>
+                                    <div class="fw-bold" style="font-size:0.83rem;">
+                                        {{ optional($snap->employee)->last_name }}, {{ optional($snap->employee)->first_name }}
+                                    </div>
+                                    <div class="text-muted" style="font-size:0.72rem;">{{ optional($snap->employee)->employee_no }}</div>
+                                </td>
+                                <td class="text-center">{{ number_format($snap->days_present, 1) }}</td>
+                                <td class="text-center {{ $snap->lwop_days > 0 ? 'text-red fw-bold' : '' }}">
+                                    {{ number_format($snap->lwop_days, 3) }}
+                                </td>
+                                <td class="text-center {{ $snap->late_minutes > 0 ? 'text-red' : '' }}">
+                                    {{ $snap->late_minutes }}
+                                </td>
+                                <td class="text-center {{ $snap->undertime_minutes > 0 ? 'text-red' : '' }}">
+                                    {{ $snap->undertime_minutes }}
+                                </td>
+                                <td class="text-center">
+                                    @if ($snap->is_corrected)
+                                        <span class="badge badge-pending" title="{{ $snap->correction_note }}">✏ HR Corrected</span>
+                                    @else
+                                        <span class="badge badge-draft">HRIS API</span>
+                                    @endif
+                                </td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        @endif
+
+    </div>
+</div>
+@endif
 
 @if ($payroll->status === 'draft' && $employeeCount === 0)
     <div class="alert alert-warning">

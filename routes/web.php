@@ -87,6 +87,7 @@ Route::middleware(['auth'])->group(function () {
             Route::post('/payroll/{payroll}/lock',       [PayrollController::class, 'lock'])      ->name('payroll.lock');
             Route::get( '/payroll/{payroll}/verify',     [PayrollController::class, 'verify'])    ->name('payroll.verify');
             Route::post('/payroll/{payroll}/force-edit', [PayrollController::class, 'forceEdit'])->name('payroll.forceEdit');
+    Route::post('/payroll/{payroll}/pull-attendance', [PayrollController::class, 'pullAttendance'])->name('payroll.pullAttendance');
 
             // Payroll entries
             Route::get('/payroll/{payrollBatch}/entries',
