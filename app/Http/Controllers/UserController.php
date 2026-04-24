@@ -12,9 +12,9 @@ use Illuminate\Support\Facades\Auth;
 class UserController extends Controller
 {
     /**
-     * Restrict the entire controller to payroll officers.
+     * Restrict the entire controller to super admins.
      *
-     * User management is a privileged operation — only payroll_officer may
+     * User management is a privileged operation — only super_admin may
      * create, edit, or delete system accounts. This is enforced here rather
      * than on individual routes so there is a single, hard-to-miss gate for
      * the whole controller.
@@ -25,8 +25,8 @@ class UserController extends Controller
             /** @var \App\Models\User $user */
             $user = Auth::user();
 
-            if (!$user || !$user->hasRole('payroll_officer')) {
-                abort(403, 'Only Payroll Officers can manage system users.');
+            if (!$user || !$user->hasRole('super_admin')) {
+                abort(403, 'Only Super Admins can manage system users.');
             }
 
             return $next($request);

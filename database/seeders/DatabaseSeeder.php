@@ -26,13 +26,18 @@ class DatabaseSeeder extends Seeder
                 'email_verified_at' => now(),
             ]
         );
-        $admin->syncRoles(['payroll_officer']);
+        $admin->syncRoles(['super_admin']);
 
         $this->command->info('✅ Admin created: admin@dole9.gov.ph / Admin@DOLE9!');
         $this->command->warn('⚠️  Change the admin password immediately after first login!');
 
         // ── Test / Development Accounts ───────────────────────────────────────
         $testUsers = [
+            [
+                'name'  => 'Test Payroll Officer',
+                'email' => 'payroll@dole9.gov.ph',
+                'role'  => 'payroll_officer',
+            ],
             [
                 'name'  => 'Test HRMO',
                 'email' => 'hrmo@dole9.gov.ph',
@@ -62,6 +67,11 @@ class DatabaseSeeder extends Seeder
                 'name'  => 'Test Cashier',
                 'email' => 'cashier@dole9.gov.ph',
                 'role'  => 'cashier',
+            ],
+            [
+                'name'  => 'Test Employee',
+                'email' => 'employee@dole9.gov.ph',
+                'role'  => 'employee',
             ],
         ];
 

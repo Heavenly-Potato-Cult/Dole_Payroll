@@ -406,6 +406,97 @@
 .db-mini-table .db-mt-label { color: var(--text-light); font-size: 0.75rem; }
 .db-mini-table .db-mt-val { font-weight: 700; color: var(--navy); text-align: right; }
 .db-mini-table tr:hover td { background: var(--navy-light); }
+/* ── Super Admin Pipeline Strips ─────────────────────────── */
+.sa-pipeline-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 11px 14px 13px;
+    margin-bottom: 12px;
+}
+.sa-pipeline-label {
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: var(--text-light);
+    margin-bottom: 10px;
+}
+
+/* Mobile: 2-column grid of tiles */
+.sa-pipeline-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+}
+/* Hide the arrow separators on mobile — they don't make sense in grid */
+.sa-pipe-arrow { display: none; }
+
+.sa-pitem {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 10px 8px;
+    border-radius: 6px;
+    border: 1.5px solid var(--border);
+    background: #FAFBFF;
+    text-decoration: none;
+    transition: background 0.12s, border-color 0.12s;
+    gap: 3px;
+    min-width: 0;
+}
+.sa-pitem:hover {
+    background: var(--navy-light);
+    border-color: var(--navy);
+    text-decoration: none;
+}
+.sa-pitem-val {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--navy);
+    line-height: 1;
+}
+.sa-pitem-val.is-alert { color: var(--red); }
+.sa-pitem-key {
+    font-size: 0.62rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--text-light);
+    line-height: 1.3;
+}
+
+/* TEV has 4 items — keep 2x2 on mobile too */
+.sa-pipeline-grid--tev {
+    grid-template-columns: 1fr 1fr;
+}
+
+/* Desktop (≥640px): switch to single inline row with arrow separators */
+@media (min-width: 640px) {
+    .sa-pipeline-grid {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        gap: 0;
+    }
+    .sa-pipe-arrow {
+        display: block;
+        font-size: 1.2rem;
+        color: var(--border);
+        flex-shrink: 0;
+        padding: 0 4px;
+        line-height: 1;
+        user-select: none;
+    }
+    .sa-pitem {
+        flex: 1;
+        padding: 10px 10px;
+    }
+    .sa-pitem-val { font-size: 1.6rem; }
+}
 </style>
 @endsection
 
@@ -440,6 +531,14 @@
     </div>
     @endrole
     @role('cashier|budget_officer')
+    <div class="db-stat teal">
+        <span class="db-stat-icon">✈</span>
+        <div class="db-stat-label">TEV This Month</div>
+        <div class="db-stat-value">{{ $tevThisMonth }}</div>
+        <div class="db-stat-sub">{{ $currentMonth }}</div>
+    </div>
+    @endrole
+    @role('super_admin')
     <div class="db-stat teal">
         <span class="db-stat-icon">✈</span>
         <div class="db-stat-label">TEV This Month</div>
@@ -527,6 +626,15 @@
         <div class="db-stat-sub">Submitted, for monitoring</div>
     </div>
     @endrole
+    @role('super_admin')
+    <div class="db-stat green">
+        <span class="db-stat-icon">👤</span>
+        <div class="db-stat-label">System Users</div>
+        @php $totalUsers = \App\Models\User::count(); @endphp
+        <div class="db-stat-value">{{ $totalUsers }}</div>
+        <div class="db-stat-sub">Registered accounts</div>
+    </div>
+    @endrole
 
 </div>{{-- /.db-stat-grid --}}
 
@@ -534,6 +642,221 @@
      MAIN CONTENT — role-driven layout
      ══════════════════════════════════════════════════════════════ --}}
 <div class="db-main">
+
+{{-- ─────────────────────────────────────────────────────────────
+     SUPER ADMIN LAYOUT
+     Full system view: all queues, pipeline chart, user mgmt
+     Row 1: Recent Payroll (all statuses) | Recent TEV (all statuses)
+     Row 2: Payroll Pipeline Chart | System-wide TEV Status + Quick Actions
+     ───────────────────────────────────────────────────────────── --}}
+@role('super_admin')
+
+    {{-- Pipeline Overview: queue counters — 2-col on mobile, inline strips on desktop --}}
+    @php
+        $saPayrollDraft    = \App\Models\PayrollBatch::whereIn('status',['draft','computed'])->count();
+        $saPayrollAcct     = \App\Models\PayrollBatch::where('status','pending_accountant')->count();
+        $saPayrollRd       = \App\Models\PayrollBatch::where('status','pending_rd')->count();
+        $saTevSubmitted    = \App\Models\TevRequest::where('status','submitted')->count();
+        $saTevCertified    = \App\Models\TevRequest::where('status','accountant_certified')->count();
+        $saTevRdApproved   = \App\Models\TevRequest::where('status','rd_approved')->count();
+        $saTevLiqFiled     = \App\Models\TevRequest::where('status','liquidation_filed')->count();
+    @endphp
+
+    {{-- ── Payroll Queue Strip ──────────────────────────────────── --}}
+    <div class="sa-pipeline-card">
+        <div class="sa-pipeline-label">💰 Payroll Queue</div>
+        <div class="sa-pipeline-grid">
+            <a href="{{ route('payroll.index') }}?status=draft" class="sa-pitem">
+                <span class="sa-pitem-val {{ $saPayrollDraft > 0 ? 'is-alert' : '' }}">{{ $saPayrollDraft }}</span>
+                <span class="sa-pitem-key">Draft / Computed</span>
+            </a>
+            <span class="sa-pipe-arrow">›</span>
+            <a href="{{ route('payroll.index') }}?status=pending_accountant" class="sa-pitem">
+                <span class="sa-pitem-val {{ $saPayrollAcct > 0 ? 'is-alert' : '' }}">{{ $saPayrollAcct }}</span>
+                <span class="sa-pitem-key">Pending Acct.</span>
+            </a>
+            <span class="sa-pipe-arrow">›</span>
+            <a href="{{ route('payroll.index') }}?status=pending_rd" class="sa-pitem">
+                <span class="sa-pitem-val {{ $saPayrollRd > 0 ? 'is-alert' : '' }}">{{ $saPayrollRd }}</span>
+                <span class="sa-pitem-key">Pending RD</span>
+            </a>
+        </div>
+    </div>
+
+    {{-- ── TEV Queue Strip ──────────────────────────────────────── --}}
+    <div class="sa-pipeline-card">
+        <div class="sa-pipeline-label">✈ TEV Queue</div>
+        <div class="sa-pipeline-grid sa-pipeline-grid--tev">
+            <a href="{{ route('tev.index') }}?status=submitted" class="sa-pitem">
+                <span class="sa-pitem-val {{ $saTevSubmitted > 0 ? 'is-alert' : '' }}">{{ $saTevSubmitted }}</span>
+                <span class="sa-pitem-key">Submitted</span>
+            </a>
+            <span class="sa-pipe-arrow">›</span>
+            <a href="{{ route('tev.index') }}?status=accountant_certified" class="sa-pitem">
+                <span class="sa-pitem-val {{ $saTevCertified > 0 ? 'is-alert' : '' }}">{{ $saTevCertified }}</span>
+                <span class="sa-pitem-key">Acct. Certified</span>
+            </a>
+            <span class="sa-pipe-arrow">›</span>
+            <a href="{{ route('tev.index') }}?status=rd_approved" class="sa-pitem">
+                <span class="sa-pitem-val {{ $saTevRdApproved > 0 ? 'is-alert' : '' }}">{{ $saTevRdApproved }}</span>
+                <span class="sa-pitem-key">RD Approved</span>
+            </a>
+            <span class="sa-pipe-arrow">›</span>
+            <a href="{{ route('tev.index') }}?status=liquidation_filed" class="sa-pitem">
+                <span class="sa-pitem-val {{ $saTevLiqFiled > 0 ? 'is-alert' : '' }}">{{ $saTevLiqFiled }}</span>
+                <span class="sa-pitem-key">Liq. Filed</span>
+            </a>
+        </div>
+    </div>
+
+    {{-- Row 1: Recent Payroll | Recent TEV --}}
+    <div class="db-row">
+
+        <div class="db-card">
+            <div class="db-card-head">
+                <h3>💰 Recent Payroll Batches</h3>
+                <a href="{{ route('payroll.index') }}" class="btn btn-outline btn-sm" style="flex-shrink:0;">View All</a>
+            </div>
+            <div class="db-card-body">
+                @if($recentPayroll->isEmpty())
+                    <div class="db-empty"><div class="db-empty-icon">📭</div>No payroll batches yet.</div>
+                @else
+                    <ul class="db-list">
+                        @foreach($recentPayroll as $batch)
+                        @php
+                            $mn = \Carbon\Carbon::create()->month($batch->period_month)->format('M');
+                            $sm = ['draft'=>['Draft','db-b-draft'],'computed'=>['Computed','db-b-computed'],'pending_accountant'=>['Acct. Review','db-b-pending'],'pending_rd'=>['RD Review','db-b-pending'],'released'=>['Released','db-b-released'],'locked'=>['Locked','db-b-locked']];
+                            $s  = $sm[$batch->status] ?? [$batch->status,'db-b-draft'];
+                            $cutLabel = $batch->cutoff === '1st' ? '1st (1–15)' : '2nd (16–end)';
+                        @endphp
+                        <li class="db-list-item">
+                            <div class="db-list-main">
+                                <div class="db-list-title">{{ $mn }} {{ $batch->period_year }}</div>
+                                <div class="db-list-sub">{{ $cutLabel }}@if($batch->creator) &mdash; {{ $batch->creator->name }}@endif</div>
+                            </div>
+                            <div class="db-list-right">
+                                <span class="db-badge {{ $s[1] }}">{{ $s[0] }}</span>
+                                <a href="{{ route('payroll.show', $batch->id) }}" class="db-view-link">View →</a>
+                            </div>
+                        </li>
+                        @endforeach
+                    </ul>
+                @endif
+            </div>
+        </div>
+
+        <div class="db-card">
+            <div class="db-card-head">
+                <h3>✈ Recent TEV Requests</h3>
+                <a href="{{ route('tev.index') }}" class="btn btn-outline btn-sm" style="flex-shrink:0;">View All</a>
+            </div>
+            <div class="db-card-body">
+                @if($recentTev->isEmpty())
+                    <div class="db-empty"><div class="db-empty-icon">✈</div>No TEV requests yet.</div>
+                @else
+                    <ul class="db-list">
+                        @foreach($recentTev as $tev)
+                        @php
+                            $tevSt = ['draft'=>['Draft','db-b-draft'],'submitted'=>['Submitted','db-b-pending'],'accountant_certified'=>['Acct. Cert.','db-b-computed'],'rd_approved'=>['RD Approved','db-b-released'],'cashier_released'=>['CA Released','db-b-gold'],'reimbursed'=>['Reimbursed','db-b-released'],'liquidation_filed'=>['Liq. Filed','db-b-pending'],'liquidated'=>['Liquidated','db-b-locked'],'rejected'=>['Rejected','db-b-red']];
+                            $t  = $tevSt[$tev->status] ?? [ucwords(str_replace('_',' ',$tev->status)),'db-b-draft'];
+                            $tk = $tev->track === 'cash_advance' ? ['CA','db-b-navy'] : ['Reimb','db-b-gold'];
+                            $en = $tev->employee ? $tev->employee->last_name.', '.substr($tev->employee->first_name,0,1).'.' : '—';
+                        @endphp
+                        <li class="db-list-item">
+                            <div class="db-list-main">
+                                <div class="db-list-title" style="font-family:monospace;font-size:0.79rem;">{{ $tev->tev_no }}</div>
+                                <div class="db-list-sub">{{ $en }} &mdash; ₱{{ number_format($tev->grand_total,2) }}</div>
+                            </div>
+                            <div class="db-list-right">
+                                <div style="display:flex;gap:3px;flex-wrap:wrap;justify-content:flex-end;">
+                                    <span class="db-badge {{ $tk[1] }}">{{ $tk[0] }}</span>
+                                    <span class="db-badge {{ $t[1] }}">{{ $t[0] }}</span>
+                                </div>
+                                <a href="{{ route('tev.show', $tev->id) }}" class="db-view-link">View →</a>
+                            </div>
+                        </li>
+                        @endforeach
+                    </ul>
+                @endif
+            </div>
+        </div>
+
+    </div>
+
+    {{-- Row 2: Payroll Pipeline Chart | TEV Status Summary + Quick Actions --}}
+    <div class="db-row">
+
+        @if($recentPayroll->isNotEmpty())
+        <div class="db-card">
+            <div class="db-card-head"><h3>📊 Payroll Pipeline Overview</h3></div>
+            <div class="db-chart-body">
+                <div class="db-chart-wrap"><canvas id="payrollChart"></canvas></div>
+            </div>
+        </div>
+        @endif
+
+        <div class="db-card">
+            <div class="db-card-head"><h3>📊 TEV Status Summary</h3></div>
+            <div class="db-card-body">
+                <table class="db-mini-table">
+                    @foreach(['submitted'=>'Submitted','accountant_certified'=>'Acct. Certified','rd_approved'=>'RD Approved','cashier_released'=>'CA Released','liquidation_filed'=>'Liq. Filed','liquidated'=>'Liquidated','reimbursed'=>'Reimbursed','cancelled'=>'Cancelled'] as $key=>$label)
+                    <tr>
+                        <td class="db-mt-label">{{ $label }}</td>
+                        <td class="db-mt-val">{{ $tevByStatus[$key] ?? 0 }}</td>
+                    </tr>
+                    @endforeach
+                </table>
+            </div>
+        </div>
+
+    </div>
+
+    {{-- Row 3: Quick Access — all modules --}}
+    <div class="db-row" style="grid-template-columns: 1fr;">
+        <div class="db-card">
+            <div class="db-card-head"><h3>⚡ Quick Access</h3></div>
+            <div class="db-actions db-actions-3col">
+                <div class="db-actions-col">
+                    <div class="db-action-sep">Payroll</div>
+                    <a href="{{ route('payroll.index') }}" class="db-action-btn primary">
+                        <span class="db-action-left">💰 Regular Payroll</span><span>→</span>
+                    </a>
+                    <a href="{{ route('special-payroll.newly-hired.index') }}" class="db-action-btn">
+                        <span class="db-action-left">🆕 Newly Hired Payroll</span><span>→</span>
+                    </a>
+                    <a href="{{ route('special-payroll.differential.index') }}" class="db-action-btn">
+                        <span class="db-action-left">📈 Salary Differential</span><span>→</span>
+                    </a>
+                </div>
+                <div class="db-actions-col">
+                    <div class="db-action-sep">Travel (TEV)</div>
+                    <a href="{{ route('office-orders.index') }}" class="db-action-btn">
+                        <span class="db-action-left">📝 Office Orders</span><span>→</span>
+                    </a>
+                    <a href="{{ route('tev.index') }}" class="db-action-btn">
+                        <span class="db-action-left">✈ TEV Requests</span><span>→</span>
+                    </a>
+                    <a href="{{ route('reports.tev-register') }}" class="db-action-btn">
+                        <span class="db-action-left">📊 TEV Register</span><span>→</span>
+                    </a>
+                </div>
+                <div class="db-actions-col">
+                    <div class="db-action-sep">Administration</div>
+                    <a href="{{ route('users.index') }}" class="db-action-btn primary">
+                        <span class="db-action-left">⚙ User Management</span><span>→</span>
+                    </a>
+                    <a href="{{ route('employees.index') }}" class="db-action-btn">
+                        <span class="db-action-left">👤 Employees</span><span>→</span>
+                    </a>
+                    <a href="{{ route('reports.remittances') }}" class="db-action-btn">
+                        <span class="db-action-left">📑 All Remittances</span><span>→</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+@endrole
 
 {{-- ─────────────────────────────────────────────────────────────
      HRMO LAYOUT
@@ -1276,7 +1599,7 @@
 
 @section('scripts')
 {{-- Chart only for roles with payroll visibility --}}
-@role('payroll_officer|hrmo|accountant|ard|chief_admin_officer')
+@role('payroll_officer|hrmo|accountant|ard|chief_admin_officer|super_admin')
 @if($recentPayroll->isNotEmpty())
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script>

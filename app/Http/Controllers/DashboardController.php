@@ -17,6 +17,7 @@ class DashboardController extends Controller
      * (employee count, recent activity, charts) are visible to everyone.
      *
      * Roles and their queues:
+     *   super_admin          → all pending items across all queues (view-only)
      *   payroll_officer      → draft/computed payroll batches
      *   hrmo                 → same as above + CA-track TEVs needing liquidation
      *   accountant           → payroll pending certification + submitted TEVs
@@ -58,7 +59,12 @@ class DashboardController extends Controller
             ->whereYear('created_at', now()->year)
             ->count();
 
-        if ($user->hasRole('payroll_officer')) {
+        if ($user->hasRole('super_admin')) {
+            // Super admin sees everything across all queues (view-only context)
+            $pendingPayroll = PayrollBatch::whereIn('status', ['draft', 'computed', 'pending_accountant', 'pending_rd'])->count();
+            $pendingTev     = TevRequest::whereNotIn('status', ['released', 'reimbursed', 'cancelled'])->count();
+
+        } elseif ($user->hasRole('payroll_officer')) {
             $pendingPayroll = PayrollBatch::whereIn('status', ['draft', 'computed'])->count();
 
         } elseif ($user->hasAnyRole(['hrmo'])) {
@@ -143,7 +149,7 @@ class DashboardController extends Controller
             ->toArray();
 
 
-            
+
         return view('dashboard.index', compact(
             'totalEmployees',
             'currentCutoff',

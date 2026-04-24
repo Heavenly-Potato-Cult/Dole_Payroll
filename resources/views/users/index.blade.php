@@ -173,6 +173,15 @@
 <div class="role-grid">
 
     <div class="role-card">
+        <div class="role-card-name">Super Admin</div>
+        <div class="role-card-desc">Manages system users and accounts. Can view all modules across the system. No payroll or TEV action rights.</div>
+        <div class="access-tags">
+            <span class="access-tag">User Management</span>
+            <span class="access-tag">View All Modules</span>
+        </div>
+    </div>
+
+    <div class="role-card">
         <div class="role-card-name">Payroll Officer</div>
         <div class="role-card-desc">Manages payroll processing and employee records. No access to TEV.</div>
         <div class="access-tags">
@@ -180,7 +189,6 @@
             <span class="access-tag">Payroll</span>
             <span class="access-tag">Special Payroll</span>
             <span class="access-tag">Payroll Reports</span>
-            <span class="access-tag">Users</span>
         </div>
     </div>
 
@@ -243,6 +251,14 @@
         <div class="access-tags">
             <span class="access-tag">Release Payroll</span>
             <span class="access-tag">TEV (release/reimburse)</span>
+        </div>
+    </div>
+
+    <div class="role-card" style="border-top-color: var(--text-light);">
+        <div class="role-card-name">Employee</div>
+        <div class="role-card-desc">Role reserved for rank-and-file employees. Specific page access is pending confirmation — no module access assigned yet.</div>
+        <div class="access-tags">
+            <span class="access-tag" style="background:var(--gold-light);color:var(--gold-dark);border-color:rgba(200,120,0,0.2);">Pending configuration</span>
         </div>
     </div>
 

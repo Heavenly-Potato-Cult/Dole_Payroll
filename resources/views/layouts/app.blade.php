@@ -36,13 +36,13 @@
             </a>
 
             {{-- ── Employees ─────────────────────────────────────────── --}}
-            @role('payroll_officer|hrmo|accountant|chief_admin_officer')
+            @role('payroll_officer|hrmo|accountant|chief_admin_officer|super_admin')
             <div class="nav-section-label">Employees</div>
             <a href="{{ route('employees.index') }}"
                class="nav-item {{ request()->routeIs('employees.*') ? 'active' : '' }}">
                 <span class="nav-icon">👤</span> Employees
             </a>
-            @role('payroll_officer|hrmo')
+            @role('payroll_officer|hrmo|super_admin')
             <a href="{{ route('divisions.index') }}"
                class="nav-item {{ request()->routeIs('divisions.*') ? 'active' : '' }}">
                 <span class="nav-icon">🏢</span> Divisions
@@ -51,14 +51,14 @@
             @endrole
 
             {{-- ── Payroll ────────────────────────────────────────────── --}}
-            @role('payroll_officer|hrmo|accountant|ard|cashier|chief_admin_officer')
+            @role('payroll_officer|hrmo|accountant|ard|cashier|chief_admin_officer|super_admin')
             <div class="nav-section-label">Payroll</div>
             <a href="{{ route('payroll.index') }}"
                class="nav-item {{ request()->routeIs('payroll.*') ? 'active' : '' }}">
                 <span class="nav-icon">💰</span> Regular Payroll
             </a>
 
-            @role('payroll_officer|hrmo|accountant|ard|chief_admin_officer')
+            @role('payroll_officer|hrmo|accountant|ard|chief_admin_officer|super_admin')
             <div class="nav-section-label" style="padding-left:12px; font-size:0.65rem;">Special Payroll</div>
             <a href="{{ route('special-payroll.newly-hired.index') }}"
                class="nav-item {{ request()->routeIs('special-payroll.newly-hired.*') ? 'active' : '' }}"
@@ -80,7 +80,7 @@
             @endrole
 
             {{-- ── Travel (TEV) ───────────────────────────────────────── --}}
-            @role('hrmo|accountant|budget_officer|ard|cashier|chief_admin_officer')
+            @role('hrmo|accountant|budget_officer|ard|cashier|chief_admin_officer|super_admin')
             <div class="nav-section-label">Travel (TEV)</div>
             <a href="{{ route('office-orders.index') }}"
                class="nav-item {{ request()->routeIs('office-orders.*') ? 'active' : '' }}">
@@ -99,11 +99,11 @@
                 hrmo + budget_officer + cashier → TEV register / employee TEV history
                 Single @role block avoids the duplicate-section bug in the original layout.
             --}}
-            @role('payroll_officer|hrmo|accountant|ard|cashier|chief_admin_officer|budget_officer')
+            @role('payroll_officer|hrmo|accountant|ard|cashier|chief_admin_officer|budget_officer|super_admin')
             <div class="nav-section-label">Reports</div>
 
             {{-- TEV Register — all TEV roles --}}
-            @role('hrmo|accountant|budget_officer|ard|cashier|chief_admin_officer')
+            @role('hrmo|accountant|budget_officer|ard|cashier|chief_admin_officer|super_admin')
             <a href="{{ route('reports.tev-register') }}"
                class="nav-item {{ request()->routeIs('reports.tev-register*') ? 'active' : '' }}">
                 <span class="nav-icon">📊</span> TEV Register
@@ -111,7 +111,7 @@
             @endrole
 
 {{-- GSIS Remittance — payroll_officer + hrmo + accountant --}}
-@role('payroll_officer|hrmo|accountant')
+@role('payroll_officer|hrmo|accountant|super_admin')
 <a href="{{ route('reports.gsis') }}"
    class="nav-item {{ request()->routeIs('reports.gsis*') ? 'active' : '' }}">
     <span class="nav-icon">🏦</span> GSIS Remittance
@@ -129,7 +129,7 @@
             @endrole
 
             {{-- ── Administration ─────────────────────────────────────── --}}
-            @role('payroll_officer')
+            @role('super_admin')
             <div class="nav-section-label">Administration</div>
             <a href="{{ route('users.index') }}"
                class="nav-item {{ request()->routeIs('users.*') ? 'active' : '' }}">

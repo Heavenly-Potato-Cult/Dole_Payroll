@@ -14,6 +14,7 @@ class RoleSeeder extends Seeder
         app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();  // ← fixed namespace
 
         $roles = [
+            'super_admin',
             'payroll_officer',
             'hrmo',
             'accountant',
@@ -21,6 +22,7 @@ class RoleSeeder extends Seeder
             'chief_admin_officer',
             'ard',
             'cashier',
+            'employee',
         ];
 
         foreach ($roles as $role) {

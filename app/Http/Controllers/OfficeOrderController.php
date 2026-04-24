@@ -181,6 +181,11 @@ class OfficeOrderController extends Controller
 
     private function authorizeRole(array $roles): void
     {
+        // super_admin bypasses all role checks — view access to all modules
+        if (Auth::user()->hasRole('super_admin')) {
+            return;
+        }
+
         if (! Auth::user()->hasAnyRole($roles)) {
             abort(403);
         }
