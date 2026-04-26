@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\DeductionTypeController;
 use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\EmployeeDeductionController;
 use App\Http\Controllers\EmployeePromotionController;
@@ -41,7 +42,6 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
     // ── Employees ────────────────────────────────────────────────
-    // super_admin added: view-only access; controller actions still guard mutations.
     Route::middleware(['role:payroll_officer|hrmo|accountant|chief_admin_officer|super_admin'])
         ->group(function () {
             Route::resource('employees', EmployeeController::class);
@@ -66,15 +66,34 @@ Route::middleware(['auth'])->group(function () {
                        [ReportController::class, 'employeeTevHistory'])->name('employees.tev-history');
         });
 
+    // ── Deduction Types CMS ──────────────────────────────────────
+    // Only payroll_officer and super_admin can manage the master list.
+    // hrmo gets read via the enrollment form; they don't need to add new types.
+    Route::middleware(['role:payroll_officer|super_admin'])
+        ->group(function () {
+            Route::resource('deduction-types', DeductionTypeController::class)
+                ->except(['show', 'destroy']);
+
+            // Toggle active/inactive
+            Route::patch(
+                '/deduction-types/{deductionType}/toggle',
+                [DeductionTypeController::class, 'toggle']
+            )->name('deduction-types.toggle');
+
+            // AJAX bulk reorder (called from index page)
+            Route::post(
+                '/deduction-types/reorder',
+                [DeductionTypeController::class, 'reorder']
+            )->name('deduction-types.reorder');
+        });
+
     // ── Divisions ────────────────────────────────────────────────
-    // super_admin added for view access.
     Route::middleware(['role:payroll_officer|hrmo|super_admin'])
         ->group(function () {
             Route::resource('divisions', DivisionController::class);
         });
 
     // ── Payroll ──────────────────────────────────────────────────
-    // super_admin added: can view all payroll pages.
     Route::middleware(['role:payroll_officer|hrmo|accountant|ard|cashier|chief_admin_officer|super_admin'])
         ->group(function () {
             Route::resource('payroll', PayrollController::class);
@@ -87,7 +106,7 @@ Route::middleware(['auth'])->group(function () {
             Route::post('/payroll/{payroll}/lock',       [PayrollController::class, 'lock'])      ->name('payroll.lock');
             Route::get( '/payroll/{payroll}/verify',     [PayrollController::class, 'verify'])    ->name('payroll.verify');
             Route::post('/payroll/{payroll}/force-edit', [PayrollController::class, 'forceEdit'])->name('payroll.forceEdit');
-    Route::post('/payroll/{payroll}/pull-attendance', [PayrollController::class, 'pullAttendance'])->name('payroll.pullAttendance');
+            Route::post('/payroll/{payroll}/pull-attendance', [PayrollController::class, 'pullAttendance'])->name('payroll.pullAttendance');
 
             // Payroll entries
             Route::get('/payroll/{payrollBatch}/entries',
@@ -101,9 +120,6 @@ Route::middleware(['auth'])->group(function () {
         });
 
     // ── Special Payroll — Newly Hired ────────────────────────────
-    // super_admin added for view access.
-    // ⚠ /create must be registered BEFORE /{id} to avoid Laravel
-    //   matching the literal string "create" as an {id} parameter.
     Route::middleware(['role:payroll_officer|hrmo|accountant|ard|chief_admin_officer|super_admin'])
         ->group(function () {
             Route::get(   '/special-payroll/newly-hired',
@@ -222,7 +238,7 @@ Route::middleware(['auth'])->group(function () {
             Route::delete('/tev/{tevRequest}/itinerary/{line}',
                           [TevItineraryController::class, 'destroy'])->name('tev.itinerary.destroy');
 
-            // TEV Liquidation workflow (Phase 2B Step 3)
+            // TEV Liquidation workflow
             Route::post('/tev/{tevRequest}/liquidate',
                         [TevController::class, 'fileLiquidation'])->name('tev.liquidate');
 
@@ -235,25 +251,22 @@ Route::middleware(['auth'])->group(function () {
         });
 
     // ── Reports ──────────────────────────────────────────────────
-    // super_admin added to all report routes for full visibility.
     Route::middleware(['role:payroll_officer|hrmo|accountant|ard|cashier|chief_admin_officer|budget_officer|super_admin'])
         ->group(function () {
             Route::get('/reports',                    [ReportController::class, 'index'])->name('reports.index');
             Route::get('/reports/payroll-register',   [ReportController::class, 'payrollRegister'])->name('reports.payroll-register');
             Route::get('/reports/payslip',            [ReportController::class, 'payslip'])->name('reports.payslip');
 
-            // ── GSIS (Phase 3A Step 1) ────────────────────────────────────────────
-            // ⚠ /gsis-summary and /gsis-detailed must be registered BEFORE /gsis
-            //   to avoid the literal strings being caught by a hypothetical {id} param.
+            // ── GSIS ─────────────────────────────────────────────────────────
             Route::get('/reports/gsis-summary',       [ReportController::class, 'gsisSummary'])->name('reports.gsis-summary');
             Route::get('/reports/gsis-detailed',      [ReportController::class, 'gsisDetailed'])->name('reports.gsis-detailed');
             Route::get('/reports/gsis',               [ReportController::class, 'gsisIndex'])->name('reports.gsis');
 
-            // ── HDMF / Pag-IBIG (Phase 3A Step 2) ───────────────────────────────
+            // ── HDMF / Pag-IBIG ──────────────────────────────────────────────
             Route::get('/reports/hdmf',          [ReportController::class, 'hdmfIndex'])->name('reports.hdmf');
             Route::get('/reports/hdmf/download', [ReportController::class, 'hdmf'])->name('reports.hdmf-download');
 
-            // ── Other remittances (Phase 3A Step 3) ─────────────────────────────
+            // ── Other remittances ─────────────────────────────────────────────
             Route::get('/reports/remittances',     [ReportController::class, 'remittancesHub'])->name('reports.remittances');
             Route::get('/reports/phic-csv',        [ReportController::class, 'phicCsv'])->name('reports.phic-csv');
             Route::get('/reports/sss',             [ReportController::class, 'sssVoluntary'])->name('reports.sss');
@@ -264,7 +277,7 @@ Route::middleware(['auth'])->group(function () {
             Route::get('/reports/provident-fund',  [ReportController::class, 'providentFund'])->name('reports.provident-fund');
             Route::get('/reports/btr-refund',      [ReportController::class, 'btrRefund'])->name('reports.btr-refund');
 
-            // TEV PDF reports (Phase 2B Step 1)
+            // TEV PDF reports
             Route::get('/reports/tev/{tevRequest}/itinerary',
                        [ReportController::class, 'tevItinerary'])->name('reports.tev-itinerary');
             Route::get('/reports/tev/{tevRequest}/travel-completed',
@@ -272,8 +285,7 @@ Route::middleware(['auth'])->group(function () {
             Route::get('/reports/tev/{tevRequest}/annex-a',
                        [ReportController::class, 'tevAnnexA'])->name('reports.tev-annex-a');
 
-            // TEV Register report + export (Phase 2B Step 2)
-            // ⚠ /export must be registered BEFORE /{tevRequest} to avoid route collision
+            // TEV Register report + export
             Route::get('/reports/tev-register/export',
                        [ReportController::class, 'tevRegisterExport'])->name('reports.tev-register.export');
             Route::get('/reports/tev-register',

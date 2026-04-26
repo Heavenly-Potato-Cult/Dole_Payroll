@@ -79,6 +79,20 @@
 
             @endrole
 
+            {{-- ── Deductions & Loans CMS ─────────────────────────────── --}}
+            {{--
+                Visible only to payroll_officer and super_admin.
+                hrmo manages per-employee enrollments via employees.deductions;
+                they do not need to add/remove types from the master list.
+            --}}
+            @role('payroll_officer|super_admin')
+            <div class="nav-section-label">Configuration</div>
+            <a href="{{ route('deduction-types.index') }}"
+               class="nav-item {{ request()->routeIs('deduction-types.*') ? 'active' : '' }}">
+                <span class="nav-icon">🗂</span> Deduction Types
+            </a>
+            @endrole
+
             {{-- ── Travel (TEV) ───────────────────────────────────────── --}}
             @role('hrmo|accountant|budget_officer|ard|cashier|chief_admin_officer|super_admin')
             <div class="nav-section-label">Travel (TEV)</div>
@@ -93,16 +107,9 @@
             @endrole
 
             {{-- ── Reports ─────────────────────────────────────────────── --}}
-            {{--
-                Show Reports section to any role that can access at least one report.
-                payroll_officer + accountant + ard + chief_admin_officer → payroll/remittance reports
-                hrmo + budget_officer + cashier → TEV register / employee TEV history
-                Single @role block avoids the duplicate-section bug in the original layout.
-            --}}
             @role('payroll_officer|hrmo|accountant|ard|cashier|chief_admin_officer|budget_officer|super_admin')
             <div class="nav-section-label">Reports</div>
 
-            {{-- TEV Register — all TEV roles --}}
             @role('hrmo|accountant|budget_officer|ard|cashier|chief_admin_officer|super_admin')
             <a href="{{ route('reports.tev-register') }}"
                class="nav-item {{ request()->routeIs('reports.tev-register*') ? 'active' : '' }}">
@@ -110,21 +117,20 @@
             </a>
             @endrole
 
-{{-- GSIS Remittance — payroll_officer + hrmo + accountant --}}
-@role('payroll_officer|hrmo|accountant|super_admin')
-<a href="{{ route('reports.gsis') }}"
-   class="nav-item {{ request()->routeIs('reports.gsis*') ? 'active' : '' }}">
-    <span class="nav-icon">🏦</span> GSIS Remittance
-</a>
-<a href="{{ route('reports.hdmf') }}"
-   class="nav-item {{ request()->routeIs('reports.hdmf*') ? 'active' : '' }}">
-    <span class="nav-icon">🏧</span> HDMF / Pag-IBIG
-</a>
-<a href="{{ route('reports.remittances') }}"
-   class="nav-item {{ request()->routeIs('reports.remittances*') || request()->routeIs('reports.caress*') || request()->routeIs('reports.lbp*') || request()->routeIs('reports.mass*') || request()->routeIs('reports.provident*') || request()->routeIs('reports.btr*') || request()->routeIs('reports.phic*') || request()->routeIs('reports.sss*') ? 'active' : '' }}">
-    <span class="nav-icon">📑</span> All Remittances
-</a>
-@endrole
+            @role('payroll_officer|hrmo|accountant|super_admin')
+            <a href="{{ route('reports.gsis') }}"
+               class="nav-item {{ request()->routeIs('reports.gsis*') ? 'active' : '' }}">
+                <span class="nav-icon">🏦</span> GSIS Remittance
+            </a>
+            <a href="{{ route('reports.hdmf') }}"
+               class="nav-item {{ request()->routeIs('reports.hdmf*') ? 'active' : '' }}">
+                <span class="nav-icon">🏧</span> HDMF / Pag-IBIG
+            </a>
+            <a href="{{ route('reports.remittances') }}"
+               class="nav-item {{ request()->routeIs('reports.remittances*') || request()->routeIs('reports.caress*') || request()->routeIs('reports.lbp*') || request()->routeIs('reports.mass*') || request()->routeIs('reports.provident*') || request()->routeIs('reports.btr*') || request()->routeIs('reports.phic*') || request()->routeIs('reports.sss*') ? 'active' : '' }}">
+                <span class="nav-icon">📑</span> All Remittances
+            </a>
+            @endrole
 
             @endrole
 
