@@ -3,21 +3,18 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules\Password;
 use App\Models\User;
+use App\Models\UserRoleAssignment;
 use Spatie\Permission\Models\Role;
-use Illuminate\Support\Facades\Auth;
 
 class UserController extends Controller
 {
     /**
      * Restrict the entire controller to super admins.
-     *
-     * User management is a privileged operation — only super_admin may
-     * create, edit, or delete system accounts. This is enforced here rather
-     * than on individual routes so there is a single, hard-to-miss gate for
-     * the whole controller.
      */
     public function __construct()
     {
@@ -33,112 +30,148 @@ class UserController extends Controller
         });
     }
 
-    /**
-     * List all system users with their assigned roles.
-     */
+    // ── CRUD ─────────────────────────────────────────────────────────────────
+
     public function index()
     {
-        $users = User::with('roles')->orderBy('name')->get();
+        $users = User::with(['roles', 'roleAssignments'])->orderBy('name')->get();
+
         return view('users.index', compact('users'));
     }
 
-    /**
-     * Show the form for creating a new system user.
-     */
     public function create()
     {
         $roles = Role::orderBy('name')->get();
+
         return view('users.create', compact('roles'));
     }
 
     /**
-     * Persist a new user and assign their initial role.
+     * Create a new user, assign their Spatie role, and create the
+     * UserRoleAssignment tracking row.
      *
-     * New accounts are created with a verified email so the user can log in
-     * immediately without going through an email verification flow — accounts
-     * are provisioned by staff, not self-registered.
+     * If a second (alternate) role is supplied, it is also assigned via Spatie
+     * and gets its own tracking row — initially inactive so it doesn't
+     * interfere with the primary active officer for that role.
      */
     public function store(Request $request)
     {
         $request->validate([
-            'name'     => ['required', 'string', 'max:255'],
-            'email'    => ['required', 'email', 'max:255', 'unique:users,email'],
-            'role'     => ['required', 'string', 'exists:roles,name'],
-            'password' => ['required', 'confirmed', Password::min(8)->mixedCase()->numbers()->symbols()],
+            'name'          => ['required', 'string', 'max:255'],
+            'email'         => ['required', 'email', 'max:255', 'unique:users,email'],
+            'role'          => ['required', 'string', 'exists:roles,name'],
+            'secondary_role'=> ['nullable', 'string', 'exists:roles,name', 'different:role'],
+            'password'      => ['required', 'confirmed', Password::min(8)->mixedCase()->numbers()->symbols()],
         ]);
 
-        $user = User::create([
-            'name'              => $request->name,
-            'email'             => $request->email,
-            'password'          => Hash::make($request->password),
-            // Staff-provisioned accounts skip email verification
-            'email_verified_at' => now(),
-        ]);
+        DB::transaction(function () use ($request) {
+            $user = User::create([
+                'name'              => $request->name,
+                'email'             => $request->email,
+                'password'          => Hash::make($request->password),
+                'email_verified_at' => now(),
+            ]);
 
-        $user->assignRole($request->role);
+            // ── Primary role ─────────────────────────────────────────────────
+            $user->assignRole($request->role);
+
+            UserRoleAssignment::create([
+                'user_id'   => $user->id,
+                'role_name' => $request->role,
+                'is_active' => true,
+            ]);
+
+            // ── Secondary (alternate) role ───────────────────────────────────
+            // Assigned but marked inactive by default — the Super Admin must
+            // explicitly activate it via the toggle if/when the person acts
+            // in that capacity.
+            if ($request->filled('secondary_role')) {
+                $user->assignRole($request->secondary_role);
+
+                UserRoleAssignment::create([
+                    'user_id'   => $user->id,
+                    'role_name' => $request->secondary_role,
+                    'is_active' => false,
+                ]);
+            }
+        });
 
         return redirect()->route('users.index')
-            ->with('success', "User {$user->name} created successfully with role: {$request->role}.");
+            ->with('success', "User {$request->name} created.");
     }
 
-    /**
-     * Display a single user's profile and role assignment.
-     */
     public function show(User $user)
     {
-        $user->load('roles');
+        $user->load(['roles', 'roleAssignments.user']);
+
         return view('users.show', compact('user'));
     }
 
-    /**
-     * Show the form for editing an existing user.
-     */
     public function edit(User $user)
     {
         $roles = Role::orderBy('name')->get();
-        $user->load('roles');
+        $user->load(['roles', 'roleAssignments']);
+
         return view('users.edit', compact('user', 'roles'));
     }
 
     /**
-     * Update a user's name, email, role, and optionally their password.
+     * Update user details and role assignments.
      *
-     * Password is only updated when explicitly provided — leaving the field
-     * blank preserves the existing credential. syncRoles() is used instead
-     * of assignRole() to ensure any previously held roles are removed, keeping
-     * each user to exactly one role at a time.
+     * syncRoles() on Spatie ensures the user only holds the declared roles.
+     * We mirror that by deleting removed role assignments and upserting kept ones.
      */
     public function update(Request $request, User $user)
     {
         $request->validate([
-            'name'     => ['required', 'string', 'max:255'],
-            'email'    => ['required', 'email', 'max:255', "unique:users,email,{$user->id}"],
-            'role'     => ['required', 'string', 'exists:roles,name'],
-            'password' => ['nullable', 'confirmed', Password::min(8)->mixedCase()->numbers()->symbols()],
+            'name'          => ['required', 'string', 'max:255'],
+            'email'         => ['required', 'email', 'max:255', "unique:users,email,{$user->id}"],
+            'role'          => ['required', 'string', 'exists:roles,name'],
+            'secondary_role'=> ['nullable', 'string', 'exists:roles,name', 'different:role'],
+            'password'      => ['nullable', 'confirmed', Password::min(8)->mixedCase()->numbers()->symbols()],
         ]);
 
-        $user->update([
-            'name'  => $request->name,
-            'email' => $request->email,
-        ]);
+        DB::transaction(function () use ($request, $user) {
+            $user->update(['name' => $request->name, 'email' => $request->email]);
 
-        if ($request->filled('password')) {
-            $user->update(['password' => Hash::make($request->password)]);
-        }
+            if ($request->filled('password')) {
+                $user->update(['password' => Hash::make($request->password)]);
+            }
 
-        // syncRoles removes any previously held roles before assigning the new one
-        $user->syncRoles([$request->role]);
+            // Build the new set of roles
+            $newRoles = array_filter([
+                $request->role,
+                $request->secondary_role ?: null,
+            ]);
+
+            // Sync Spatie roles
+            $user->syncRoles($newRoles);
+
+            // Remove tracking rows for roles no longer assigned
+            $user->roleAssignments()
+                 ->whereNotIn('role_name', $newRoles)
+                 ->delete();
+
+            // Upsert tracking rows for current roles
+            // Primary role: always active
+            UserRoleAssignment::updateOrCreate(
+                ['user_id' => $user->id, 'role_name' => $request->role],
+                ['is_active' => true]
+            );
+
+            // Secondary role: keep existing is_active state; create as inactive if new
+            if ($request->filled('secondary_role')) {
+                UserRoleAssignment::firstOrCreate(
+                    ['user_id' => $user->id, 'role_name' => $request->secondary_role],
+                    ['is_active' => false]
+                );
+            }
+        });
 
         return redirect()->route('users.index')
-            ->with('success', "User {$user->name} updated successfully.");
+            ->with('success', "User {$user->name} updated.");
     }
 
-    /**
-     * Delete a user account.
-     *
-     * Self-deletion is blocked to prevent a payroll officer from accidentally
-     * locking everyone out of user management by removing their own account.
-     */
     public function destroy(User $user)
     {
         /** @var \App\Models\User $authUser */
@@ -149,9 +182,43 @@ class UserController extends Controller
         }
 
         $name = $user->name;
-        $user->delete();
+        $user->delete(); // cascadeOnDelete handles role assignments
 
         return redirect()->route('users.index')
             ->with('success', "User {$name} has been removed.");
+    }
+
+    // ── Role activation toggle ────────────────────────────────────────────────
+
+    /**
+     * Toggle the is_active flag on a specific role assignment for a user.
+     *
+     * Activating a role for user X automatically deactivates that same role
+     * for all other users — ensuring only one person is the acting officer
+     * per role at any point in time.
+     */
+    public function activateRole(Request $request, User $user)
+    {
+        $request->validate([
+            'role_name' => ['required', 'string', 'exists:roles,name'],
+        ]);
+
+        $roleName   = $request->role_name;
+        $assignment = $user->roleAssignments()->where('role_name', $roleName)->firstOrFail();
+
+        DB::transaction(function () use ($assignment, $roleName, $user) {
+            if (!$assignment->is_active) {
+                // Deactivate all other users' assignments for this role
+                UserRoleAssignment::where('role_name', $roleName)
+                                  ->where('user_id', '!=', $user->id)
+                                  ->update(['is_active' => false]);
+            }
+
+            $assignment->update(['is_active' => !$assignment->is_active]);
+        });
+
+        $state = $assignment->fresh()->is_active ? 'activated' : 'deactivated';
+
+        return back()->with('success', "{$user->name} {$state} as {$roleName}.");
     }
 }

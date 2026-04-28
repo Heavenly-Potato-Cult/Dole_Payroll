@@ -1,10 +1,40 @@
 @extends('layouts.app')
- 
+
 @section('title', 'Edit User')
 @section('page-title', 'Edit User')
- 
+
+@section('styles')
+<style>
+.role-assignment-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 14px;
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    margin-bottom: 8px;
+}
+.role-assignment-row.is-active {
+    border-left: 3px solid #2E7D52;
+    background: #F6FBF7;
+}
+.role-assignment-name {
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: var(--navy);
+}
+.role-assignment-meta {
+    font-size: 0.75rem;
+    color: var(--text-light);
+    margin-top: 2px;
+}
+</style>
+@endsection
+
 @section('content')
- 
+
 <div class="page-header">
     <div class="page-header-left">
         <h1>Edit User</h1>
@@ -12,48 +42,80 @@
     </div>
     <a href="{{ route('users.index') }}" class="btn btn-outline">← Back</a>
 </div>
- 
+
 <div style="max-width:520px;">
-    <div class="card">
+
+    {{-- ── Account details form ──────────────────────────────────────────── --}}
+    <div class="card" style="margin-bottom:20px;">
         <div class="card-header"><h3>Account Details</h3></div>
         <div class="card-body">
             <form method="POST" action="{{ route('users.update', $user) }}">
                 @csrf
                 @method('PUT')
- 
+
                 <div class="form-group">
                     <label for="name">Full Name <span style="color:var(--red)">*</span></label>
-                    <input type="text" id="name" name="name" class="{{ $errors->has('name') ? 'is-invalid' : '' }}"
+                    <input type="text" id="name" name="name"
+                           class="{{ $errors->has('name') ? 'is-invalid' : '' }}"
                            value="{{ old('name', $user->name) }}" required>
                     @error('name')<div class="invalid-feedback">{{ $message }}</div>@enderror
                 </div>
- 
+
                 <div class="form-group">
                     <label for="email">Email Address <span style="color:var(--red)">*</span></label>
-                    <input type="email" id="email" name="email" class="{{ $errors->has('email') ? 'is-invalid' : '' }}"
+                    <input type="email" id="email" name="email"
+                           class="{{ $errors->has('email') ? 'is-invalid' : '' }}"
                            value="{{ old('email', $user->email) }}" required>
                     @error('email')<div class="invalid-feedback">{{ $message }}</div>@enderror
                 </div>
- 
+
+                {{-- ── Primary role ──────────────────────────────────────── --}}
                 <div class="form-group">
-                    <label for="role">Role <span style="color:var(--red)">*</span></label>
-                    <select id="role" name="role" class="{{ $errors->has('role') ? 'is-invalid' : '' }}" required>
+                    <label for="role">Primary Role <span style="color:var(--red)">*</span></label>
+                    <select id="role" name="role"
+                            class="{{ $errors->has('role') ? 'is-invalid' : '' }}" required>
                         <option value="">— Select a role —</option>
                         @foreach ($roles as $role)
                             <option value="{{ $role->name }}"
-                                {{ (old('role', $user->roles->first()?->name) === $role->name) ? 'selected' : '' }}>
+                                {{ (old('role', $user->roleAssignments->where('is_active', true)->first()?->role_name) === $role->name) ? 'selected' : '' }}>
                                 {{ ucwords(str_replace('_', ' ', $role->name)) }}
                             </option>
                         @endforeach
                     </select>
                     @error('role')<div class="invalid-feedback">{{ $message }}</div>@enderror
                 </div>
- 
+
+                {{-- ── Secondary role ────────────────────────────────────── --}}
+                @php
+                    $primaryRole    = $user->roleAssignments->where('is_active', true)->first()?->role_name;
+                    $secondaryRole  = $user->roleAssignments->firstWhere('is_active', false)?->role_name;
+                @endphp
+                <div class="form-group">
+                    <label for="secondary_role">
+                        Secondary Role
+                        <span style="font-weight:400; color:var(--text-light); font-size:0.82rem;">(optional)</span>
+                    </label>
+                    <select id="secondary_role" name="secondary_role"
+                            class="{{ $errors->has('secondary_role') ? 'is-invalid' : '' }}">
+                        <option value="">— None —</option>
+                        @foreach ($roles as $role)
+                            <option value="{{ $role->name }}"
+                                    {{ (old('secondary_role', $secondaryRole) === $role->name) ? 'selected' : '' }}>
+                                {{ ucwords(str_replace('_', ' ', $role->name)) }}
+                            </option>
+                        @endforeach
+                    </select>
+                    @error('secondary_role')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                    <div style="font-size:0.78rem; color:var(--text-light); margin-top:4px;">
+                        Inactive by default — activate from the role assignments panel below.
+                    </div>
+                </div>
+
                 <hr style="border:none;border-top:1px solid var(--border);margin:20px 0 4px;">
                 <p style="font-size:0.82rem;color:var(--text-light);margin-bottom:16px;">
                     Leave password fields blank to keep the current password.
                 </p>
- 
+
                 <div class="form-group">
                     <label for="password">New Password</label>
                     <input type="password" id="password" name="password"
@@ -61,12 +123,12 @@
                            placeholder="Leave blank to keep current">
                     @error('password')<div class="invalid-feedback">{{ $message }}</div>@enderror
                 </div>
- 
+
                 <div class="form-group" style="margin-bottom:0;">
                     <label for="password_confirmation">Confirm New Password</label>
                     <input type="password" id="password_confirmation" name="password_confirmation">
                 </div>
- 
+
                 <div style="display:flex;gap:10px;margin-top:24px;">
                     <button type="submit" class="btn btn-primary">✓ Save Changes</button>
                     <a href="{{ route('users.index') }}" class="btn btn-outline">Cancel</a>
@@ -74,6 +136,49 @@
             </form>
         </div>
     </div>
+
+    {{-- ── Role assignment status panel ─────────────────────────────────── --}}
+    @if ($user->roleAssignments->isNotEmpty())
+    <div class="card">
+        <div class="card-header">
+            <h3>Role Assignments</h3>
+            <p style="font-size:0.78rem; color:var(--text-light); margin-top:2px;">
+                Toggle which role this user is currently acting in.
+                Activating a role deactivates all other users in that same role.
+            </p>
+        </div>
+        <div class="card-body">
+            @foreach ($user->roleAssignments as $assignment)
+            <div class="role-assignment-row {{ $assignment->is_active ? 'is-active' : '' }}">
+                <div>
+                    <div class="role-assignment-name">
+                        {{ ucwords(str_replace('_', ' ', $assignment->role_name)) }}
+                        @if ($assignment->is_active)
+                            <span class="active-pill" style="font-size:0.65rem;">✓ Active</span>
+                        @endif
+                    </div>
+                    <div class="role-assignment-meta">
+                        {{ $assignment->is_active ? 'Currently acting in this role' : 'Assigned but not currently active' }}
+                    </div>
+                </div>
+
+                <form method="POST" action="{{ route('users.activate-role', $user) }}"
+                      onsubmit="return confirm('{{ $assignment->is_active
+                          ? 'Deactivate ' . addslashes($user->name) . ' from ' . $assignment->role_name . '?'
+                          : 'Set ' . addslashes($user->name) . ' as the active ' . $assignment->role_name . '? Other users currently active in this role will be deactivated.' }}')">
+                    @csrf
+                    <input type="hidden" name="role_name" value="{{ $assignment->role_name }}">
+                    <button type="submit"
+                            class="btn btn-sm {{ $assignment->is_active ? 'btn-outline' : 'btn-primary' }}">
+                        {{ $assignment->is_active ? '⏸ Deactivate' : '▶ Set Active' }}
+                    </button>
+                </form>
+            </div>
+            @endforeach
+        </div>
+    </div>
+    @endif
+
 </div>
- 
+
 @endsection

@@ -17,7 +17,7 @@ use App\Http\Controllers\ReportController;
 use App\Http\Controllers\DivisionController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\SalaryIndexTableController;
-use App\Http\Controllers\SignatoryController;           // ← NEW
+use App\Http\Controllers\SignatoryController;
 
 /*
 |--------------------------------------------------------------------------
@@ -145,7 +145,15 @@ Route::middleware(['auth'])->group(function () {
                 ->name('special-payroll.newly-hired.show')
                 ->where('id', '[0-9]+');
 
-            // ── Special Payroll — Salary Differential ────────────────────
+            Route::delete('/special-payroll/newly-hired/{id}',
+                          [SpecialPayrollController::class, 'newHireDestroy'])
+                ->name('special-payroll.newly-hired.destroy')
+                ->where('id', '[0-9]+');
+        });
+
+    // ── Special Payroll — Salary Differential ────────────────────
+    Route::middleware(['role:payroll_officer|hrmo|accountant|ard|chief_admin_officer|super_admin'])
+        ->group(function () {
             Route::get(   '/special-payroll/differential',
                           [SpecialPayrollController::class, 'differentialIndex'])
                 ->name('special-payroll.differential.index');
@@ -163,17 +171,15 @@ Route::middleware(['auth'])->group(function () {
                 ->name('special-payroll.differential.show')
                 ->where('id', '[0-9]+');
 
-            Route::post(  '/special-payroll/differential/{id}/approve',
-                         [SpecialPayrollController::class, 'differentialApprove'])
-                ->name('special-payroll.differential.approve')
-                ->where('id', '[0-9]+');
-
             Route::delete('/special-payroll/differential/{id}',
-                      [SpecialPayrollController::class, 'differentialDestroy'])
+                          [SpecialPayrollController::class, 'differentialDestroy'])
                 ->name('special-payroll.differential.destroy')
                 ->where('id', '[0-9]+');
+        });
 
-            // ── Special Payroll — NOSI / NOSA ────────────────────────────
+    // ── Special Payroll — NOSI / NOSA ────────────────────────────
+    Route::middleware(['role:payroll_officer|hrmo|accountant|ard|chief_admin_officer|super_admin'])
+        ->group(function () {
             Route::get(    '/special-payroll/nosi-nosa',
                            [SpecialPayrollController::class, 'nosiNosaIndex'])
                 ->name('special-payroll.nosi-nosa.index');
@@ -292,14 +298,24 @@ Route::middleware(['auth'])->group(function () {
     Route::middleware(['role:super_admin'])
         ->group(function () {
             Route::resource('users', UserController::class);
+
+            // ↓ NEW: Toggle active/inactive for a specific role assignment on a user
+            Route::post('users/{user}/activate-role', [UserController::class, 'activateRole'])
+                ->name('users.activate-role');
         });
 
     // ── Signatories (payroll_officer + super_admin) ──────────────
     // Manages the dynamic signing officers shown on payslips and reports.
     Route::middleware(['role:payroll_officer|super_admin'])
         ->group(function () {
+            // ↓ NEW: Must be declared BEFORE the resource to avoid Laravel
+            //   treating 'users-for-role' as a {signatory} model binding.
+            Route::get('signatories/users-for-role', [SignatoryController::class, 'usersForRole'])
+                ->name('signatories.users-for-role');
+
             Route::resource('signatories', SignatoryController::class)
                 ->except(['show']);
+
             Route::patch('/signatories/{signatory}/toggle',
                          [SignatoryController::class, 'toggle'])
                 ->name('signatories.toggle');
