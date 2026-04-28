@@ -21,6 +21,53 @@ class TevController extends Controller
     public function __construct(private TevComputationService $tevService) {}
 
     // =====================================================================
+    //  DASHBOARD
+    // =====================================================================
+
+    /**
+     * TEV Dashboard - overview of TEV requests and pending actions.
+     */
+    public function dashboard()
+    {
+        $this->authorizeRole(['hrmo', 'accountant', 'budget_officer', 'ard', 'chief_admin_officer', 'cashier']);
+
+        $user = Auth::user();
+        $userId = $user->id;
+
+        // Count of pending TEV requests (submitted status)
+        $pendingRequests = TevRequest::where('status', 'submitted')->count();
+
+        // Count of requests pending my approval based on role
+        $pendingMyApproval = 0;
+        if ($user->hasAnyRole(['accountant'])) {
+            $pendingMyApproval = TevRequest::where('status', 'submitted')->count();
+        } elseif ($user->hasAnyRole(['ard', 'chief_admin_officer'])) {
+            $pendingMyApproval = TevRequest::where('status', 'accountant_certified')->count();
+        } elseif ($user->hasAnyRole(['cashier'])) {
+            $pendingMyApproval = TevRequest::whereIn('status', ['rd_approved', 'liquidation_filed'])->count();
+        }
+
+        // Count of my requests this month (submitted by me)
+        $myRequestsThisMonth = TevRequest::where('submitted_by', $userId)
+            ->whereMonth('created_at', now()->month)
+            ->whereYear('created_at', now()->year)
+            ->count();
+
+        // 5 most recent TEV requests
+        $recentRequests = TevRequest::with(['employee', 'officeOrder'])
+            ->orderByDesc('id')
+            ->limit(5)
+            ->get();
+
+        return view('tev.dashboard', compact(
+            'pendingRequests',
+            'pendingMyApproval',
+            'myRequestsThisMonth',
+            'recentRequests'
+        ));
+    }
+
+    // =====================================================================
     //  INDEX
     // =====================================================================
 

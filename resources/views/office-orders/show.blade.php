@@ -4,7 +4,7 @@
       $order — OfficeOrder with employee, approver, tevRequests.employee
 --}}
 
-@extends('layouts.app')
+@extends('layouts.tev')
 
 @section('title', 'Office Order — ' . $order->office_order_no)
 @section('page-title', 'Travel (TEV)')
@@ -97,12 +97,12 @@
     </div>
     <div class="d-flex gap-2 flex-wrap no-print">
         @if ($canEdit)
-            <a href="{{ route('office-orders.edit', $order->id) }}" class="btn btn-outline btn-sm">
+            <a href="{{ route('tev.office-orders.edit', $order->id) }}" class="btn btn-outline btn-sm">
                 ✏ Edit
             </a>
         @endif
         <button onclick="window.print()" class="btn btn-outline btn-sm">🖨 Print</button>
-        <a href="{{ route('office-orders.index') }}" class="btn btn-outline btn-sm">← Back</a>
+        <a href="{{ route('tev.office-orders.index') }}" class="btn btn-outline btn-sm">← Back</a>
     </div>
 </div>
 
@@ -202,7 +202,7 @@
         <div class="card no-print">
             <div class="card-header"><h3>✓ Approve</h3></div>
             <div class="card-body">
-                <form method="POST" action="{{ route('office-orders.approve', $order->id) }}">
+                <form method="POST" action="{{ route('tev.office-orders.approve', $order->id) }}">
                     @csrf
                     <div class="form-group">
                         <label for="approve_remarks">Remarks (optional)</label>
@@ -225,7 +225,7 @@
                 <p style="font-size:0.82rem; color:var(--text-mid); margin-bottom:10px;">
                     Cancelling is irreversible and only allowed when no TEV requests are linked.
                 </p>
-                <form method="POST" action="{{ route('office-orders.cancel', $order->id) }}">
+                <form method="POST" action="{{ route('tev.office-orders.cancel', $order->id) }}">
                     @csrf
                     <div class="form-group">
                         <label for="cancel_remarks">Reason (optional)</label>
@@ -249,14 +249,14 @@
                     <p style="font-size:0.83rem; margin:0 0 8px; color:var(--text-mid);">
                         {{ $order->tevRequests->count() }} TEV request(s) linked to this order.
                     </p>
-                    <a href="{{ route('tev.index') }}?office_order_id={{ $order->id }}"
+                    <a href="{{ route('tev.requests.index') }}?office_order_id={{ $order->id }}"
                        class="btn btn-outline btn-sm">View TEV Requests</a>
                 @else
                     <p style="font-size:0.83rem; color:var(--text-light); margin:0 0 10px;">
                         No TEV requests yet.
                     </p>
                     @if ($order->status === 'approved' && auth()->user()->hasAnyRole(['payroll_officer', 'hrmo']))
-                        <a href="{{ route('tev.create') }}" class="btn btn-primary btn-sm">
+                        <a href="{{ route('tev.requests.create') }}" class="btn btn-primary btn-sm">
                             + Create TEV
                         </a>
                     @endif
@@ -331,7 +331,7 @@
                                 <span class="badge {{ $tevStatusClass }}">{{ $tevStatusLabel }}</span>
                             </td>
                             <td>
-                                <a href="{{ route('tev.show', $tev->id) }}"
+                                <a href="{{ route('tev.requests.show', $tev->id) }}"
                                    class="btn btn-outline btn-sm">View</a>
                             </td>
                         </tr>

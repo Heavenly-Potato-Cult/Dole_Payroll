@@ -1,5 +1,5 @@
 {{-- resources/views/tev/show.blade.php --}}
-@extends('layouts.app')
+@extends('layouts.tev')
 
 @section('title', 'TEV — ' . $tev->tev_no)
 @section('page-title', 'Travel (TEV)')
@@ -242,7 +242,7 @@
     </div>
     <div class="d-flex gap-2 no-print">
         <button onclick="window.print()" class="btn btn-outline btn-sm">🖨 Print</button>
-        <a href="{{ route('tev.index') }}" class="btn btn-outline btn-sm">← Back</a>
+        <a href="{{ route('tev.requests.index') }}" class="btn btn-outline btn-sm">← Back</a>
     </div>
 </div>
 
@@ -398,7 +398,7 @@
                     <div class="detail-item">
                         <span class="label">Office Order</span>
                         <span class="value">
-                            <a href="{{ route('office-orders.show', $tev->office_order_id) }}" style="color:var(--navy);">
+                            <a href="{{ route('tev.office-orders.show', $tev->office_order_id) }}" style="color:var(--navy);">
                                 {{ optional($tev->officeOrder)->office_order_no ?? '—' }}
                             </a>
                         </span>
@@ -763,7 +763,7 @@
         <div class="card no-print">
             <div class="card-header"><h3>✓ {{ $nextAction }}</h3></div>
             <div class="card-body">
-                <form method="POST" action="{{ route('tev.approve', $tev->id) }}">
+                <form method="POST" action="{{ route('tev.requests.approve', $tev->id) }}">
                     @csrf
                     <div class="form-group">
                         <label for="approve_remarks">Remarks (optional)</label>
@@ -784,7 +784,7 @@
                 <div style="padding:10px 12px; background:#FFF8E1; border-radius:6px; font-size:0.80rem; margin-bottom:14px; color:#7B5800;">
                     Cash advance released: <strong>₱{{ number_format($tev->cash_advance_amount ?? $tev->grand_total, 2) }}</strong>
                 </div>
-                <form method="POST" action="{{ route('tev.liquidate', $tev->id) }}">
+                <form method="POST" action="{{ route('tev.requests.liquidate', $tev->id) }}">
                     @csrf
                     <div class="form-group">
                         <label for="actual_amount">Actual Amount Spent (₱) <span style="color:var(--red);">*</span></label>
@@ -824,7 +824,7 @@
                         <span>Balance</span><span>{{ $liqNote }}</span>
                     </div>
                 </div>
-                <form method="POST" action="{{ route('tev.liquidation.approve', $tev->id) }}">
+                <form method="POST" action="{{ route('tev.requests.liquidation.approve', $tev->id) }}">
                     @csrf
                     <div class="form-group">
                         <label for="liq_approve_remarks">Remarks (optional)</label>
@@ -841,7 +841,7 @@
         <div class="card no-print">
             <div class="card-header" style="border-left:3px solid var(--red);"><h3 style="color:var(--red);">✕ Reject</h3></div>
             <div class="card-body">
-                <form method="POST" action="{{ route('tev.reject', $tev->id) }}">
+                <form method="POST" action="{{ route('tev.requests.reject', $tev->id) }}">
                     @csrf
                     <div class="form-group">
                         <label for="reject_remarks">Reason for Rejection <span style="color:var(--red);">*</span></label>
@@ -859,7 +859,7 @@
         <div class="card no-print">
             <div class="card-header"><h3>📜 Certify Travel</h3></div>
             <div class="card-body">
-                <form method="POST" action="{{ route('tev.certify', $tev->id) }}">
+                <form method="POST" action="{{ route('tev.requests.certify', $tev->id) }}">
                     @csrf
                     <div class="form-group">
                         <label style="display:flex; align-items:center; gap:8px; cursor:pointer; text-transform:none; font-size:0.875rem; font-weight:500; letter-spacing:0; color:var(--text);">

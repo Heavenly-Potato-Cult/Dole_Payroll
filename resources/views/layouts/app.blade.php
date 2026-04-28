@@ -88,29 +88,9 @@
             </a>
             @endrole
 
-            {{-- ── Travel (TEV) ───────────────────────────────────────── --}}
-            @role('hrmo|accountant|budget_officer|ard|cashier|chief_admin_officer|super_admin')
-            <div class="nav-section-label">Travel (TEV)</div>
-            <a href="{{ route('office-orders.index') }}"
-               class="nav-item {{ request()->routeIs('office-orders.*') ? 'active' : '' }}">
-                <span class="nav-icon">📝</span> Office Orders
-            </a>
-            <a href="{{ route('tev.index') }}"
-               class="nav-item {{ request()->routeIs('tev.*') ? 'active' : '' }}">
-                <span class="nav-icon">✈</span> TEV Requests
-            </a>
-            @endrole
-
             {{-- ── Reports ─────────────────────────────────────────────── --}}
             @role('payroll_officer|hrmo|accountant|ard|cashier|chief_admin_officer|budget_officer|super_admin')
             <div class="nav-section-label">Reports</div>
-
-            @role('hrmo|accountant|budget_officer|ard|cashier|chief_admin_officer|super_admin')
-            <a href="{{ route('reports.tev-register') }}"
-               class="nav-item {{ request()->routeIs('reports.tev-register*') ? 'active' : '' }}">
-                <span class="nav-icon">📊</span> TEV Register
-            </a>
-            @endrole
 
             @role('payroll_officer|hrmo|accountant|super_admin')
             <a href="{{ route('reports.gsis') }}"

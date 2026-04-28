@@ -208,10 +208,26 @@ Route::middleware(['auth'])->group(function () {
                 ->where('id', '[0-9]+');
         });
 
-    // ── Office Orders ────────────────────────────────────────────
-    Route::middleware(['role:hrmo|accountant|budget_officer|ard|cashier|chief_admin_officer|super_admin'])
+    // ── TEV (Travel & Expense Voucher) ─────────────────────────────
+    Route::middleware(['auth', 'role:hrmo|accountant|budget_officer|ard|cashier|chief_admin_officer|super_admin'])
+        ->prefix('tev')
+        ->name('tev.')
         ->group(function () {
-            Route::resource('office-orders', OfficeOrderController::class);
+            // TEV Dashboard
+            Route::get('/', [TevController::class, 'dashboard'])->name('dashboard');
+
+            // Office Orders
+            Route::resource('office-orders', OfficeOrderController::class, [
+                'names' => [
+                    'index' => 'office-orders.index',
+                    'create' => 'office-orders.create',
+                    'store' => 'office-orders.store',
+                    'show' => 'office-orders.show',
+                    'edit' => 'office-orders.edit',
+                    'update' => 'office-orders.update',
+                    'destroy' => 'office-orders.destroy',
+                ]
+            ]);
 
             Route::post('/office-orders/{id}/approve',
                         [OfficeOrderController::class, 'approve'])
@@ -222,34 +238,38 @@ Route::middleware(['auth'])->group(function () {
                         [OfficeOrderController::class, 'cancel'])
                 ->name('office-orders.cancel')
                 ->where('id', '[0-9]+');
-        });
 
-    // ── TEV ──────────────────────────────────────────────────────
-    Route::middleware(['role:hrmo|accountant|budget_officer|ard|cashier|chief_admin_officer|super_admin'])
-        ->group(function () {
-            Route::resource('tev', TevController::class);
-            Route::post('/tev/{tevRequest}/submit',  [TevController::class, 'submit'])->name('tev.submit');
-            Route::post('/tev/{tevRequest}/approve', [TevController::class, 'approve'])->name('tev.approve');
-            Route::post('/tev/{tevRequest}/certify', [TevController::class, 'certify'])->name('tev.certify');
-            Route::post('/tev/{tevRequest}/reject',  [TevController::class, 'reject'])->name('tev.reject');
+            // TEV Requests
+            Route::resource('requests', TevController::class, [
+                'names' => [
+                    'index' => 'requests.index',
+                    'create' => 'requests.create',
+                    'store' => 'requests.store',
+                    'show' => 'requests.show',
+                    'edit' => 'requests.edit',
+                    'update' => 'requests.update',
+                    'destroy' => 'requests.destroy',
+                ]
+            ]);
 
-            Route::post(  '/tev/{tevRequest}/itinerary',
-                          [TevItineraryController::class, 'store'])->name('tev.itinerary.store');
-            Route::put(   '/tev/{tevRequest}/itinerary/{line}',
-                          [TevItineraryController::class, 'update'])->name('tev.itinerary.update');
-            Route::delete('/tev/{tevRequest}/itinerary/{line}',
-                          [TevItineraryController::class, 'destroy'])->name('tev.itinerary.destroy');
+            Route::post('/requests/{tevRequest}/submit',  [TevController::class, 'submit'])->name('requests.submit');
+            Route::post('/requests/{tevRequest}/approve', [TevController::class, 'approve'])->name('requests.approve');
+            Route::post('/requests/{tevRequest}/certify', [TevController::class, 'certify'])->name('requests.certify');
+            Route::post('/requests/{tevRequest}/reject',  [TevController::class, 'reject'])->name('requests.reject');
+
+            Route::post(  '/requests/{tevRequest}/itinerary',
+                          [TevItineraryController::class, 'store'])->name('requests.itinerary.store');
+            Route::put(   '/requests/{tevRequest}/itinerary/{line}',
+                          [TevItineraryController::class, 'update'])->name('requests.itinerary.update');
+            Route::delete('/requests/{tevRequest}/itinerary/{line}',
+                          [TevItineraryController::class, 'destroy'])->name('requests.itinerary.destroy');
 
             // TEV Liquidation workflow
-            Route::post('/tev/{tevRequest}/liquidate',
-                        [TevController::class, 'fileLiquidation'])->name('tev.liquidate');
+            Route::post('/requests/{tevRequest}/liquidate',
+                        [TevController::class, 'fileLiquidation'])->name('requests.liquidate');
 
-            Route::post('/tev/{tevRequest}/liquidation/approve',
-                        [TevController::class, 'approveLiquidation'])->name('tev.liquidation.approve');
-
-            // Liquidation DV PDF
-            Route::get('/reports/tev/{tevRequest}/liquidation-dv',
-                    [ReportController::class, 'tevLiquidationDv'])->name('reports.tev-liquidation-dv');
+            Route::post('/requests/{tevRequest}/liquidation/approve',
+                        [TevController::class, 'approveLiquidation'])->name('requests.liquidation.approve');
         });
 
     // ── Reports ──────────────────────────────────────────────────

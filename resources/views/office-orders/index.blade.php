@@ -5,7 +5,7 @@
       $currentYear — int
 --}}
 
-@extends('layouts.app')
+@extends('layouts.tev')
 
 @section('title', 'Office Orders')
 @section('page-title', 'Travel (TEV)')
@@ -232,7 +232,7 @@
         <p>Manage travel authority documents for DOLE RO9 employees.</p>
     </div>
     @if (auth()->user()->hasAnyRole(['payroll_officer', 'hrmo']))
-        <a href="{{ route('office-orders.create') }}" class="btn btn-primary">
+        <a href="{{ route('tev.office-orders.create') }}" class="btn btn-primary">
             + New Office Order
         </a>
     @endif
@@ -248,7 +248,7 @@
 {{-- ── Filter bar ── --}}
 <div class="card mb-3">
     <div class="card-body" style="padding:14px 20px;">
-        <form method="GET" action="{{ route('office-orders.index') }}" class="filter-form">
+        <form method="GET" action="{{ route('tev.office-orders.index') }}" class="filter-form">
 
             <div class="ff-group" style="min-width:120px;">
                 <label for="year">Year</label>
@@ -274,7 +274,7 @@
 
             <div class="ff-btns">
                 <button type="submit" class="btn btn-primary btn-sm">Filter</button>
-                <a href="{{ route('office-orders.index') }}" class="btn btn-outline btn-sm">Reset</a>
+                <a href="{{ route('tev.office-orders.index') }}" class="btn btn-outline btn-sm">Reset</a>
             </div>
 
         </form>
@@ -369,13 +369,13 @@
 
                             <td class="col-actions">
                                 <div class="d-flex gap-2" style="justify-content:center;">
-                                    <a href="{{ route('office-orders.show', $order->id) }}"
+                                    <a href="{{ route('tev.office-orders.show', $order->id) }}"
                                        class="btn btn-outline btn-sm"
                                        onclick="event.stopPropagation();">View</a>
 
                                     @if ($order->status === 'draft' && auth()->user()->hasAnyRole(['ard', 'chief_admin_officer']))
                                         <form method="POST"
-                                              action="{{ route('office-orders.approve', $order->id) }}"
+                                              action="{{ route('tev.office-orders.approve', $order->id) }}"
                                               onsubmit="event.stopPropagation(); return confirm('Approve this Office Order?')">
                                             @csrf
                                             <button type="submit" class="btn btn-sm btn-primary"
@@ -387,7 +387,7 @@
 
                                     @if ($order->status === 'approved' && auth()->user()->hasAnyRole(['hrmo', 'ard', 'chief_admin_officer']))
                                         <form method="POST"
-                                              action="{{ route('office-orders.cancel', $order->id) }}"
+                                              action="{{ route('tev.office-orders.cancel', $order->id) }}"
                                               onsubmit="event.stopPropagation(); return confirm('Cancel this Office Order? This cannot be undone.')">
                                             @csrf
                                             <button type="submit" class="btn btn-sm btn-danger"
@@ -442,12 +442,12 @@
                                     </div>
                                 </div>
                                 <div class="sd-detail-actions">
-                                    <a href="{{ route('office-orders.show', $order->id) }}"
+                                    <a href="{{ route('tev.office-orders.show', $order->id) }}"
                                        class="btn btn-outline btn-sm">View</a>
 
                                     @if ($order->status === 'draft' && auth()->user()->hasAnyRole(['ard', 'chief_admin_officer']))
                                         <form method="POST"
-                                              action="{{ route('office-orders.approve', $order->id) }}"
+                                              action="{{ route('tev.office-orders.approve', $order->id) }}"
                                               style="flex:1;"
                                               onsubmit="return confirm('Approve this Office Order?')">
                                             @csrf
@@ -460,7 +460,7 @@
 
                                     @if ($order->status === 'approved' && auth()->user()->hasAnyRole(['hrmo', 'ard', 'chief_admin_officer']))
                                         <form method="POST"
-                                              action="{{ route('office-orders.cancel', $order->id) }}"
+                                              action="{{ route('tev.office-orders.cancel', $order->id) }}"
                                               style="flex:1;"
                                               onsubmit="return confirm('Cancel this Office Order?')">
                                             @csrf
@@ -479,7 +479,7 @@
                             <td colspan="8" style="text-align:center; padding:40px; color:var(--text-light);">
                                 No office orders found.
                                 @if (auth()->user()->hasAnyRole(['payroll_officer', 'hrmo']))
-                                    <a href="{{ route('office-orders.create') }}">Create one now →</a>
+                                    <a href="{{ route('tev.office-orders.create') }}">Create one now →</a>
                                 @endif
                             </td>
                         </tr>

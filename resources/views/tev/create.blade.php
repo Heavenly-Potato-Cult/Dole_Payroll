@@ -1,5 +1,5 @@
 {{-- resources/views/tev/create.blade.php --}}
-@extends('layouts.app')
+@extends('layouts.tev')
 
 @section('title', 'New TEV Request')
 @section('page-title', 'Travel (TEV)')
@@ -173,7 +173,7 @@
         <h1>New TEV Request</h1>
         <p class="text-muted">Travel Expense Voucher — fill in all sections then click <strong>Submit TEV Request</strong>. The TEV will be sent directly to the Accountant for review.</p>
     </div>
-    <a href="{{ route('tev.index') }}" class="btn btn-outline btn-sm">← Back to List</a>
+    <a href="{{ route('tev.requests.index') }}" class="btn btn-outline btn-sm">← Back to List</a>
 </div>
 
 @if ($errors->any())
@@ -219,7 +219,7 @@
     $ratesJson = json_encode($ratesArr);
 @endphp
 
-<form method="POST" action="{{ route('tev.store') }}" id="tevForm">
+<form method="POST" action="{{ route('tev.requests.store') }}" id="tevForm">
 @csrf
 
 {{--
@@ -475,7 +475,7 @@
                     This TEV will go <strong>directly to the Accountant</strong> — no extra step required.
                 </div>
                 <button type="submit" class="btn btn-primary" style="width:100%;">📤 Submit TEV Request</button>
-                <a href="{{ route('tev.index') }}" class="btn btn-outline" style="width:100%; margin-top:8px; display:block; text-align:center;">Cancel</a>
+                <a href="{{ route('tev.requests.index') }}" class="btn btn-outline" style="width:100%; margin-top:8px; display:block; text-align:center;">Cancel</a>
             </div>
         </div>
 
