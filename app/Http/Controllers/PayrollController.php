@@ -6,8 +6,10 @@ use App\Http\Requests\ComputePayrollRequest;
 use App\Models\AttendanceSnapshot;
 use App\Models\PayrollBatch;
 use App\Models\PayrollAuditLog;
+use App\Models\Signatory;
 use App\Services\AttendanceService;
 use App\Services\PayrollComputationService;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -97,7 +99,7 @@ class PayrollController extends Controller
 
     public function show(PayrollBatch $payroll)
     {
-        $payroll->load(['entries.employee', 'entries.deductions', 'creator', 'auditLogs.user']);
+        $payroll->load(['entries.employee', 'entries.deductions.deductionType', 'creator', 'auditLogs.user']);
 
         $entries       = $payroll->entries->sortBy(fn ($e) => optional($e->employee)->last_name ?? '');
         $totalGross    = $payroll->entries->sum('gross_income');
@@ -129,7 +131,7 @@ class PayrollController extends Controller
     }
 
     // ═══════════════════════════════════════════════════════════════════
-    //  NEW: Pull Attendance from HRIS API and store snapshots
+    //  Pull Attendance from HRIS API and store snapshots
     // ═══════════════════════════════════════════════════════════════════
 
     /**
@@ -164,7 +166,7 @@ class PayrollController extends Controller
     }
 
     // ═══════════════════════════════════════════════════════════════════
-    //  Compute — now reads from snapshots, not live API
+    //  Compute — reads from snapshots, not live API
     // ═══════════════════════════════════════════════════════════════════
 
     public function compute(Request $request, PayrollBatch $payroll)
@@ -200,7 +202,7 @@ class PayrollController extends Controller
     }
 
     // ═══════════════════════════════════════════════════════════════════
-    //  Approval pipeline (unchanged)
+    //  Approval pipeline
     // ═══════════════════════════════════════════════════════════════════
 
     public function submit(Request $request, PayrollBatch $payroll)
@@ -284,7 +286,6 @@ class PayrollController extends Controller
             }
             $payroll->entries()->delete();
             $payroll->auditLogs()->delete();
-            // Also delete attendance snapshots for this batch
             AttendanceSnapshot::where('payroll_batch_id', $payroll->id)->delete();
             $payroll->delete();
         });
@@ -360,7 +361,144 @@ class PayrollController extends Controller
             ->with('success', 'Payroll batch unlocked. Status reverted to Released for corrections.');
     }
 
-    // ── Helpers ───────────────────────────────────────────────────────
+    // ═══════════════════════════════════════════════════════════════════
+    //  Payslip Generation
+    //
+    //  GET /payroll/{payroll}/payslips/generate
+    //      ?mode      = consolidated (default) | per_batch
+    //      ?entry_id  = <PayrollEntry id>  (optional — single employee only)
+    //
+    //  consolidated  → single payslip per employee showing BOTH cut-offs
+    //                  side-by-side. Matches the existing payslip Blade layout.
+    //                  Requires the sibling batch to also be released/locked.
+    //                  If no sibling exists the 2nd column will render empty.
+    //
+    //  per_batch     → one payslip per employee for THIS batch's cut-off only.
+    //                  The opposite column is left blank.
+    // ═══════════════════════════════════════════════════════════════════
+
+    public function generatePayslips(Request $request, PayrollBatch $payroll)
+    {
+        // ── Guard: only released or locked batches ───────────────────────
+        if (! in_array($payroll->status, ['released', 'locked'])) {
+            abort(403, 'Payslips are only available after the batch has been released.');
+        }
+
+        $mode    = $request->input('mode', 'consolidated');
+        $entryId = $request->input('entry_id');
+
+        // ── Resolve sibling batch (other cut-off, same month/year) ───────
+        $siblingCutoff = $payroll->cutoff === '1st' ? '2nd' : '1st';
+        $sibling = PayrollBatch::where('period_year',  $payroll->period_year)
+                               ->where('period_month', $payroll->period_month)
+                               ->where('cutoff',       $siblingCutoff)
+                               ->first();
+
+        // ── Entries to print ─────────────────────────────────────────────
+        $query = $payroll->entries()
+                         ->with(['employee.division', 'deductions.deductionType'])
+                         ->orderBy(
+                             \App\Models\Employee::select('last_name')
+                                 ->whereColumn('employees.id', 'payroll_entries.employee_id'),
+                             'asc'
+                         );
+
+        if ($entryId) {
+            $query->where('id', $entryId);
+        }
+
+        $entries = $query->get();
+
+        if ($entries->isEmpty()) {
+            abort(404, 'No payroll entries found for the given parameters.');
+        }
+
+        // ── Active HRMO Designate signatory ──────────────────────────────
+        // Falls back to a safe placeholder if the table is empty.
+        $signatory = Signatory::where('role_type', 'hrmo_designate')
+                              ->where('is_active', true)
+                              ->first();
+
+        // ── Month label ───────────────────────────────────────────────────
+        $months = [
+            '', 'January', 'February', 'March', 'April', 'May', 'June',
+            'July', 'August', 'September', 'October', 'November', 'December',
+        ];
+        $periodLabel = ($months[$payroll->period_month] ?? '') . ' ' . $payroll->period_year;
+
+        // ── Build per-employee payslip data ───────────────────────────────
+        //
+        // Each item in $payslips carries:
+        //   employee, entry1st, entry2nd, ded1st (keyed collection), ded2nd
+        //
+        // For consolidated mode:
+        //   - if this is the 1st cut-off batch, entry1st = current, entry2nd = sibling
+        //   - if this is the 2nd cut-off batch, entry1st = sibling, entry2nd = current
+        //
+        // For per_batch mode:
+        //   - only the current cut-off column is populated; the other is null.
+
+        $siblingEntriesById = $sibling
+            ? $sibling->entries()
+                       ->with('deductions.deductionType')
+                       ->get()
+                       ->keyBy('employee_id')
+            : collect();
+
+        $dedMap = fn ($entry) => $entry
+            ? $entry->deductions->keyBy(fn ($d) => $d->deductionType->code ?? $d->name)
+            : collect();
+
+        $payslips = $entries->map(function ($entry) use ($payroll, $siblingEntriesById, $dedMap, $mode) {
+            $siblingEntry = $siblingEntriesById->get($entry->employee_id);
+
+            if ($mode === 'consolidated') {
+                if ($payroll->cutoff === '1st') {
+                    $entry1st = $entry;
+                    $entry2nd = $siblingEntry;
+                } else {
+                    $entry1st = $siblingEntry;
+                    $entry2nd = $entry;
+                }
+            } else {
+                // per_batch — only show the column that belongs to this batch
+                if ($payroll->cutoff === '1st') {
+                    $entry1st = $entry;
+                    $entry2nd = null;
+                } else {
+                    $entry1st = null;
+                    $entry2nd = $entry;
+                }
+            }
+
+            return [
+                'employee' => $entry->employee,
+                'entry1st' => $entry1st,
+                'entry2nd' => $entry2nd,
+                'ded1st'   => $dedMap($entry1st),
+                'ded2nd'   => $dedMap($entry2nd),
+            ];
+        });
+
+        // ── Render & stream PDF ───────────────────────────────────────────
+        $pdf = Pdf::loadView('payroll.payslip', [
+            'batch'       => $payroll,
+            'payslips'    => $payslips,
+            'rows'        => $this->payslipRows(),
+            'periodLabel' => $periodLabel,
+            'signatory'   => $signatory,
+            'mode'        => $mode,
+        ])->setPaper('a4', 'portrait');
+
+        $cutoffLabel = $mode === 'consolidated' ? 'Monthly' : ucfirst($payroll->cutoff) . 'Cutoff';
+        $filename    = 'Payslips_' . str_replace(' ', '_', $periodLabel) . '_' . $cutoffLabel . '.pdf';
+
+        return $pdf->stream($filename);
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    //  Helpers
+    // ═══════════════════════════════════════════════════════════════════
 
     private function authorizeRole(array $roles): void
     {
@@ -379,5 +517,56 @@ class PayrollController extends Controller
             'new_value'        => $new,
             'ip_address'       => request()->ip(),
         ]);
+    }
+
+    /**
+     * Row definitions for the payslip Blade template.
+     *
+     * Each row is an array with:
+     *   type  — income | spacer | deduction | sub | divider | net
+     *   label — display label
+     *   code  — deduction type code (used for deduction/sub rows only)
+     *
+     * This is intentionally kept as a simple data structure so the Blade
+     * template remains logic-free. Adjust the order and codes to match
+     * your DeductionType.code values in the database.
+     */
+    private function payslipRows(): array
+    {
+        return [
+            // ── Earnings ─────────────────────────────────────────────────
+            ['type' => 'spacer',  'label' => 'EARNINGS',              'code' => null],
+            ['type' => 'income',  'label' => 'BASIC',                 'code' => null],
+            ['type' => 'income',  'label' => 'ALLOWANCE',             'code' => null],  // PERA
+
+            // ── Mandatory Deductions ──────────────────────────────────────
+            ['type' => 'spacer',     'label' => 'MANDATORY DEDUCTIONS', 'code' => null],
+            ['type' => 'deduction',  'label' => 'GSIS — Life Insurance', 'code' => 'GSIS_LIFE'],
+            ['type' => 'deduction',  'label' => 'GSIS — Retirement',     'code' => 'GSIS_RET'],
+            ['type' => 'deduction',  'label' => 'PhilHealth',            'code' => 'PHIC'],
+            ['type' => 'deduction',  'label' => 'Pag-IBIG / HDMF',      'code' => 'HDMF'],
+            ['type' => 'deduction',  'label' => 'Withholding Tax',       'code' => 'TAX'],
+
+            // ── Loans ─────────────────────────────────────────────────────
+            ['type' => 'spacer',     'label' => 'LOANS',              'code' => null],
+            ['type' => 'deduction',  'label' => 'GSIS Policy Loan',   'code' => 'GSIS_POL'],
+            ['type' => 'deduction',  'label' => 'GSIS Emergency Loan','code' => 'GSIS_EML'],
+            ['type' => 'sub',        'label' => 'GSIS Consolid. Loan','code' => 'GSIS_CON'],
+            ['type' => 'deduction',  'label' => 'Pag-IBIG MP2',       'code' => 'HDMF_MP2'],
+            ['type' => 'deduction',  'label' => 'Pag-IBIG Loan',      'code' => 'HDMF_LOAN'],
+            ['type' => 'deduction',  'label' => 'LBP Loan',           'code' => 'LBP'],
+
+            // ── Others ────────────────────────────────────────────────────
+            ['type' => 'spacer',     'label' => 'OTHERS',             'code' => null],
+            ['type' => 'deduction',  'label' => 'CARESS — Union',     'code' => 'CARESS_U'],
+            ['type' => 'deduction',  'label' => 'CARESS — Mortuary',  'code' => 'CARESS_M'],
+            ['type' => 'deduction',  'label' => 'MASS',               'code' => 'MASS'],
+            ['type' => 'deduction',  'label' => 'Provident Fund',     'code' => 'PROVIDENT'],
+
+            // ── Totals & Net ──────────────────────────────────────────────
+            ['type' => 'divider', 'label' => 'TOTAL DEDUCTIONS',      'code' => null],
+            ['type' => 'net',     'label' => 'NET PAY 1-15',          'code' => null],
+            ['type' => 'net',     'label' => 'NET PAY 16-31',         'code' => null],
+        ];
     }
 }

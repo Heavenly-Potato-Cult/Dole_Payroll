@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\PayrollBatch;
 use App\Models\PayrollEntry;
+use App\Models\Signatory;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -72,7 +73,8 @@ class PayrollEntryController extends Controller
      */
     public function payslip(PayrollBatch $payrollBatch, PayrollEntry $entry)
     {
-        $entry->load(['employee.division', 'deductions', 'batch']);
+        // FIX 1: eager-load deductionType so keyBy can resolve the code
+        $entry->load(['employee.division', 'deductions.deductionType', 'batch']);
 
         $employee = $entry->employee;
         $batch    = $payrollBatch;
@@ -85,8 +87,9 @@ class PayrollEntryController extends Controller
             'cutoff'       => $companionCutoff,
         ])->first();
 
+        // FIX 2: eager-load deductionType on the companion entry as well
         $companionEntry = $companionBatch
-            ? PayrollEntry::with('deductions')
+            ? PayrollEntry::with('deductions.deductionType')
                 ->where('payroll_batch_id', $companionBatch->id)
                 ->where('employee_id', $employee->id)
                 ->first()
@@ -97,10 +100,14 @@ class PayrollEntryController extends Controller
             ? [$entry, $companionEntry]
             : [$companionEntry, $entry];
 
-        // Deductions are keyed by code for direct lookup in the payslip view.
-        // Codes must match deduction_types.code exactly — see payslipRowDefinitions().
-        $ded1st = $entry1st ? $entry1st->deductions->keyBy('code') : collect();
-        $ded2nd = $entry2nd ? $entry2nd->deductions->keyBy('code') : collect();
+        // FIX 3: key deductions by deductionType->code (not the non-existent direct ->code).
+        // Falls back to ->name if the type has no code, matching PayrollController::generatePayslips().
+        $dedKey = fn ($e) => $e
+            ? $e->deductions->keyBy(fn ($d) => $d->deductionType->code ?? $d->name)
+            : collect();
+
+        $ded1st = $dedKey($entry1st);
+        $ded2nd = $dedKey($entry2nd);
 
         $months      = ['', 'January', 'February', 'March', 'April', 'May', 'June',
                             'July', 'August', 'September', 'October', 'November', 'December'];
@@ -108,11 +115,17 @@ class PayrollEntryController extends Controller
 
         $rows = $this->payslipRowDefinitions();
 
+        // FIX 4: resolve the active HRMO Designate and pass to view
+        $signatory = Signatory::where('role_type', 'hrmo_designate')
+                              ->where('is_active', true)
+                              ->first();
+
         $pdf = Pdf::loadView('payslip.show', compact(
             'employee', 'batch',
             'entry1st', 'entry2nd',
             'ded1st', 'ded2nd',
-            'periodLabel', 'rows'
+            'periodLabel', 'rows',
+            'signatory'           // ← was missing, caused $signatory undefined in Blade
         ))
         ->setPaper('a4', 'portrait')
         ->setOptions([
@@ -134,8 +147,10 @@ class PayrollEntryController extends Controller
      *
      * CODE CONTRACT: every 'code' value must match deduction_types.code in the
      * database exactly (set by DeductionTypeSeeder, written by DeductionService).
-     * The $ded1st/$ded2nd maps in payslip() are keyBy('code'), so any mismatch
-     * silently produces a blank cell. The canonical reference is DeductionTypeSeeder.
+     * The $ded1st/$ded2nd maps in payslip() are keyBy(deductionType->code), so any
+     * mismatch silently produces a blank cell. This is the canonical row list —
+     * PayrollController::payslipRows() delegates to the same logical set, but if
+     * they ever diverge this file wins (it has the real DOLE codes).
      *
      * Row types:
      *   income    → Basic / PERA earnings row
@@ -148,11 +163,11 @@ class PayrollEntryController extends Controller
     private function payslipRowDefinitions(): array
     {
         return [
-            // Income
+            // ── Earnings ─────────────────────────────────────────────
             ['label' => 'BASIC',      'code' => null, 'type' => 'income'],
             ['label' => 'ALLOWANCE',  'code' => null, 'type' => 'income'],
 
-            // Section header
+            // ── Deductions header ─────────────────────────────────────
             ['label' => 'DEDUCTIONS', 'code' => null, 'type' => 'spacer'],
 
             // HDMF / Pag-IBIG
@@ -193,7 +208,7 @@ class PayrollEntryController extends Controller
             ['label' => 'SMART PLAN GOLD EXCESS CHARGES', 'code' => 'SMART_PLAN_GOLD', 'type' => 'deduction'],
             ['label' => 'REFUND (VARIOUS)',                'code' => 'REFUND_VARIOUS',  'type' => 'deduction'],
 
-            // Totals / Net
+            // ── Totals / Net ──────────────────────────────────────────
             ['label' => 'TOTAL',            'code' => null, 'type' => 'divider'],
             ['label' => 'NET PAY 1-15',     'code' => null, 'type' => 'net'],
             ['label' => 'NET PAY 16-30/31', 'code' => null, 'type' => 'net'],

@@ -80,11 +80,6 @@
             @endrole
 
             {{-- ── Deductions & Loans CMS ─────────────────────────────── --}}
-            {{--
-                Visible only to payroll_officer and super_admin.
-                hrmo manages per-employee enrollments via employees.deductions;
-                they do not need to add/remove types from the master list.
-            --}}
             @role('payroll_officer|super_admin')
             <div class="nav-section-label">Configuration</div>
             <a href="{{ route('deduction-types.index') }}"
@@ -135,12 +130,27 @@
             @endrole
 
             {{-- ── Administration ─────────────────────────────────────── --}}
-            @role('super_admin')
+            {{--
+                Two separate @role guards because:
+                  - User Management  → super_admin only
+                  - Signatories      → payroll_officer + super_admin
+                The section label appears when either condition is true.
+            --}}
+            @role('payroll_officer|super_admin')
             <div class="nav-section-label">Administration</div>
+
+            @role('super_admin')
             <a href="{{ route('users.index') }}"
                class="nav-item {{ request()->routeIs('users.*') ? 'active' : '' }}">
                 <span class="nav-icon">⚙</span> User Management
             </a>
+            @endrole
+
+            <a href="{{ route('signatories.index') }}"
+               class="nav-item {{ request()->routeIs('signatories.*') ? 'active' : '' }}">
+                <span class="nav-icon">✍</span> Signatories
+            </a>
+
             @endrole
 
         </nav>

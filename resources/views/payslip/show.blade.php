@@ -527,8 +527,8 @@ body {
         {{-- ── Footer ── --}}
         <tr><td>
         <div class="slip-footer">
-            <div class="signatory">AIRA D. LAGRADILLA</div>
-            <div class="sig-title">Labor Employment Officer III, HRMO Designate</div>
+<div class="signatory">{{ strtoupper($signatory?->full_name ?? 'HRMO DESIGNATE') }}</div>
+<div class="sig-title">{{ $signatory?->position_title ?? '' }}{{ $signatory?->position_title ? ', ' : '' }}HRMO Designate</div>
             <div class="doc-ref">
                 D9FI-550308 Rev. 01 &nbsp;·&nbsp;
                 Email: ro9@dole.gov.ph &nbsp;·&nbsp;

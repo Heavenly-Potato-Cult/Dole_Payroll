@@ -17,6 +17,7 @@ use App\Http\Controllers\ReportController;
 use App\Http\Controllers\DivisionController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\SalaryIndexTableController;
+use App\Http\Controllers\SignatoryController;           // ← NEW
 
 /*
 |--------------------------------------------------------------------------
@@ -67,8 +68,6 @@ Route::middleware(['auth'])->group(function () {
         });
 
     // ── Deduction Types CMS ──────────────────────────────────────
-    // Only payroll_officer and super_admin can manage the master list.
-    // hrmo gets read via the enrollment form; they don't need to add new types.
     Route::middleware(['role:payroll_officer|super_admin'])
         ->group(function () {
             Route::resource('deduction-types', DeductionTypeController::class)
@@ -108,6 +107,13 @@ Route::middleware(['auth'])->group(function () {
             Route::post('/payroll/{payroll}/force-edit', [PayrollController::class, 'forceEdit'])->name('payroll.forceEdit');
             Route::post('/payroll/{payroll}/pull-attendance', [PayrollController::class, 'pullAttendance'])->name('payroll.pullAttendance');
 
+            // ── Payslip generation (released / locked batches only) ──────
+            // ?mode=consolidated (default) | per_batch
+            // ?entry_id=<PayrollEntry id>  (optional — single employee)
+            Route::get('/payroll/{payroll}/payslips/generate',
+                       [PayrollController::class, 'generatePayslips'])
+                ->name('payroll.payslips.generate');
+
             // Payroll entries
             Route::get('/payroll/{payrollBatch}/entries',
                        [PayrollEntryController::class, 'index'])->name('payroll.entries.index');
@@ -139,35 +145,25 @@ Route::middleware(['auth'])->group(function () {
                 ->name('special-payroll.newly-hired.show')
                 ->where('id', '[0-9]+');
 
-            Route::post(  '/special-payroll/newly-hired/{id}/approve',
-                          [SpecialPayrollController::class, 'newHireApprove'])
-                ->name('special-payroll.newly-hired.approve')
-                ->where('id', '[0-9]+');
-
-            Route::delete('/special-payroll/newly-hired/{id}',
-                          [SpecialPayrollController::class, 'newHireDestroy'])
-                ->name('special-payroll.newly-hired.destroy')
-                ->where('id', '[0-9]+');
-
             // ── Special Payroll — Salary Differential ────────────────────
-            Route::get(  '/special-payroll/differential',
-                         [SpecialPayrollController::class, 'differentialIndex'])
+            Route::get(   '/special-payroll/differential',
+                          [SpecialPayrollController::class, 'differentialIndex'])
                 ->name('special-payroll.differential.index');
 
-            Route::get(  '/special-payroll/differential/create',
-                         [SpecialPayrollController::class, 'differentialCreate'])
+            Route::get(   '/special-payroll/differential/create',
+                          [SpecialPayrollController::class, 'differentialCreate'])
                 ->name('special-payroll.differential.create');
 
-            Route::post( '/special-payroll/differential',
-                         [SpecialPayrollController::class, 'differentialStore'])
+            Route::post(  '/special-payroll/differential',
+                          [SpecialPayrollController::class, 'differentialStore'])
                 ->name('special-payroll.differential.store');
 
-            Route::get(  '/special-payroll/differential/{id}',
-                         [SpecialPayrollController::class, 'differentialShow'])
+            Route::get(   '/special-payroll/differential/{id}',
+                          [SpecialPayrollController::class, 'differentialShow'])
                 ->name('special-payroll.differential.show')
                 ->where('id', '[0-9]+');
 
-            Route::post( '/special-payroll/differential/{id}/approve',
+            Route::post(  '/special-payroll/differential/{id}/approve',
                          [SpecialPayrollController::class, 'differentialApprove'])
                 ->name('special-payroll.differential.approve')
                 ->where('id', '[0-9]+');
@@ -296,6 +292,17 @@ Route::middleware(['auth'])->group(function () {
     Route::middleware(['role:super_admin'])
         ->group(function () {
             Route::resource('users', UserController::class);
+        });
+
+    // ── Signatories (payroll_officer + super_admin) ──────────────
+    // Manages the dynamic signing officers shown on payslips and reports.
+    Route::middleware(['role:payroll_officer|super_admin'])
+        ->group(function () {
+            Route::resource('signatories', SignatoryController::class)
+                ->except(['show']);
+            Route::patch('/signatories/{signatory}/toggle',
+                         [SignatoryController::class, 'toggle'])
+                ->name('signatories.toggle');
         });
 
 });

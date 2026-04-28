@@ -218,7 +218,7 @@
                && auth()->user()->hasRole('payroll_officer');
 
     $canPullAttendance = in_array($payroll->status, ['draft', 'computed'])
-                  && auth()->user()->hasRole('payroll_officer');           
+                  && auth()->user()->hasRole('payroll_officer');
 
     $nextAction = null;
     // CHANGED: hrmo removed — only payroll_officer submits to Accountant
@@ -312,12 +312,26 @@
             </form>
         @endif
 
-        @if ($isComputed)
-            <a href="{{ route('reports.payroll-register', ['batch_id' => $payroll->id]) }}"
-               class="btn btn-outline btn-sm" target="_blank">
-                📄 Payroll Register PDF
-            </a>
-        @endif
+      {{-- NEW: --}}
+@if ($isComputed)
+    <a href="{{ route('reports.payroll-register', ['batch_id' => $payroll->id]) }}"
+       class="btn btn-outline btn-sm" target="_blank">
+        📄 Payroll Register PDF
+    </a>
+@endif
+
+{{-- Payslip generation — only after release --}}
+@if (in_array($payroll->status, ['released', 'locked']))
+    <button class="btn btn-outline btn-sm" onclick="openPayslipModal()">
+        🧾 Generate Payslips
+    </button>
+@elseif ($isComputed)
+    <button class="btn btn-outline btn-sm" disabled
+            title="Payslips available after the batch is released"
+            style="opacity:0.45; cursor:not-allowed;">
+        🧾 Payslips (Pending Release)
+    </button>
+@endif
 
         @if ($payroll->status === 'released' || auth()->user()->hasRole('cashier'))
             <a href="{{ route('payroll.verify', $payroll) }}" class="btn btn-outline btn-sm">
@@ -471,19 +485,19 @@
      PAYROLL REGISTER TABLE
 ═══════════════════════════════════════════════════════════════ --}}
 @if ($employeeCount > 0)
-<div class="card">
+<div class="card" style="overflow:visible;">
     <div class="card-header">
         <h3>Payroll Register — {{ $periodLabel }} ({{ $employeeCount }} Employees)</h3>
-        <div class="d-flex gap-2 align-center flex-wrap">
-            <span class="text-muted" style="font-size:0.78rem;">
-                Click <em>Deductions ▾</em> to expand per-employee breakdown.
-            </span>
-            @if (!$isLocked)
-                <span class="text-muted" style="font-size:0.78rem;">
-                    · Click <em>Payslip</em> to view / print.
-                </span>
-            @endif
-        </div>
+<div class="d-flex gap-2 align-center flex-wrap">
+    <span class="text-muted" style="font-size:0.78rem;">
+        Click <em>Deductions ▾</em> to expand per-employee breakdown.
+    </span>
+    @if (in_array($payroll->status, ['released', 'locked']))
+        <span class="text-muted" style="font-size:0.78rem;">
+            · Click <em>Payslip</em> to view / print individual slips.
+        </span>
+    @endif
+</div>
     </div>
 
     <div class="scroll-hint">Scroll horizontally to see all columns</div>
@@ -550,11 +564,12 @@
                             </td>
                             <td class="text-right" style="white-space:nowrap;">
                                 @if ($dedCount > 0)
-                                    <button class="ded-toggle"
-                                            onclick="toggleDed({{ $entry->id }})"
-                                            id="toggle-{{ $entry->id }}">
-                                        {{ $dedCount }} lines ▾
-                                    </button>
+<button class="ded-toggle"
+        onclick="toggleDed({{ $entry->id }})"
+        id="toggle-{{ $entry->id }}"
+        data-count="{{ $dedCount }}">
+    {{ $dedCount }} lines ▾
+</button>
                                 @else
                                     <span class="text-muted" style="font-size:0.78rem;">—</span>
                                 @endif
@@ -569,21 +584,26 @@
                                     <span class="net-warn-badge">Below ₱5K</span>
                                 @endif
                             </td>
-                            <td>
-                                <a href="{{ route('payroll.payslip', [$payroll, $entry]) }}"
-                                   class="btn btn-outline btn-sm" target="_blank">
-                                    Payslip
-                                </a>
-                            </td>
+{{-- NEW --}}
+<td>
+    @if (in_array($payroll->status, ['released', 'locked']))
+        <a href="{{ route('payroll.payslip', [$payroll, $entry]) }}"
+           class="btn btn-outline btn-sm" target="_blank">
+            Payslip
+        </a>
+    @else
+        <span class="text-muted" style="font-size:0.75rem;">—</span>
+    @endif
+</td>
                         </tr>
 
                         @if ($dedCount > 0)
-                            <tr class="{{ $netWarn ? 'net-warn' : '' }}"
-                                id="ded-row-{{ $entry->id }}" style="display:none;">
-                                <td colspan="13" style="padding:0;">
-                                    <div class="ded-panel" id="ded-panel-{{ $entry->id }}">
+<tr class="{{ $netWarn ? 'net-warn' : '' }}"
+    id="ded-row-{{ $entry->id }}" hidden>
+    <td colspan="13" style="padding:0;">
+        <div class="ded-panel" id="ded-panel-{{ $entry->id }}" hidden>
                                         <div class="ded-grid">
-                                            @foreach ($entry->deductions->sortBy(fn ($d) => $d->deductionType->display_order ?? 99) as $ded)
+                                            @foreach ($entry->deductions->sortBy(fn ($d) => optional($d->deductionType)->display_order ?? 99) as $ded)
                                                 <div class="ded-row">
                                                     <span>{{ $ded->name }}</span>
                                                     <span>₱{{ number_format($ded->amount, 2) }}</span>
@@ -741,20 +761,142 @@
 </div>
 @endif
 
+{{-- ═══════════════════════════════════════════════════════════════
+     PAYSLIP GENERATION MODAL
+═══════════════════════════════════════════════════════════════ --}}
+<div id="payslipModal" style="
+    display:none; position:fixed; inset:0; z-index:1000;
+    background:rgba(0,0,0,0.45); align-items:center; justify-content:center;">
+    <div style="
+        background:#fff; border-radius:var(--radius); box-shadow:0 8px 32px rgba(0,0,0,0.18);
+        padding:28px 32px; width:100%; max-width:440px; margin:16px;">
+
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:18px;">
+            <h3 style="color:var(--navy); margin:0;">Generate Payslips</h3>
+            <button onclick="closePayslipModal()"
+                    style="background:none; border:none; font-size:1.4rem; color:var(--text-light);
+                           cursor:pointer; line-height:1;">&times;</button>
+        </div>
+
+        <p style="font-size:0.85rem; color:var(--text-mid); margin-bottom:20px;">
+            <strong>{{ $periodLabel }}</strong> ·
+            <span class="badge {{ $statusClass }}">{{ $statusLabel }}</span>
+        </p>
+
+        {{-- Option A: Monthly consolidated (default) --}}
+        <label id="opt-consolidated" class="payslip-opt selected"
+               style="display:flex; align-items:flex-start; gap:12px; padding:14px 16px;
+                      border:2px solid var(--navy); border-radius:var(--radius);
+                      cursor:pointer; margin-bottom:10px; transition:border-color .15s;">
+            <input type="radio" name="payslipMode" value="consolidated"
+                   checked onchange="selectOpt('consolidated')"
+                   style="margin-top:3px; accent-color:var(--navy);">
+            <div>
+                <div style="font-weight:700; font-size:0.88rem; color:var(--navy);">
+                    Monthly Payslip
+                    <span style="font-size:0.72rem; background:#E8F0FE; color:var(--navy);
+                                 padding:1px 8px; border-radius:10px; margin-left:6px;">
+                        Recommended
+                    </span>
+                </div>
+                <div style="font-size:0.78rem; color:var(--text-mid); margin-top:3px;">
+                    Single payslip showing both 1–15 and 16–30/31 cut-offs side by side.
+                    Matches current DOLE practice.
+                </div>
+            </div>
+        </label>
+
+        {{-- Option B: Per batch --}}
+        <label id="opt-perbatch" class="payslip-opt"
+               style="display:flex; align-items:flex-start; gap:12px; padding:14px 16px;
+                      border:2px solid var(--border); border-radius:var(--radius);
+                      cursor:pointer; margin-bottom:20px; transition:border-color .15s;">
+            <input type="radio" name="payslipMode" value="per_batch"
+                   onchange="selectOpt('per_batch')"
+                   style="margin-top:3px; accent-color:var(--navy);">
+            <div>
+                <div style="font-weight:700; font-size:0.88rem; color:var(--navy);">
+                    Per Batch (Separate)
+                </div>
+                <div style="font-size:0.78rem; color:var(--text-mid); margin-top:3px;">
+                    Generate individual payslips for the 1st and 2nd cut-offs separately.
+                </div>
+            </div>
+        </label>
+
+        {{-- Employee filter (optional) --}}
+        <div style="margin-bottom:20px;">
+            <label style="font-size:0.75rem; font-weight:700; text-transform:uppercase;
+                          letter-spacing:.05em; color:var(--text-mid); display:block; margin-bottom:6px;">
+                Employee (leave blank for all)
+            </label>
+            <select id="payslipEmployee"
+                    style="width:100%; height:38px; border:1px solid var(--border);
+                           border-radius:var(--radius); padding:0 10px; font-size:0.85rem;">
+                <option value="">— All Employees —</option>
+                @foreach ($entries as $entry)
+                    <option value="{{ $entry->id }}">{{ $entry->employee->full_name }}</option>
+                @endforeach
+            </select>
+        </div>
+
+        <div style="display:flex; gap:10px; justify-content:flex-end;">
+            <button onclick="closePayslipModal()" class="btn btn-outline btn-sm">Cancel</button>
+            <button onclick="submitPayslip()" class="btn btn-primary btn-sm">
+                📄 Generate PDF
+            </button>
+        </div>
+    </div>
+</div>
+
 @endsection
 
 @section('scripts')
 <script>
 function toggleDed(entryId) {
     const row    = document.getElementById('ded-row-' + entryId);
+    const panel  = document.getElementById('ded-panel-' + entryId);
     const toggle = document.getElementById('toggle-' + entryId);
-    if (!row) return;
+    if (!row || !panel || !toggle) return;
 
-    const isOpen = row.style.display !== 'none';
-    row.style.display = isOpen ? 'none' : 'table-row';
+    const isOpen = !row.hidden;
 
-    const countText = toggle.textContent.replace(/[▾▴\s]+$/, '').trim();
-    toggle.textContent = countText + ' ' + (isOpen ? '▾' : '▴');
+    row.hidden   = isOpen;
+    panel.hidden = isOpen;
+
+    toggle.dataset.count = toggle.dataset.count || toggle.textContent.match(/\d+/)?.[0] || '?';
+    toggle.textContent = toggle.dataset.count + ' lines ' + (isOpen ? '▾' : '▴');
 }
+
+
+// ── Payslip modal ──────────────────────────────────────────
+function openPayslipModal() {
+    const m = document.getElementById('payslipModal');
+    m.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+}
+function closePayslipModal() {
+    const m = document.getElementById('payslipModal');
+    m.style.display = 'none';
+    document.body.style.overflow = '';
+}
+function selectOpt(val) {
+    document.getElementById('opt-consolidated').style.borderColor =
+        val === 'consolidated' ? 'var(--navy)' : 'var(--border)';
+    document.getElementById('opt-perbatch').style.borderColor =
+        val === 'per_batch' ? 'var(--navy)' : 'var(--border)';
+}
+function submitPayslip() {
+    const mode     = document.querySelector('input[name="payslipMode"]:checked').value;
+    const entryId  = document.getElementById('payslipEmployee').value;
+    const base     = '{{ route("payroll.payslips.generate", $payroll) }}';
+    const url      = base + '?mode=' + mode + (entryId ? '&entry_id=' + entryId : '');
+    window.open(url, '_blank');
+    closePayslipModal();
+}
+// Close modal on backdrop click
+document.getElementById('payslipModal').addEventListener('click', function(e) {
+    if (e.target === this) closePayslipModal();
+});
 </script>
 @endsection

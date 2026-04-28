@@ -17,6 +17,58 @@
 
 @section('styles')
 <style>
+/* ══════════════════════════════════════════════════
+   APPROVAL STAGE BAR
+══════════════════════════════════════════════════ */
+.approval-bar {
+    display: flex;
+    align-items: stretch;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    box-shadow: var(--shadow);
+    margin-bottom: 24px;
+}
+.approval-step {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 18px;
+    font-size: 0.80rem;
+    font-weight: 600;
+    color: var(--text-light);
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    transition: background 0.2s;
+}
+.approval-step:last-child { border-right: none; }
+.approval-step.done   { background: #F1FAF5; color: #1B6B3A; }
+.approval-step.active { background: #EEF1FA; color: var(--navy); }
+.approval-step.locked { background: var(--navy); color: #ffffff; }
+.approval-step-dot {
+    width: 30px; height: 30px;
+    border-radius: 50%;
+    border: 2px solid currentColor;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.9rem; font-weight: 700;
+    flex-shrink: 0;
+    background: #ffffff; color: inherit;
+}
+.approval-step.done   .approval-step-dot { background: #2E7D52; border-color: #2E7D52; color: #ffffff; }
+.approval-step.active .approval-step-dot { background: var(--navy); border-color: var(--navy); color: #ffffff; }
+.approval-step.locked .approval-step-dot { background: rgba(255,255,255,0.15); border-color: rgba(255,255,255,0.6); color: #ffffff; }
+.approval-step-label { line-height: 1.3; min-width: 0; }
+.approval-step-label small {
+    display: block; font-weight: 400; font-size: 0.70rem;
+    opacity: 0.72; margin-top: 2px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
+/* ══════════════════════════════════════════════════
+   VERIFY TABLE
+══════════════════════════════════════════════════ */
 .verify-table th,
 .verify-table td {
     vertical-align: middle;
@@ -76,7 +128,7 @@
     background: var(--navy);
     color: white;
 }
-.verify-tfoot td.gold { color: var(--gold); }
+.verify-tfoot td.gold  { color: var(--gold); }
 .verify-tfoot td.green { color: #69F0AE; }
 .admin-override-card {
     border: 2px solid #B71C1C;
@@ -89,6 +141,25 @@
     color: #B71C1C;
     margin-bottom: 12px;
     font-size: 0.95rem;
+}
+
+/* ══════════════════════════════════════════════════
+   MOBILE
+══════════════════════════════════════════════════ */
+@media (max-width: 768px) {
+    .approval-bar {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    .approval-step {
+        min-width: 130px;
+        flex: 0 0 auto;
+    }
+    .stat-grid {
+        grid-template-columns: 1fr 1fr !important;
+        gap: 10px !important;
+    }
+    .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
 }
 </style>
 @endsection
@@ -123,9 +194,8 @@
     $statusLabel = $statusLabels[$payroll->status] ?? ucfirst(str_replace('_', ' ', $payroll->status));
 
     // Label columns by cut-off
-    $col1stLabel = '1–15 Net Pay';
-    $col2ndLabel = '16–30/31 Net Pay';
-    // Determine which column is "current" vs "sibling"
+    $col1stLabel  = '1–15 Net Pay';
+    $col2ndLabel  = '16–30/31 Net Pay';
     $currentIs1st = $payroll->cutoff === '1st';
 @endphp
 
@@ -162,7 +232,7 @@
 @endif
 
 {{-- ═══════════════════════════════════════════════════════════════
-     APPROVAL BAR
+     APPROVAL STAGE BAR
 ═══════════════════════════════════════════════════════════════ --}}
 @include('payroll._approval_bar')
 
@@ -205,7 +275,7 @@
 ═══════════════════════════════════════════════════════════════ --}}
 <div class="card">
     <div class="card-header">
-        <h3>New Net Pay — {{ $periodLabel }}</h3>
+        <h3>Net Pay — {{ $periodLabel }}</h3>
         <span class="text-muted" style="font-size:0.80rem;">
             Matches the "New Net Pay" sheet format
         </span>
@@ -231,7 +301,6 @@
                         @php
                             $flagged = $row->below_threshold;
 
-                            // Assign net values to the correct column
                             if ($currentIs1st) {
                                 $net1st = $row->net_current;
                                 $net2nd = $row->net_sibling;
