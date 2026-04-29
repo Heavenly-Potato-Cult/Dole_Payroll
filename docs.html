@@ -249,7 +249,11 @@
             <a href="#folder-structure" class="nav-link">Folder Structure</a>
             <a href="#key-modules" class="nav-link">Key Modules</a>
 
+            <h2>Integrations</h2>
+            <a href="#hris-integration" class="nav-link">HRIS Integration</a>
+
             <h2>Operations</h2>
+            <a href="#recent-developments" class="nav-link">Recent Developments</a>
             <a href="#quirks" class="nav-link">Quirks & Decisions</a>
             <a href="#deployment" class="nav-link">Deployment</a>
             <a href="#known-issues" class="nav-link">Known Issues</a>
@@ -281,6 +285,9 @@
                     <li><strong>Employee Management</strong> — Employee records with HRIS API sync, deduction enrollments, promotion history</li>
                     <li><strong>Government Remittances</strong> — GSIS, HDMF/Pag-IBIG, PHIC, SSS, and various loan remittances (LBP, CARESS, MASS, Provident Fund, BTR)</li>
                     <li><strong>Reports</strong> — Payroll register, payslips, TEV reports, remittance exports</li>
+                    <li><strong>HRIS Integration</strong> — Employee SSO via JWT authentication, attendance data synchronization</li>
+                    <li><strong>Deduction Type CMS</strong> — Full content management system for deduction types</li>
+                    <li><strong>Signatory Management</strong> — Document signatory assignment and management</li>
                 </ul>
             </section>
 
@@ -305,11 +312,15 @@
                     </tr>
                     <tr>
                         <td>Authentication</td>
-                        <td>Laravel Sanctum 4.3</td>
+                        <td>Laravel Sanctum 4.3 + JWT (for HRIS SSO)</td>
                     </tr>
                     <tr>
                         <td>Authorization</td>
                         <td>Spatie Laravel Permission 6.25</td>
+                    </tr>
+                    <tr>
+                        <td>JWT Authentication</td>
+                        <td>firebase/php-jwt</td>
                     </tr>
                     <tr>
                         <td>PDF Generation</td>
@@ -438,22 +449,33 @@
                 <h1>Folder Structure</h1>
                 <p>Standard Laravel structure with these notable additions:</p>
 
-                <h3>app/Services/</h3>
-                <p>Business logic layer separating computation from controllers. Key services:</p>
+                <h3>app/Http/Controllers/</h3>
+                <p>18 controllers handling web requests. Key controllers:</p>
                 <ul>
-                    <li><code>PayrollComputationService</code> — Core payroll calculation logic</li>
-                    <li><code>DeductionService</code> — Government and loan deduction computations</li>
-                    <li><code>AttendanceService</code> — HRIS attendance integration and LWOP/tardiness calculations</li>
-                    <li><code>HrisApiService</code> — HRIS API client with mock fallbacks</li>
-                    <li><code>NewlyHiredPayrollService</code> — Pro-rated payroll for new hires</li>
-                    <li><code>SalaryDifferentialService</code> — Salary differential and NOSI/NOSA calculations</li>
-                    <li><code>TevComputationService</code> — TEV total calculations</li>
-                    <li><code>ReportService</code> — <span class="badge badge-red">Empty stub</span></li>
+                    <li><code>AuthController</code> — Login/logout, HRIS SSO integration</li>
+                    <li><code>DashboardController</code> — Main dashboard</li>
+                    <li><code>EmployeeController</code> — Employee CRUD, HRIS sync</li>
+                    <li><code>PayrollController</code> — Payroll batch management, computation</li>
+                    <li><code>PayrollEntryController</code> — Individual payroll entry management</li>
+                    <li><code>SpecialPayrollController</code> — Special payroll types</li>
+                    <li><code>TevController</code> — TEV management</li>
+                    <li><code>TevItineraryController</code> — TEV itinerary lines</li>
+                    <li><code>OfficeOrderController</code> — Office order management</li>
+                    <li><code>ReportController</code> — <span class="badge badge-red">16 missing methods</span></li>
+                    <li><code>UserController</code> — User management, role assignment (dual role system)</li>
+                    <li><code>DeductionTypeController</code> — Deduction type CMS (new)</li>
+                    <li><code>SignatoryController</code> — Signatory management (new)</li>
                 </ul>
 
                 <h3>app/Traits/</h3>
                 <ul>
                     <li><code>TableIVConverter</code> — Converts minutes to decimal day equivalents using DOLE Table IV lookup</li>
+                </ul>
+
+                <h3>app/Http/Middleware/</h3>
+                <ul>
+                    <li><code>JwtAuth</code> — JWT authentication middleware for HRIS SSO (new)</li>
+                    <li><code>PayrollReleasedOnly</code> — Restricts access to released payroll batches only (new)</li>
                 </ul>
 
                 <h3>app/Policies/</h3>
@@ -465,6 +487,19 @@
 
                 <h3>app/Exports/</h3>
                 <p>Excel export classes for government remittances (GSIS, HDMF, PHIC, SSS, LBP, CARESS, MASS, Provident Fund, BTR, TEV Register)</p>
+
+                <h3>app/Models/</h3>
+                <p>21 Eloquent models including:</p>
+                <ul>
+                    <li><code>User</code> — User accounts with dual role support (main role and sub role)</li>
+                    <li><code>UserRoleAssignment</code> — User role assignments for dual role system (new)</li>
+                    <li><code>Signatory</code> — Document signatory management (new)</li>
+                    <li><code>Employee</code> — Employee records with HRIS integration</li>
+                    <li><code>PayrollBatch</code>, <code>PayrollEntry</code> — Payroll data</li>
+                    <li><code>SpecialPayrollBatch</code> — Special payroll types</li>
+                    <li><code>Tev</code>, <code>TevItinerary</code> — TEV management</li>
+                    <li><code>OfficeOrder</code> — Office order authorization</li>
+                </ul>
 
                 <h3>database/seeders/</h3>
                 <p>Seeders for initial data: roles, divisions, employees, deduction types, per diem rates, salary index tables</p>
@@ -479,6 +514,15 @@
                     <li><code>start.sh</code> — Docker startup script for Linux/Mac</li>
                     <li><code>backup-data.bat</code> / <code>restore-data.bat</code> — Database backup/restore</li>
                     <li><code>gdrive-*.bat</code> — Google Drive integration scripts (prepared but not configured)</li>
+                </ul>
+
+                <h3>HRIS/</h3>
+                <p>Node.js-based HRIS simulation server for development and testing:</p>
+                <ul>
+                    <li><code>server.js</code> — Express server with JWT authentication</li>
+                    <li><code>config.js</code> — JWT configuration and settings</li>
+                    <li><code>data.js</code> — Dummy employee data (82 employees)</li>
+                    <li><code>package.json</code> — Node.js dependencies</li>
                 </ul>
             </section>
 
@@ -507,6 +551,15 @@
                     <li>Cashier locks after disbursement → <code>locked</code></li>
                     <li>Force edit override allows reverting from locked to released (requires remarks)</li>
                 </ol>
+
+                <h3>Payslip Generation</h3>
+                <p><strong>Enhanced Features:</strong></p>
+                <ul>
+                    <li>Payslips can be generated by month (combining both cutoffs) or by individual payroll batch</li>
+                    <li>"My Payslip" feature allows employees to view their payslips via HRIS SSO</li>
+                    <li>Signatory information is included on payslips for proper authorization</li>
+                    <li>Payslip views have been enhanced with better formatting and layout</li>
+                </ul>
 
                 <h2>Special Payroll</h2>
                 <p><strong>Types:</strong> Newly Hired (pro-rated), Salary Differential, NOSI (Non-Optimization of Salary Increase), NOSA (Non-Optimization of Salary Adjustment)</p>
@@ -540,14 +593,38 @@
                     <li>Cashier approves liquidation → <code>liquidated</code></li>
                 </ol>
 
+                <div class="callout-note">
+                    <strong>Planned Enhancement:</strong> Future integration with HRIS to receive approved TEV requests via webhook instead of internal creation by HRMO. This would shift the workflow so that HRIS becomes the authoritative source for TEV requests, with approved TEVs being pushed to the Payroll System for processing. Timeline: TBD (pending HRIS coordination).
+                </div>
+
                 <h2>Employee Management</h2>
                 <p><strong>Flow:</strong></p>
                 <ol>
-                    <li>Employees can be created manually or synced from HRIS API</li>
+                    <li>Employees are strictly sourced from HRIS API — no manual creation</li>
                     <li>HRIS sync matches employees by <code>employee_no</code>, updates existing records, creates new ones</li>
                     <li>Division matching uses <code>division_code</code> from API to local divisions</li>
                     <li>Deduction enrollments track which loans/deductions apply per employee with effective dates</li>
                     <li>Promotion history tracks salary changes over time</li>
+                    <li>Employees can now be linked to user accounts for HRIS SSO integration</li>
+                </ol>
+
+                <h2>User Management</h2>
+                <p><strong>Flow:</strong></p>
+                <ol>
+                    <li>Users can be assigned a main role and a sub role for flexible access control</li>
+                    <li>User accounts have active/inactive status for better account management</li>
+                    <li>Signatory management allows linking users to document signatory roles</li>
+                    <li>Users can be linked to employee records for HRIS integration</li>
+                    <li>Role-based access control is enforced throughout the system</li>
+                </ol>
+
+                <h2>Deduction Type Management</h2>
+                <p><strong>Flow:</strong></p>
+                <ol>
+                    <li>DeductionTypeController provides full CRUD operations for deduction types</li>
+                    <li>Deduction types can be created, edited, and deleted via CMS interface</li>
+                    <li>Deduction types are used in employee deduction enrollments</li>
+                    <li>Supports government deductions (GSIS, HDMF, PHIC, SSS) and loan deductions</li>
                 </ol>
 
                 <h2>Government Remittances</h2>
@@ -560,14 +637,133 @@
                 </ol>
             </section>
 
+            <section id="hris-integration" class="section">
+                <h1>HRIS Integration</h1>
+                <p>The system integrates with an external HRIS (Human Resource Information System) for employee Single Sign-On (SSO) and attendance data synchronization.</p>
+
+                <h2>HRIS Simulation Server (Development)</h2>
+                <div class="callout-note">
+                    <strong>Note:</strong> A simulation HRIS server is included in the <code>HRIS/</code> directory for development and testing purposes.
+                </div>
+
+                <h3>Setup</h3>
+                <ol>
+                    <li>Navigate to the HRIS directory: <code>cd HRIS</code></li>
+                    <li>Install dependencies: <code>npm install</code></li>
+                    <li>Start the HRIS server: <code>npm start</code></li>
+                    <li>The server runs on <code>http://localhost:3001</code></li>
+                </ol>
+
+                <h3>Features</h3>
+                <ul>
+                    <li><strong>Employee Login:</strong> Login with Employee ID (EMP001-EMP082) and password (pass123)</li>
+                    <li><strong>JWT Generation:</strong> Generates signed JWT tokens for SSO authentication</li>
+                    <li><strong>Navigation:</strong> Provides links to Payroll and TEV systems</li>
+                    <li><strong>Dummy Data:</strong> Includes 82 employees with full profiles and attendance records</li>
+                </ul>
+
+                <h3>JWT Configuration</h3>
+                <p>JWT configuration in <code>HRIS/config.js</code>:</p>
+                <ul>
+                    <li><strong>Secret:</strong> dole-hris-payroll-shared-secret-2024</li>
+                    <li><strong>Expiration:</strong> 1 hour</li>
+                    <li><strong>Issuer:</strong> hris-system</li>
+                    <li><strong>Audience:</strong> payroll-system</li>
+                </ul>
+
+                <h3>Laravel Integration</h3>
+                <p>The Laravel application receives JWT tokens at:</p>
+                <ul>
+                    <li><strong>Payroll:</strong> <code>http://localhost:8000/hris-auth?token={jwt}</code></li>
+                    <li><strong>TEV:</strong> <code>http://localhost:8000/tev-hris-auth?token={jwt}</code></li>
+                </ul>
+                <p>The JWT middleware (<code>app/Http/Middleware/JwtAuth.php</code>) validates the token and stores user data in session.</p>
+
+                <h2>Production HRIS API</h2>
+                <p>For production deployment, configure the following environment variables:</p>
+                <ul>
+                    <li><code>HRIS_API_URL</code> — Base URL for the production HRIS API</li>
+                    <li><code>HRIS_API_KEY</code> — API key for HRIS authentication</li>
+                </ul>
+                <div class="callout-warning">
+                    <strong>Important:</strong> Currently, the HRIS API integration is stubbed with mock data. All employees have perfect attendance (zero deductions) and YTD gross is always 0. This must be resolved before production deployment.
+                </div>
+            </section>
+
+            <section id="recent-developments" class="section">
+                <h1>Recent Developments</h1>
+                <p>Based on the commit history, here are the recent major developments in the project:</p>
+
+                <h2>Latest Updates (April 2026)</h2>
+                <ul>
+                    <li><strong>Refactored To-Do List:</strong> Cleaned up the to-do list by removing completed backend tasks and updating payroll URLs</li>
+                    <li><strong>Enhanced Documentation:</strong> Updated README.md with comprehensive project documentation and features overview</li>
+                    <li><strong>TEV and Payroll Enhancements:</strong> Enhanced TEV and payroll functionality with improved workflows</li>
+                </ul>
+
+                <h2>HRIS Simulation Server & JWT Auth</h2>
+                <ul>
+                    <li><strong>HRIS Simulation Server:</strong> Added Node.js-based HRIS simulation server in <code>HRIS/</code> directory</li>
+                    <li><strong>JWT Authentication:</strong> Implemented JWT authentication middleware for HRIS SSO integration</li>
+                    <li><strong>Employee SSO:</strong> Employees can now sign in via HRIS using JWT tokens</li>
+                    <li><strong>82 Employee Records:</strong> Included dummy data for 82 employees with attendance records</li>
+                </ul>
+
+                <h2>TEV and Office Orders Refactoring</h2>
+                <ul>
+                    <li><strong>Dedicated TEV Layout:</strong> Created separate TEV layout for better UI separation</li>
+                    <li><strong>TEV Dashboard:</strong> Added TEV dashboard view for improved user experience</li>
+                    <li><strong>Office Order Enhancements:</strong> Improved office order views and routes</li>
+                </ul>
+
+                <h2>User Management Enhancements</h2>
+                <ul>
+                    <li><strong>Dual Role System:</strong> Users can now have a main role and a sub role</li>
+                    <li><strong>Active/Inactive Status:</strong> Added active/inactive status for user accounts</li>
+                    <li><strong>Signatory Management:</strong> Added signatory management with user association</li>
+                    <li><strong>Enhanced User Views:</strong> Improved user creation and edit views with role assignment</li>
+                </ul>
+
+                <h2>Payslip Enhancements</h2>
+                <ul>
+                    <li><strong>Monthly or Batch Payslips:</strong> Payslips can now be generated by month or by payroll batch</li>
+                    <li><strong>My Payslip Feature:</strong> Added "My Payslip" feature for employees to view their payslips</li>
+                    <li><strong>Signatory Integration:</strong> Payslips now include signatory information</li>
+                    <li><strong>Improved Payslip View:</strong> Enhanced payslip display with better formatting</li>
+                </ul>
+
+                <h2>Deduction Type CMS</h2>
+                <ul>
+                    <li><strong>Deduction Type Controller:</strong> Added DeductionTypeController for managing deduction types</li>
+                    <li><strong>CMS Module:</strong> Created full CMS module for deduction type management (CRUD operations)</li>
+                    <li><strong>Deduction Type Views:</strong> Added create, edit, index views for deduction types</li>
+                </ul>
+
+                <h2>Payroll Role Restrictions</h2>
+                <ul>
+                    <li><strong>Payroll Officer Only:</strong> Restricted payroll batch creation and management to payroll officers only</li>
+                    <li><strong>Computation and Submission:</strong> Only payroll officers can compute and submit payroll batches</li>
+                    <li><strong>Role-Based Access:</strong> Enhanced role-based access control throughout the system</li>
+                </ul>
+
+                <h2>Database Schema Updates</h2>
+                <ul>
+                    <li><strong>Signatories Table:</strong> Added signatories table for managing document signatories</li>
+                    <li><strong>User Role Assignments:</strong> Added user_role_assignments table for dual role system</li>
+                    <li><strong>Employee ID in Users:</strong> Added employee_id to users table for HRIS integration</li>
+                    <li><strong>Email Nullable:</strong> Made email field nullable in users table</li>
+                    <li><strong>Plantilla Constraint:</strong> Removed unique constraint from plantilla table</li>
+                </ul>
+            </section>
+
             <section id="quirks" class="section">
                 <h1>Quirks & Decisions</h1>
 
                 <h2>HRIS API Stubbed</h2>
                 <div class="callout-danger">
-                    <strong>Critical:</strong> The HRIS API integration exists but returns mock data. All employees currently have perfect attendance (zero LWOP, zero tardiness) and YTD gross is always 0. This means withholding tax is under-computed for everyone.
+                    <strong>Critical:</strong> The HRIS API integration exists but returns mock data. Attendance data is currently stubbed and YTD (Year-To-Date) gross tracking is not implemented. This means withholding tax is under-computed for everyone.
                 </div>
-                <p>The <code>HrisApiService</code> has real API calls but falls back to mock data when the API fails or returns errors. The mock returns perfect attendance. This is intentional for development but must be resolved before production use.</p>
+                <p>The <code>HrisApiService</code> has real API calls but falls back to mock data when the API fails or returns errors. Attendance data (days_present, lwop_days, late_minutes, undertime_minutes) is stored in the <code>attendance_snapshots</code> table but is currently stubbed. <strong>YTD (Year-To-Date)</strong> gross — the cumulative gross income an employee has earned from January 1st up to the current payroll period — is critical for accurate withholding tax computation using the annualized method. Currently, YTD gross is hardcoded to 0 in the <code>AttendanceSnapshot::toAttendanceArray()</code> method (TODO at line 64), causing tax calculations to be incorrect. This must be implemented before production use.</p>
 
                 <h2>TEV Auto-Submission</h2>
                 <p>TEV requests are auto-submitted on creation. There is no draft state for TEVs. This is intentional because HRMO files TEVs on behalf of employees — the draft state was redundant. The <code>submit()</code> method exists but aborts with a 410 error if called.</p>
@@ -588,12 +784,6 @@
 
                 <h2>Table IV Minute Conversion</h2>
                 <p>Tardiness and undertime minutes are converted to decimal days using a lookup table (DOLE Table IV), not a simple division. The <code>TableIVConverter</code> trait handles this. For example, 15 minutes = 0.031 days (from table), not 0.03125 computed.</p>
-
-                <h2>YTD Gross Tracking Not Implemented</h2>
-                <div class="callout-warning">
-                    <strong>Impact:</strong> Withholding tax uses an annualized method that requires YTD gross accumulation. Currently, YTD gross is hardcoded to 0, causing WHT to be under-computed.
-                </div>
-                <p>The <code>AttendanceService</code> has a TODO comment at line 125: <code>'ytd_gross' => 0, // TODO: Implement YTD gross tracking</code>. This is a known gap that affects tax computation accuracy.</p>
 
                 <h2>Working Day Denominator Fixed at 22</h2>
                 <p>All salary computations use a fixed 22 working days per month denominator, regardless of actual calendar days. This is per DOLE RO9 payroll rules and is hardcoded in multiple services.</p>
