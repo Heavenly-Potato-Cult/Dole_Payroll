@@ -3,14 +3,7 @@ in Regular Payroll Batches make it 2 tabs. separate the current active and the d
 
 Active Tab | Done Tab( put the batches that has lock status here)
 
+- http://localhost:8000/my-payslip My Payslip should fetch the relevant data, should also create table for that info to be displayed or other way to display.
+
+-http://localhost:8000/special-payroll/differential/create when creating salary differential we should have 3 types of process, whether addition, deduction, or tax .
 --[backend]
-
-1. remove HRMO role access during draft. -DONE
-2. fix issue where only pending and draft can be viewed
-   2.1 fix issue in payroll controller in 2nd batch entry
-
-3. add new position title table then connect the salary index table to it
-   connect the new position title table to employees table.
-   employee table <== position title table <== salary index table
-
-4. Reports GSIS and PagIbig not working. Report Controller Error - DONE
