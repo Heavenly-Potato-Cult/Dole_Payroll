@@ -663,6 +663,7 @@
     @endphp
 
     {{-- ── Payroll Queue Strip ──────────────────────────────────── --}}
+    @role('payroll_officer|hrmo|accountant|ard|cashier|chief_admin_officer|super_admin')
     <div class="sa-pipeline-card">
         <div class="sa-pipeline-label">💰 Payroll Queue</div>
         <div class="sa-pipeline-grid">
@@ -682,6 +683,17 @@
             </a>
         </div>
     </div>
+    @else
+    <div class="sa-pipeline-card">
+        <div class="sa-pipeline-label">💰 Payroll Status</div>
+        <div class="sa-pipeline-grid">
+            <a href="{{ route('my-payslip') }}" class="sa-pitem">
+                <span class="sa-pitem-val">📄</span>
+                <span class="sa-pitem-key">View My Payslip</span>
+            </a>
+        </div>
+    </div>
+    @endrole
 
     {{-- ── TEV Queue Strip ──────────────────────────────────────── --}}
     <div class="sa-pipeline-card">

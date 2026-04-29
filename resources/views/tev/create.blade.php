@@ -240,34 +240,46 @@
         <div class="card">
             <div class="card-header"><h3>📝 Step 1 — Office Order</h3></div>
             <div class="card-body">
-                <p class="field-hint" style="margin-bottom:14px;">
-                    Select the <strong>approved Office Order</strong> that authorises this travel.
-                    The destination, travel type, and dates will be filled in automatically.
-                </p>
-                <div class="form-group">
-                    <label for="office_order_id">Office Order <span style="color:var(--red);">*</span></label>
-                    <select name="office_order_id" id="office_order_id"
-                            class="{{ $errors->has('office_order_id') ? 'is-invalid' : '' }}" required>
-                        <option value="">— Select an approved Office Order —</option>
-                        @foreach ($approvedOrders as $oo)
-                            @php
-                                $ooEmp   = $oo->employee;
-                                $empName = optional($ooEmp)->last_name . ', ' . optional($ooEmp)->first_name;
-                            @endphp
-                            <option value="{{ $oo->id }}"
-                                data-destination="{{ $oo->destination }}"
-                                data-travel-type="{{ $oo->travel_type }}"
-                                data-purpose="{{ $oo->purpose }}"
-                                data-date-start="{{ $oo->travel_date_start->toDateString() }}"
-                                data-date-end="{{ $oo->travel_date_end->toDateString() }}"
-                                {{ old('office_order_id') == $oo->id ? 'selected' : '' }}>
-                                {{ $oo->office_order_no }} — {{ $empName }}
-                                ({{ $oo->travel_date_start->format('M d') }}–{{ $oo->travel_date_end->format('M d, Y') }})
-                            </option>
-                        @endforeach
-                    </select>
-                    @error('office_order_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
-                </div>
+                @if ($isEmployee)
+                    <p class="field-hint" style="margin-bottom:14px;">
+                        As an employee, you can file a TEV directly without an Office Order.
+                        Fill in your travel details manually in the next steps.
+                    </p>
+                    <div class="form-group" style="display:none;">
+                        <input type="hidden" name="office_order_id" value="">
+                    </div>
+                @else
+                    <p class="field-hint" style="margin-bottom:14px;">
+                        Select the <strong>approved Office Order</strong> that authorises this travel.
+                        The destination, travel type, and dates will be filled in automatically.
+                    </p>
+                    <div class="form-group">
+                        <label for="office_order_id">Office Order <span style="color:var(--red);">*</span></label>
+                        <select name="office_order_id" id="office_order_id"
+                                class="{{ $errors->has('office_order_id') ? 'is-invalid' : '' }}" required>
+                            <option value="">— Select an approved Office Order —</option>
+                            @if ($approvedOrders)
+                                @foreach ($approvedOrders as $oo)
+                                    @php
+                                        $ooEmp   = $oo->employee;
+                                        $empName = optional($ooEmp)->last_name . ', ' . optional($ooEmp)->first_name;
+                                    @endphp
+                                    <option value="{{ $oo->id }}"
+                                        data-destination="{{ $oo->destination }}"
+                                        data-travel-type="{{ $oo->travel_type }}"
+                                        data-purpose="{{ $oo->purpose }}"
+                                        data-date-start="{{ $oo->travel_date_start->toDateString() }}"
+                                        data-date-end="{{ $oo->travel_date_end->toDateString() }}"
+                                        {{ old('office_order_id') == $oo->id ? 'selected' : '' }}>
+                                        {{ $oo->office_order_no }} — {{ $empName }}
+                                        ({{ $oo->travel_date_start->format('M d') }}–{{ $oo->travel_date_end->format('M d, Y') }})
+                                    </option>
+                                @endforeach
+                            @endif
+                        </select>
+                        @error('office_order_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                    </div>
+                @endif
                 <div id="oo-preview" style="display:none; margin-top:10px; padding:10px 14px;
                      background:#f0f2ff; border-radius:6px; font-size:0.82rem;
                      border-left:3px solid var(--navy); overflow-wrap:break-word;">

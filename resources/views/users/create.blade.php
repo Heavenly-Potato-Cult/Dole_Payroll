@@ -21,19 +21,18 @@
                 @csrf
 
                 <div class="form-group">
-                    <label for="name">Full Name <span style="color:var(--red)">*</span></label>
-                    <input type="text" id="name" name="name"
-                           class="{{ $errors->has('name') ? 'is-invalid' : '' }}"
-                           value="{{ old('name') }}" required placeholder="e.g. Juan Dela Cruz">
-                    @error('name')<div class="invalid-feedback">{{ $message }}</div>@enderror
-                </div>
-
-                <div class="form-group">
-                    <label for="email">Email Address <span style="color:var(--red)">*</span></label>
-                    <input type="email" id="email" name="email"
-                           class="{{ $errors->has('email') ? 'is-invalid' : '' }}"
-                           value="{{ old('email') }}" required placeholder="user@dole9.gov.ph">
-                    @error('email')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                    <label for="employee_id">Employee <span style="color:var(--red)">*</span></label>
+                    <select id="employee_id" name="employee_id"
+                            class="{{ $errors->has('employee_id') ? 'is-invalid' : '' }}" required>
+                        <option value="">— Select an employee —</option>
+                        @foreach ($employees as $employee)
+                            <option value="{{ $employee->id }}"
+                                    {{ old('employee_id') === $employee->id ? 'selected' : '' }}>
+                                {{ $employee->last_name }}, {{ $employee->first_name }} {{ $employee->middle_name ? $employee->middle_name . '.' : '' }} ({{ $employee->employee_no }})
+                            </option>
+                        @endforeach
+                    </select>
+                    @error('employee_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
                 </div>
 
                 {{-- ── Primary role ──────────────────────────────────────────── --}}
@@ -79,21 +78,7 @@
                     </div>
                 </div>
 
-                <hr style="border:none;border-top:1px solid var(--border);margin:20px 0 16px;">
-
-                <div class="form-group">
-                    <label for="password">Password <span style="color:var(--red)">*</span></label>
-                    <input type="password" id="password" name="password"
-                           class="{{ $errors->has('password') ? 'is-invalid' : '' }}"
-                           required placeholder="Min 8 chars, uppercase, number, symbol">
-                    @error('password')<div class="invalid-feedback">{{ $message }}</div>@enderror
-                </div>
-
-                <div class="form-group" style="margin-bottom:0;">
-                    <label for="password_confirmation">Confirm Password <span style="color:var(--red)">*</span></label>
-                    <input type="password" id="password_confirmation" name="password_confirmation" required>
-                </div>
-
+                
                 <div style="display:flex;gap:10px;margin-top:24px;">
                     <button type="submit" class="btn btn-primary">✓ Create User</button>
                     <a href="{{ route('users.index') }}" class="btn btn-outline">Cancel</a>

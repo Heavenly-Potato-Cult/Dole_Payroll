@@ -11,7 +11,7 @@ class ComputePayrollRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return $this->user()->hasAnyRole(['payroll_officer', 'hrmo']);
+        return \App\Services\RoleService::canCreatePayroll($this->user());
     }
 
     public function rules(): array

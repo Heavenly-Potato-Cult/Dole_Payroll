@@ -217,7 +217,7 @@
         <h1>Employees</h1>
         <p>DOLE RO9 Regular Plantilla — {{ $employees->total() }} {{ Str::plural('record', $employees->total()) }}</p>
     </div>
-    @role('payroll_officer|hrmo')
+    @role('payroll_officer|hrmo|super_admin')
     <form method="POST" action="{{ route('employees.pullFromApi') }}" style="display:inline;">
         @csrf
         <button type="submit" class="btn btn-primary" onclick="return confirm('Sync employees from HRIS API?\nThis will update existing employees and add new ones.')">
@@ -293,6 +293,7 @@
             <thead>
                 <tr>
                     <th style="width:160px;">Plantilla No.</th>
+                    <th style="width:100px;">Employee ID</th>
                     <th>Name</th>
                     <th>Position</th>
                     <th style="width:130px;">Division</th>
@@ -311,6 +312,11 @@
                     <td class="col-plantilla">
                         <code style="font-size:0.76rem;color:var(--text-mid);">
                             {{ $emp->plantilla_item_no }}
+                        </code>
+                    </td>
+                    <td class="col-employee-id">
+                        <code style="font-size:0.76rem;color:var(--text-mid);">
+                            {{ $emp->employee_no }}
                         </code>
                     </td>
                     <td class="col-name">
@@ -349,7 +355,7 @@
                         <div class="d-flex gap-2" style="justify-content:center;">
                             <a href="{{ route('employees.show', $emp) }}"
                                class="btn btn-outline btn-sm" title="View">👁</a>
-                            @role('payroll_officer|hrmo')
+                            @role('payroll_officer|hrmo|super_admin')
                             <a href="{{ route('employees.edit', $emp) }}"
                                class="btn btn-outline btn-sm" title="Edit">✎</a>
                             <form method="POST" action="{{ route('employees.destroy', $emp) }}"
@@ -365,7 +371,7 @@
 
                 {{-- Expandable detail row (mobile only) --}}
                 <tr class="emp-detail-row" id="detail-{{ $emp->id }}">
-                    <td colspan="9">
+                    <td colspan="10">
                         <div class="emp-detail-grid">
                             <div class="emp-detail-item">
                                 <label>Plantilla No.</label>
@@ -390,7 +396,7 @@
                         </div>
                         <div class="emp-detail-actions">
                             <a href="{{ route('employees.show', $emp) }}" class="btn btn-outline btn-sm">👁 View</a>
-                            @role('payroll_officer|hrmo')
+                            @role('payroll_officer|hrmo|super_admin')
                             <a href="{{ route('employees.edit', $emp) }}" class="btn btn-outline btn-sm">✎ Edit</a>
                             <form method="POST" action="{{ route('employees.destroy', $emp) }}" style="flex:1;"
                                   onsubmit="return confirm('Remove {{ addslashes($emp->full_name) }} from the active plantilla?\n(Soft delete — record is preserved.)')">
@@ -405,7 +411,7 @@
 
                 @empty
                 <tr>
-                    <td colspan="9" style="text-align:center;padding:40px;color:var(--text-light);">
+                    <td colspan="10" style="text-align:center;padding:40px;color:var(--text-light);">
                         @if($search || $divisionId || $status)
                             No employees matched your filters.
                             <a href="{{ route('employees.index') }}">Clear filters →</a>

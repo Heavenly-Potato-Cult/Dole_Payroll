@@ -37,10 +37,7 @@ class PayrollPolicy
      */
     public function viewAny(User $user): bool
     {
-        return $user->hasAnyRole([
-            'payroll_officer', 'hrmo', 'accountant',
-            'ard', 'cashier', 'budget_officer', 'chief_admin_officer',
-        ]);
+        return \App\Services\RoleService::canAccessPayroll($user);
     }
 
     public function view(User $user, PayrollBatch $batch): bool
@@ -52,7 +49,7 @@ class PayrollPolicy
 
     public function create(User $user): bool
     {
-        return $user->hasAnyRole(['payroll_officer', 'hrmo']);
+        return \App\Services\RoleService::canCreatePayroll($user);
     }
 
     /**
@@ -60,7 +57,7 @@ class PayrollPolicy
      */
     public function delete(User $user, PayrollBatch $batch): bool
     {
-        return $user->hasAnyRole(['payroll_officer'])
+        return $user->hasAnyRole(['payroll_officer', 'super_admin'])
             && $batch->status === 'draft';
     }
 
@@ -71,7 +68,7 @@ class PayrollPolicy
      */
     public function compute(User $user, PayrollBatch $batch): bool
     {
-        return $user->hasAnyRole(['payroll_officer', 'hrmo'])
+        return $user->hasAnyRole(['payroll_officer', 'hrmo', 'super_admin'])
             && $batch->status !== 'locked';
     }
 
@@ -85,7 +82,7 @@ class PayrollPolicy
      */
     public function submit(User $user, PayrollBatch $batch): bool
     {
-        return $user->hasAnyRole(['payroll_officer', 'hrmo'])
+        return $user->hasAnyRole(['payroll_officer', 'hrmo', 'super_admin'])
             && in_array($batch->status, ['draft', 'computed'], true);
     }
 
@@ -140,7 +137,7 @@ class PayrollPolicy
      */
     public function forceEdit(User $user, PayrollBatch $batch): bool
     {
-        return $user->hasRole('payroll_officer')
+        return $user->hasAnyRole(['payroll_officer', 'super_admin'])
             && $batch->status === 'locked';
     }
 

@@ -34,7 +34,10 @@ class UserController extends Controller
 
     public function index()
     {
-        $users = User::with(['roles', 'roleAssignments'])->orderBy('name')->get();
+        $users = User::with(['roles', 'roleAssignments', 'employee'])
+            ->whereHas('roles', fn($q) => $q->where('name', '!=', 'employee'))
+            ->orderBy('name')
+            ->get();
 
         return view('users.index', compact('users'));
     }
@@ -42,8 +45,9 @@ class UserController extends Controller
     public function create()
     {
         $roles = Role::orderBy('name')->get();
+        $employees = \App\Models\Employee::orderBy('last_name')->get();
 
-        return view('users.create', compact('roles'));
+        return view('users.create', compact('roles', 'employees'));
     }
 
     /**
@@ -57,19 +61,20 @@ class UserController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'name'          => ['required', 'string', 'max:255'],
-            'email'         => ['required', 'email', 'max:255', 'unique:users,email'],
-            'role'          => ['required', 'string', 'exists:roles,name'],
-            'secondary_role'=> ['nullable', 'string', 'exists:roles,name', 'different:role'],
-            'password'      => ['required', 'confirmed', Password::min(8)->mixedCase()->numbers()->symbols()],
+            'employee_id'    => ['required', 'exists:employees,id'],
+            'role'           => ['required', 'string', 'exists:roles,name'],
+            'secondary_role' => ['nullable', 'string', 'exists:roles,name', 'different:role'],
         ]);
 
-        DB::transaction(function () use ($request) {
+        $employee = \App\Models\Employee::findOrFail($request->employee_id);
+
+        DB::transaction(function () use ($request, $employee) {
             $user = User::create([
-                'name'              => $request->name,
-                'email'             => $request->email,
-                'password'          => Hash::make($request->password),
-                'email_verified_at' => now(),
+                'name'              => $employee->first_name . ' ' . ($employee->middle_name ? $employee->middle_name . '. ' : '') . $employee->last_name,
+                'email'             => null, // No email needed for HRIS SSO users
+                'password'          => Hash::make(uniqid()), // Random password - not used for HRIS SSO
+                'email_verified_at' => null,
+                'employee_id'       => $employee->id,
             ]);
 
             // ── Primary role ─────────────────────────────────────────────────
@@ -97,7 +102,7 @@ class UserController extends Controller
         });
 
         return redirect()->route('users.index')
-            ->with('success', "User {$request->name} created.");
+            ->with('success', "User {$employee->first_name} {$employee->last_name} created.");
     }
 
     public function show(User $user)
@@ -110,9 +115,10 @@ class UserController extends Controller
     public function edit(User $user)
     {
         $roles = Role::orderBy('name')->get();
+        $employees = \App\Models\Employee::orderBy('last_name')->get();
         $user->load(['roles', 'roleAssignments']);
 
-        return view('users.edit', compact('user', 'roles'));
+        return view('users.edit', compact('user', 'roles', 'employees'));
     }
 
     /**
@@ -124,19 +130,13 @@ class UserController extends Controller
     public function update(Request $request, User $user)
     {
         $request->validate([
-            'name'          => ['required', 'string', 'max:255'],
-            'email'         => ['required', 'email', 'max:255', "unique:users,email,{$user->id}"],
             'role'          => ['required', 'string', 'exists:roles,name'],
             'secondary_role'=> ['nullable', 'string', 'exists:roles,name', 'different:role'],
-            'password'      => ['nullable', 'confirmed', Password::min(8)->mixedCase()->numbers()->symbols()],
         ]);
 
         DB::transaction(function () use ($request, $user) {
-            $user->update(['name' => $request->name, 'email' => $request->email]);
-
-            if ($request->filled('password')) {
-                $user->update(['password' => Hash::make($request->password)]);
-            }
+            // No name/email updates needed - they come from employee record
+            // Password not updated - HRIS users authenticate via JWT SSO
 
             // Build the new set of roles
             $newRoles = array_filter([
@@ -174,18 +174,21 @@ class UserController extends Controller
 
     public function destroy(User $user)
     {
-        /** @var \App\Models\User $authUser */
         $authUser = Auth::user();
 
         if ($user->id === $authUser->id) {
             return back()->with('error', 'You cannot delete your own account.');
         }
 
-        $name = $user->name;
-        $user->delete(); // cascadeOnDelete handles role assignments
+        // Prevent deleting HRIS-only employee accounts from here
+        if ($user->roles->count() === 1 && $user->hasRole('employee')) {
+            return back()->with('error', 'HRIS employee accounts cannot be removed from User Management.');
+        }
 
-        return redirect()->route('users.index')
-            ->with('success', "User {$name} has been removed.");
+        $name = $user->name;
+        $user->delete();
+
+        return redirect()->route('users.index')->with('success', "User {$name} has been removed.");
     }
 
     // ── Role activation toggle ────────────────────────────────────────────────

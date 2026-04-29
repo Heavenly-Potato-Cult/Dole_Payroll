@@ -27,6 +27,7 @@ class PayrollController extends Controller
 
     public function index(Request $request)
     {
+        $user = Auth::user();
         $query = PayrollBatch::with('creator')
             ->withCount('entries')
             ->withSum('entries', 'gross_income')
@@ -35,6 +36,11 @@ class PayrollController extends Controller
             ->orderByDesc('period_year')
             ->orderByDesc('period_month')
             ->orderByDesc('id');
+
+        // Employees can only see released/locked batches
+        if (!\App\Services\RoleService::canAccessPayroll($user)) {
+            $query->whereIn('status', ['released', 'locked']);
+        }
 
         if ($request->filled('year'))   $query->where('period_year',  $request->year);
         if ($request->filled('month'))  $query->where('period_month', $request->month);
@@ -45,9 +51,38 @@ class PayrollController extends Controller
         return view('payroll.index', compact('batches'));
     }
 
+    public function myPayslip(Request $request)
+    {
+        $user = Auth::user();
+        $employeeId = session('hris_employee_id');
+        
+        // Get employee's payroll entries from released/locked batches only
+        $query = \App\Models\PayrollEntry::with(['batch', 'employee'])
+            ->whereHas('batch', function ($q) {
+                $q->whereIn('status', ['released', 'locked']);
+            });
+
+        // Filter by employee ID (for HRIS users)
+        if ($employeeId) {
+            $query->where('employee_id', $employeeId);
+        } elseif ($user->employee) {
+            $query->where('employee_id', $user->employee->id);
+        } else {
+            // If no employee association, return empty
+            $entries = collect([]);
+            return view('payroll.my-payslip', compact('entries'));
+        }
+
+        $entries = $query->orderByDesc('id')
+            ->paginate(10)
+            ->withQueryString();
+
+        return view('payroll.my-payslip', compact('entries'));
+    }
+
     public function create()
     {
-        $this->authorizeRole(['payroll_officer', 'hrmo']);
+        $this->authorizeRole(\App\Services\RoleService::getRoleGroup('payroll_create'));
 
         $currentYear  = now()->year;
         $currentMonth = now()->month;

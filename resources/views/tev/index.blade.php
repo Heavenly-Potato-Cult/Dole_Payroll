@@ -232,9 +232,7 @@
         <h1>TEV Requests</h1>
         <p>Travel Expense Vouchers — Cash Advance and Reimbursement.</p>
     </div>
-    @if (auth()->user()->hasAnyRole(['payroll_officer', 'hrmo']))
-        <a href="{{ route('tev.requests.create') }}" class="btn btn-primary">+ New TEV</a>
-    @endif
+    <a href="{{ route('tev.requests.create') }}" class="btn btn-primary">+ New TEV</a>
 </div>
 
 @if (session('success'))
@@ -306,7 +304,7 @@
                             };
                             $statusLabel = ucwords(str_replace('_', ' ', $tev->status));
 
-                            $isOwner  = $emp && $emp->user_id === auth()->id();
+                            $isOwner  = $emp && ($emp->user_id === auth()->id() || $emp->employee_id === session('hris_employee_id'));
                             $canSubmit = $tev->status === 'draft'
                                 && ($isOwner || auth()->user()->hasAnyRole(['payroll_officer', 'hrmo']));
                         @endphp
@@ -440,9 +438,7 @@
                         <tr>
                             <td colspan="8" style="text-align:center; padding:40px; color:var(--text-light);">
                                 No TEV requests found.
-                                @if (auth()->user()->hasAnyRole(['payroll_officer', 'hrmo']))
-                                    <a href="{{ route('tev.requests.create') }}">Create one now →</a>
-                                @endif
+                                <a href="{{ route('tev.requests.create') }}">Create one now →</a>
                             </td>
                         </tr>
                     @endforelse

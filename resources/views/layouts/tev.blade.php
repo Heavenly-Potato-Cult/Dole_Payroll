@@ -35,16 +35,18 @@
                 <span class="nav-icon">⊞</span> TEV Dashboard
             </a>
 
-            {{-- ── Office Orders ─────────────────────────────────────── --}}
-            @role('hrmo|accountant|budget_officer|ard|cashier|chief_admin_officer|super_admin')
+            {{-- ── TEV Requests (available to all users) ───────────────── --}}
             <div class="nav-section-label">Travel Management</div>
-            <a href="{{ route('tev.office-orders.index') }}"
-               class="nav-item {{ request()->routeIs('tev.office-orders.*') ? 'active' : '' }}">
-                <span class="nav-icon">📝</span> Office Orders
-            </a>
             <a href="{{ route('tev.requests.index') }}"
                class="nav-item {{ request()->routeIs('tev.requests.*') ? 'active' : '' }}">
                 <span class="nav-icon">✈</span> TEV Requests
+            </a>
+
+            {{-- ── Office Orders (officers only) ───────────────────────── --}}
+            @role('hrmo|accountant|budget_officer|ard|cashier|chief_admin_officer|super_admin')
+            <a href="{{ route('tev.office-orders.index') }}"
+               class="nav-item {{ request()->routeIs('tev.office-orders.*') ? 'active' : '' }}">
+                <span class="nav-icon">📝</span> Office Orders
             </a>
             @endrole
 
@@ -80,10 +82,17 @@
                     <span>{{ auth()->user()->getRoleNames()->first() ?? 'No Role' }}</span>
                 </div>
             </div>
+            @role('super_admin')
             <form method="POST" action="{{ route('logout') }}">
                 @csrf
                 <button type="submit" class="btn-logout">⏻ Sign Out</button>
             </form>
+            @else
+            <form method="POST" action="{{ route('logout') }}" onsubmit="setTimeout(() => { window.location.href = 'http://localhost:3001'; }, 100);">
+                @csrf
+                <button type="submit" class="btn-logout" style="text-decoration:none;">← Back to HRIS</button>
+            </form>
+            @endrole
         </div>
 
     </aside>

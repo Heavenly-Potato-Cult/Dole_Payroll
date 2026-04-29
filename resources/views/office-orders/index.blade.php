@@ -231,7 +231,7 @@
         <h1>Office Orders</h1>
         <p>Manage travel authority documents for DOLE RO9 employees.</p>
     </div>
-    @if (auth()->user()->hasAnyRole(['payroll_officer', 'hrmo']))
+    @if (auth()->user()->hasAnyRole(['payroll_officer', 'hrmo', 'super_admin']))
         <a href="{{ route('tev.office-orders.create') }}" class="btn btn-primary">
             + New Office Order
         </a>
@@ -478,7 +478,7 @@
                         <tr>
                             <td colspan="8" style="text-align:center; padding:40px; color:var(--text-light);">
                                 No office orders found.
-                                @if (auth()->user()->hasAnyRole(['payroll_officer', 'hrmo']))
+                                @if (auth()->user()->hasAnyRole(['payroll_officer', 'hrmo', 'super_admin']))
                                     <a href="{{ route('tev.office-orders.create') }}">Create one now →</a>
                                 @endif
                             </td>

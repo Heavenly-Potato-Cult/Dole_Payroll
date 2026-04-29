@@ -21,6 +21,8 @@ $middleware->alias([
     'role'               => \Spatie\Permission\Middleware\RoleMiddleware::class,
     'permission'         => \Spatie\Permission\Middleware\PermissionMiddleware::class,
     'role_or_permission' => \Spatie\Permission\Middleware\RoleOrPermissionMiddleware::class,
+    'jwt.auth'           => \App\Http\Middleware\JwtAuth::class,
+    'payroll.released.only' => \App\Http\Middleware\PayrollReleasedOnly::class,
 ]);
 
     })

@@ -29,6 +29,10 @@ Route::get('/', fn() => redirect()->route('login'));
 Route::get('/login',  [AuthController::class, 'showLogin'])->name('login')->middleware('guest');
 Route::post('/login', [AuthController::class, 'login'])->name('login.post')->middleware('guest');
 
+// ── HRIS SSO Routes — JWT authentication from HRIS simulation ─────
+Route::get('/hris-auth', [AuthController::class, 'hrisAuth'])->name('hris.auth')->middleware('jwt.auth');
+Route::get('/tev-hris-auth', [AuthController::class, 'tevHrisAuth'])->name('tev.hris.auth')->middleware('jwt.auth');
+
 
 /*
 |--------------------------------------------------------------------------
@@ -93,40 +97,58 @@ Route::middleware(['auth'])->group(function () {
         });
 
     // ── Payroll ──────────────────────────────────────────────────
-    Route::middleware(['role:payroll_officer|hrmo|accountant|ard|cashier|chief_admin_officer|super_admin'])
+    // Employee access - My Payslip page
+    Route::middleware(['auth'])
         ->group(function () {
-            Route::resource('payroll', PayrollController::class);
+            Route::get('/my-payslip', [PayrollController::class, 'myPayslip'])->name('my-payslip');
+        });
+
+    // Officer access - full payroll management
+    Route::middleware(['role:' . implode('|', \App\Services\RoleService::getRoleGroup('payroll'))])
+        ->prefix('payroll')
+        ->name('payroll.')
+        ->group(function () {
+            // Officer routes - specific routes first
+            Route::get('/', [PayrollController::class, 'index'])->name('index');
+            Route::get('/create', [PayrollController::class, 'create'])->name('create');
+            Route::post('/', [PayrollController::class, 'store'])->name('store');
+            Route::get('/{payroll}', [PayrollController::class, 'show'])->name('show');
+            Route::get('/{payroll}/edit', [PayrollController::class, 'edit'])->name('edit');
+            Route::put('/{payroll}', [PayrollController::class, 'update'])->name('update');
+            Route::delete('/{payroll}', [PayrollController::class, 'destroy'])->name('destroy');
 
             // Payroll workflow actions
-            Route::post('/payroll/{payroll}/compute',    [PayrollController::class, 'compute'])   ->name('payroll.compute');
-            Route::post('/payroll/{payroll}/submit',     [PayrollController::class, 'submit'])    ->name('payroll.submit');
-            Route::post('/payroll/{payroll}/certify',    [PayrollController::class, 'certify'])   ->name('payroll.certify');
-            Route::post('/payroll/{payroll}/approve',    [PayrollController::class, 'approve'])   ->name('payroll.approve');
-            Route::post('/payroll/{payroll}/lock',       [PayrollController::class, 'lock'])      ->name('payroll.lock');
-            Route::get( '/payroll/{payroll}/verify',     [PayrollController::class, 'verify'])    ->name('payroll.verify');
-            Route::post('/payroll/{payroll}/force-edit', [PayrollController::class, 'forceEdit'])->name('payroll.forceEdit');
-            Route::post('/payroll/{payroll}/pull-attendance', [PayrollController::class, 'pullAttendance'])->name('payroll.pullAttendance');
+            Route::post('/{payroll}/compute',    [PayrollController::class, 'compute'])   ->name('compute');
+            Route::post('/{payroll}/submit',     [PayrollController::class, 'submit'])    ->name('submit');
+            Route::post('/{payroll}/certify',    [PayrollController::class, 'certify'])   ->name('certify');
+            Route::post('/{payroll}/approve',    [PayrollController::class, 'approve'])   ->name('approve');
+            Route::post('/{payroll}/lock',       [PayrollController::class, 'lock'])      ->name('lock');
+            Route::get( '/{payroll}/verify',     [PayrollController::class, 'verify'])    ->name('verify');
+            Route::post('/{payroll}/force-edit', [PayrollController::class, 'forceEdit'])->name('forceEdit');
+            Route::post('/{payroll}/pull-attendance', [PayrollController::class, 'pullAttendance'])->name('pullAttendance');
 
             // ── Payslip generation (released / locked batches only) ──────
             // ?mode=consolidated (default) | per_batch
             // ?entry_id=<PayrollEntry id>  (optional — single employee)
-            Route::get('/payroll/{payroll}/payslips/generate',
+            Route::get('/{payroll}/payslips/generate',
                        [PayrollController::class, 'generatePayslips'])
-                ->name('payroll.payslips.generate');
+                ->name('payslips.generate');
 
             // Payroll entries
-            Route::get('/payroll/{payrollBatch}/entries',
-                       [PayrollEntryController::class, 'index'])->name('payroll.entries.index');
-            Route::get('/payroll/{payrollBatch}/entries/{entry}',
-                       [PayrollEntryController::class, 'show'])->name('payroll.entries.show');
-            Route::put('/payroll/{payrollBatch}/entries/{entry}',
-                       [PayrollEntryController::class, 'update'])->name('payroll.entries.update');
-            Route::get('/payroll/{payrollBatch}/payslip/{entry}',
-                       [PayrollEntryController::class, 'payslip'])->name('payroll.payslip');
+            Route::get('/{payrollBatch}/entries',
+                       [PayrollEntryController::class, 'index'])->name('entries.index');
+            Route::get('/{payrollBatch}/entries/{entry}',
+                       [PayrollEntryController::class, 'show'])->name('entries.show');
+            Route::put('/{payrollBatch}/entries/{entry}',
+                       [PayrollEntryController::class, 'update'])->name('entries.update');
+            
+            // Individual payslip
+            Route::get('/{payrollBatch}/payslip/{entry}',
+                       [PayrollEntryController::class, 'payslip'])->name('payslip');
         });
 
     // ── Special Payroll — Newly Hired ────────────────────────────
-    Route::middleware(['role:payroll_officer|hrmo|accountant|ard|chief_admin_officer|super_admin'])
+    Route::middleware(['role:' . implode('|', \App\Services\RoleService::getRoleGroup('special_payroll'))])
         ->group(function () {
             Route::get(   '/special-payroll/newly-hired',
                           [SpecialPayrollController::class, 'newHireIndex'])
@@ -152,7 +174,7 @@ Route::middleware(['auth'])->group(function () {
         });
 
     // ── Special Payroll — Salary Differential ────────────────────
-    Route::middleware(['role:payroll_officer|hrmo|accountant|ard|chief_admin_officer|super_admin'])
+    Route::middleware(['role:' . implode('|', \App\Services\RoleService::getRoleGroup('special_payroll'))])
         ->group(function () {
             Route::get(   '/special-payroll/differential',
                           [SpecialPayrollController::class, 'differentialIndex'])
@@ -178,7 +200,7 @@ Route::middleware(['auth'])->group(function () {
         });
 
     // ── Special Payroll — NOSI / NOSA ────────────────────────────
-    Route::middleware(['role:payroll_officer|hrmo|accountant|ard|chief_admin_officer|super_admin'])
+    Route::middleware(['role:' . implode('|', \App\Services\RoleService::getRoleGroup('special_payroll'))])
         ->group(function () {
             Route::get(    '/special-payroll/nosi-nosa',
                            [SpecialPayrollController::class, 'nosiNosaIndex'])
@@ -209,37 +231,14 @@ Route::middleware(['auth'])->group(function () {
         });
 
     // ── TEV (Travel & Expense Voucher) ─────────────────────────────
-    Route::middleware(['auth', 'role:hrmo|accountant|budget_officer|ard|cashier|chief_admin_officer|super_admin'])
+    Route::middleware(['auth'])
         ->prefix('tev')
         ->name('tev.')
         ->group(function () {
-            // TEV Dashboard
+            // TEV Dashboard - accessible to all authenticated users
             Route::get('/', [TevController::class, 'dashboard'])->name('dashboard');
 
-            // Office Orders
-            Route::resource('office-orders', OfficeOrderController::class, [
-                'names' => [
-                    'index' => 'office-orders.index',
-                    'create' => 'office-orders.create',
-                    'store' => 'office-orders.store',
-                    'show' => 'office-orders.show',
-                    'edit' => 'office-orders.edit',
-                    'update' => 'office-orders.update',
-                    'destroy' => 'office-orders.destroy',
-                ]
-            ]);
-
-            Route::post('/office-orders/{id}/approve',
-                        [OfficeOrderController::class, 'approve'])
-                ->name('office-orders.approve')
-                ->where('id', '[0-9]+');
-
-            Route::post('/office-orders/{id}/cancel',
-                        [OfficeOrderController::class, 'cancel'])
-                ->name('office-orders.cancel')
-                ->where('id', '[0-9]+');
-
-            // TEV Requests
+            // TEV Requests - employees can create/view their own requests
             Route::resource('requests', TevController::class, [
                 'names' => [
                     'index' => 'requests.index',
@@ -252,11 +251,10 @@ Route::middleware(['auth'])->group(function () {
                 ]
             ]);
 
+            // Employee actions - submit own requests
             Route::post('/requests/{tevRequest}/submit',  [TevController::class, 'submit'])->name('requests.submit');
-            Route::post('/requests/{tevRequest}/approve', [TevController::class, 'approve'])->name('requests.approve');
-            Route::post('/requests/{tevRequest}/certify', [TevController::class, 'certify'])->name('requests.certify');
-            Route::post('/requests/{tevRequest}/reject',  [TevController::class, 'reject'])->name('requests.reject');
 
+            // Itinerary management - employees can manage their own itinerary
             Route::post(  '/requests/{tevRequest}/itinerary',
                           [TevItineraryController::class, 'store'])->name('requests.itinerary.store');
             Route::put(   '/requests/{tevRequest}/itinerary/{line}',
@@ -264,12 +262,45 @@ Route::middleware(['auth'])->group(function () {
             Route::delete('/requests/{tevRequest}/itinerary/{line}',
                           [TevItineraryController::class, 'destroy'])->name('requests.itinerary.destroy');
 
-            // TEV Liquidation workflow
+            // TEV Liquidation - employees can file their own liquidation
             Route::post('/requests/{tevRequest}/liquidate',
                         [TevController::class, 'fileLiquidation'])->name('requests.liquidate');
 
-            Route::post('/requests/{tevRequest}/liquidation/approve',
-                        [TevController::class, 'approveLiquidation'])->name('requests.liquidation.approve');
+            // ── Officer-only actions ─────────────────────────────────
+            Route::middleware(['role:hrmo|accountant|budget_officer|ard|cashier|chief_admin_officer|super_admin'])
+                ->group(function () {
+                    // Office Orders
+                    Route::resource('office-orders', OfficeOrderController::class, [
+                        'names' => [
+                            'index' => 'office-orders.index',
+                            'create' => 'office-orders.create',
+                            'store' => 'office-orders.store',
+                            'show' => 'office-orders.show',
+                            'edit' => 'office-orders.edit',
+                            'update' => 'office-orders.update',
+                            'destroy' => 'office-orders.destroy',
+                        ]
+                    ]);
+
+                    Route::post('/office-orders/{id}/approve',
+                                [OfficeOrderController::class, 'approve'])
+                        ->name('office-orders.approve')
+                        ->where('id', '[0-9]+');
+
+                    Route::post('/office-orders/{id}/cancel',
+                                [OfficeOrderController::class, 'cancel'])
+                        ->name('office-orders.cancel')
+                        ->where('id', '[0-9]+');
+
+                    // Approval actions
+                    Route::post('/requests/{tevRequest}/approve', [TevController::class, 'approve'])->name('requests.approve');
+                    Route::post('/requests/{tevRequest}/certify', [TevController::class, 'certify'])->name('requests.certify');
+                    Route::post('/requests/{tevRequest}/reject',  [TevController::class, 'reject'])->name('requests.reject');
+
+                    // Liquidation approval
+                    Route::post('/requests/{tevRequest}/liquidation/approve',
+                                [TevController::class, 'approveLiquidation'])->name('requests.liquidation.approve');
+                });
         });
 
     // ── Reports ──────────────────────────────────────────────────
