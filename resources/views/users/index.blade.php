@@ -122,14 +122,23 @@
 
         <div class="user-avatar">
             @php
-                $parts = explode(' ', trim($user->name));
+                if ($user->employee) {
+                    $fullName = $user->employee->first_name . ' ' . ($user->employee->middle_name ? $user->employee->middle_name . '. ' : '') . $user->employee->last_name;
+                } else {
+                    $fullName = $user->name;
+                }
+                $parts = explode(' ', trim($fullName));
                 echo strtoupper(substr($parts[0], 0, 1)) . strtoupper(substr($parts[1] ?? '', 0, 1));
             @endphp
         </div>
 
         <div class="user-info">
             <div class="user-name">
-                {{ $user->name }}
+                @if ($user->employee)
+                    {{ $user->employee->first_name }} {{ $user->employee->middle_name ? $user->employee->middle_name . '. ' : '' }}{{ $user->employee->last_name }}
+                @else
+                    {{ $user->name }}
+                @endif
                 @if ($user->id === auth()->id())
                     <span class="you-pill">You</span>
                 @endif

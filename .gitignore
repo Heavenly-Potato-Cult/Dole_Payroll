@@ -27,3 +27,6 @@ dole_payroll.sql
 
 # rclone config (each teammate has their own)
 rclone.conf
+
+# HRIS Simulation Server - exclude node_modules only
+HRIS/node_modules/

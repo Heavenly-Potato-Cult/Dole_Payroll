@@ -294,7 +294,7 @@
 
                         <td class="col-actions text-center no-print">
                             <div class="d-flex gap-2" style="justify-content:center;">
-                                <a href="{{ route('tev.show', $tev->id) }}"
+                                <a href="{{ route('tev.requests.show', $tev->id) }}"
                                    class="btn btn-outline btn-sm"
                                    onclick="event.stopPropagation();">View</a>
                                 @if ($hasPdf)
@@ -346,7 +346,7 @@
                                 </div>
                             </div>
                             <div class="sd-detail-actions">
-                                <a href="{{ route('tev.show', $tev->id) }}"
+                                <a href="{{ route('tev.requests.show', $tev->id) }}"
                                    class="btn btn-outline btn-sm">View</a>
                                 @if ($hasPdf)
                                     <a href="{{ route('reports.tev-itinerary', $tev->id) }}"

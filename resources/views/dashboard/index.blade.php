@@ -663,6 +663,7 @@
     @endphp
 
     {{-- ── Payroll Queue Strip ──────────────────────────────────── --}}
+    @role('payroll_officer|hrmo|accountant|ard|cashier|chief_admin_officer|super_admin')
     <div class="sa-pipeline-card">
         <div class="sa-pipeline-label">💰 Payroll Queue</div>
         <div class="sa-pipeline-grid">
@@ -682,27 +683,38 @@
             </a>
         </div>
     </div>
+    @else
+    <div class="sa-pipeline-card">
+        <div class="sa-pipeline-label">💰 Payroll Status</div>
+        <div class="sa-pipeline-grid">
+            <a href="{{ route('my-payslip') }}" class="sa-pitem">
+                <span class="sa-pitem-val">📄</span>
+                <span class="sa-pitem-key">View My Payslip</span>
+            </a>
+        </div>
+    </div>
+    @endrole
 
     {{-- ── TEV Queue Strip ──────────────────────────────────────── --}}
     <div class="sa-pipeline-card">
         <div class="sa-pipeline-label">✈ TEV Queue</div>
         <div class="sa-pipeline-grid sa-pipeline-grid--tev">
-            <a href="{{ route('tev.index') }}?status=submitted" class="sa-pitem">
+            <a href="{{ route('tev.requests.index') }}?status=submitted" class="sa-pitem">
                 <span class="sa-pitem-val {{ $saTevSubmitted > 0 ? 'is-alert' : '' }}">{{ $saTevSubmitted }}</span>
                 <span class="sa-pitem-key">Submitted</span>
             </a>
             <span class="sa-pipe-arrow">›</span>
-            <a href="{{ route('tev.index') }}?status=accountant_certified" class="sa-pitem">
+            <a href="{{ route('tev.requests.index') }}?status=accountant_certified" class="sa-pitem">
                 <span class="sa-pitem-val {{ $saTevCertified > 0 ? 'is-alert' : '' }}">{{ $saTevCertified }}</span>
                 <span class="sa-pitem-key">Acct. Certified</span>
             </a>
             <span class="sa-pipe-arrow">›</span>
-            <a href="{{ route('tev.index') }}?status=rd_approved" class="sa-pitem">
+            <a href="{{ route('tev.requests.index') }}?status=rd_approved" class="sa-pitem">
                 <span class="sa-pitem-val {{ $saTevRdApproved > 0 ? 'is-alert' : '' }}">{{ $saTevRdApproved }}</span>
                 <span class="sa-pitem-key">RD Approved</span>
             </a>
             <span class="sa-pipe-arrow">›</span>
-            <a href="{{ route('tev.index') }}?status=liquidation_filed" class="sa-pitem">
+            <a href="{{ route('tev.requests.index') }}?status=liquidation_filed" class="sa-pitem">
                 <span class="sa-pitem-val {{ $saTevLiqFiled > 0 ? 'is-alert' : '' }}">{{ $saTevLiqFiled }}</span>
                 <span class="sa-pitem-key">Liq. Filed</span>
             </a>
@@ -748,7 +760,7 @@
         <div class="db-card">
             <div class="db-card-head">
                 <h3>✈ Recent TEV Requests</h3>
-                <a href="{{ route('tev.index') }}" class="btn btn-outline btn-sm" style="flex-shrink:0;">View All</a>
+                <a href="{{ route('tev.requests.index') }}" class="btn btn-outline btn-sm" style="flex-shrink:0;">View All</a>
             </div>
             <div class="db-card-body">
                 @if($recentTev->isEmpty())
@@ -772,7 +784,7 @@
                                     <span class="db-badge {{ $tk[1] }}">{{ $tk[0] }}</span>
                                     <span class="db-badge {{ $t[1] }}">{{ $t[0] }}</span>
                                 </div>
-                                <a href="{{ route('tev.show', $tev->id) }}" class="db-view-link">View →</a>
+                                <a href="{{ route('tev.requests.show', $tev->id) }}" class="db-view-link">View →</a>
                             </div>
                         </li>
                         @endforeach
@@ -830,10 +842,10 @@
                 </div>
                 <div class="db-actions-col">
                     <div class="db-action-sep">Travel (TEV)</div>
-                    <a href="{{ route('office-orders.index') }}" class="db-action-btn">
+                    <a href="{{ route('tev.office-orders.index') }}" class="db-action-btn">
                         <span class="db-action-left">📝 Office Orders</span><span>→</span>
                     </a>
-                    <a href="{{ route('tev.index') }}" class="db-action-btn">
+                    <a href="{{ route('tev.requests.index') }}" class="db-action-btn">
                         <span class="db-action-left">✈ TEV Requests</span><span>→</span>
                     </a>
                     <a href="{{ route('reports.tev-register') }}" class="db-action-btn">
@@ -905,7 +917,7 @@
         <div class="db-card">
             <div class="db-card-head">
                 <h3>✈ Recent TEV Requests</h3>
-                <a href="{{ route('tev.index') }}" class="btn btn-outline btn-sm" style="flex-shrink:0;">View All</a>
+                <a href="{{ route('tev.requests.index') }}" class="btn btn-outline btn-sm" style="flex-shrink:0;">View All</a>
             </div>
             <div class="db-card-body">
                 @if($recentTev->isEmpty())
@@ -929,7 +941,7 @@
                                     <span class="db-badge {{ $tk[1] }}">{{ $tk[0] }}</span>
                                     <span class="db-badge {{ $t[1] }}">{{ $t[0] }}</span>
                                 </div>
-                                <a href="{{ route('tev.show', $tev->id) }}" class="db-view-link">View →</a>
+                                <a href="{{ route('tev.requests.show', $tev->id) }}" class="db-view-link">View →</a>
                             </div>
                         </li>
                         @endforeach
@@ -968,14 +980,14 @@
                 </div>
                 <div class="db-actions-col">
                     <div class="db-action-sep">Travel (TEV)</div>
-                    <a href="{{ route('office-orders.create') }}" class="db-action-btn">
+                    <a href="{{ route('tev.office-orders.create') }}" class="db-action-btn">
                         <span class="db-action-left">📝 New Office Order</span><span>→</span>
                     </a>
-                    <a href="{{ route('tev.create') }}" class="db-action-btn gold-btn">
+                    <a href="{{ route('tev.requests.create') }}" class="db-action-btn gold-btn">
                         <span class="db-action-left">✈ New TEV Request</span><span>→</span>
                     </a>
                     @if($pendingTev > 0)
-                    <a href="{{ route('tev.index') }}?status=cashier_released&track=cash_advance" class="db-action-btn primary">
+                    <a href="{{ route('tev.requests.index') }}?status=cashier_released&track=cash_advance" class="db-action-btn primary">
                         <span class="db-action-left">🗂 File CA Liquidation <span class="db-action-count">{{ $pendingTev }}</span></span><span>→</span>
                     </a>
                     @endif
@@ -1191,7 +1203,7 @@
         <div class="db-card">
             <div class="db-card-head">
                 <h3>✈ TEV for Certification</h3>
-                <a href="{{ route('tev.index') }}?status=submitted" class="btn btn-outline btn-sm" style="flex-shrink:0;">View All</a>
+                <a href="{{ route('tev.requests.index') }}?status=submitted" class="btn btn-outline btn-sm" style="flex-shrink:0;">View All</a>
             </div>
             <div class="db-card-body">
                 @php
@@ -1213,7 +1225,7 @@
                             </div>
                             <div class="db-list-right">
                                 <span class="db-badge {{ $tk[1] }}">{{ $tk[0] }}</span>
-                                <a href="{{ route('tev.show', $tev->id) }}" class="db-view-link">Certify →</a>
+                                <a href="{{ route('tev.requests.show', $tev->id) }}" class="db-view-link">Certify →</a>
                             </div>
                         </li>
                         @endforeach
@@ -1246,7 +1258,7 @@
                 </div>
                 <div class="db-actions-col">
                     <div class="db-action-sep">TEV &amp; Reports</div>
-                    <a href="{{ route('tev.index') }}?status=submitted" class="db-action-btn{{ $pendingTev > 0 ? ' primary' : '' }}">
+                    <a href="{{ route('tev.requests.index') }}?status=submitted" class="db-action-btn{{ $pendingTev > 0 ? ' primary' : '' }}">
                         <span class="db-action-left">✈ Certify TEV
                             @if($pendingTev > 0)<span class="db-action-count">{{ $pendingTev }}</span>@endif
                         </span><span>→</span>
@@ -1302,7 +1314,7 @@
         <div class="db-card">
             <div class="db-card-head">
                 <h3>✈ TEV Awaiting Approval</h3>
-                <a href="{{ route('tev.index') }}?status=accountant_certified" class="btn btn-outline btn-sm" style="flex-shrink:0;">View All</a>
+                <a href="{{ route('tev.requests.index') }}?status=accountant_certified" class="btn btn-outline btn-sm" style="flex-shrink:0;">View All</a>
             </div>
             <div class="db-card-body">
                 @php $rdTevs = \App\Models\TevRequest::with('employee')->where('status','accountant_certified')->orderByDesc('id')->limit(5)->get(); @endphp
@@ -1322,7 +1334,7 @@
                             </div>
                             <div class="db-list-right">
                                 <span class="db-badge {{ $tk[1] }}">{{ $tk[0] }}</span>
-                                <a href="{{ route('tev.show', $tev->id) }}" class="db-view-link">Approve →</a>
+                                <a href="{{ route('tev.requests.show', $tev->id) }}" class="db-view-link">Approve →</a>
                             </div>
                         </li>
                         @endforeach
@@ -1355,7 +1367,7 @@
                 </div>
                 <div class="db-actions-col">
                     <div class="db-action-sep">TEV &amp; Reports</div>
-                    <a href="{{ route('tev.index') }}?status=accountant_certified" class="db-action-btn{{ $pendingTev > 0 ? ' primary' : '' }}">
+                    <a href="{{ route('tev.requests.index') }}?status=accountant_certified" class="db-action-btn{{ $pendingTev > 0 ? ' primary' : '' }}">
                         <span class="db-action-left">✈ Approve TEV
                             @if($pendingTev > 0)<span class="db-action-count">{{ $pendingTev }}</span>@endif
                         </span><span>→</span>
@@ -1384,7 +1396,7 @@
         <div class="db-card">
             <div class="db-card-head">
                 <h3>💵 TEV for Release</h3>
-                <a href="{{ route('tev.index') }}?status=rd_approved" class="btn btn-outline btn-sm" style="flex-shrink:0;">View All</a>
+                <a href="{{ route('tev.requests.index') }}?status=rd_approved" class="btn btn-outline btn-sm" style="flex-shrink:0;">View All</a>
             </div>
             <div class="db-card-body">
                 @php $forRelease = \App\Models\TevRequest::with('employee')->where('status','rd_approved')->orderByDesc('id')->limit(6)->get(); @endphp
@@ -1404,7 +1416,7 @@
                             </div>
                             <div class="db-list-right">
                                 <span class="db-badge {{ $tk[1] }}">{{ $tk[0] }}</span>
-                                <a href="{{ route('tev.show', $tev->id) }}" class="db-view-link">Release →</a>
+                                <a href="{{ route('tev.requests.show', $tev->id) }}" class="db-view-link">Release →</a>
                             </div>
                         </li>
                         @endforeach
@@ -1417,7 +1429,7 @@
         <div class="db-card">
             <div class="db-card-head">
                 <h3>🗂 Liquidations to Approve</h3>
-                <a href="{{ route('tev.index') }}?status=liquidation_filed" class="btn btn-outline btn-sm" style="flex-shrink:0;">View All</a>
+                <a href="{{ route('tev.requests.index') }}?status=liquidation_filed" class="btn btn-outline btn-sm" style="flex-shrink:0;">View All</a>
             </div>
             <div class="db-card-body">
                 @php $liquids = \App\Models\TevRequest::with('employee')->where('status','liquidation_filed')->orderByDesc('id')->limit(6)->get(); @endphp
@@ -1434,7 +1446,7 @@
                             </div>
                             <div class="db-list-right">
                                 <span class="db-badge db-b-pending">Liq. Filed</span>
-                                <a href="{{ route('tev.show', $tev->id) }}" class="db-view-link">Approve →</a>
+                                <a href="{{ route('tev.requests.show', $tev->id) }}" class="db-view-link">Approve →</a>
                             </div>
                         </li>
                         @endforeach
@@ -1449,17 +1461,17 @@
         <div class="db-card">
             <div class="db-card-head"><h3>⚡ Quick Actions</h3></div>
             <div class="db-actions">
-                <a href="{{ route('tev.index') }}?status=rd_approved" class="db-action-btn primary">
+                <a href="{{ route('tev.requests.index') }}?status=rd_approved" class="db-action-btn primary">
                     <span class="db-action-left">💵 TEV for Release
                         @if($pendingTev > 0)<span class="db-action-count">{{ $pendingTev }}</span>@endif
                     </span><span>→</span>
                 </a>
-                <a href="{{ route('tev.index') }}?status=liquidation_filed" class="db-action-btn{{ $pendingLiquidation > 0 ? ' primary' : '' }}">
+                <a href="{{ route('tev.requests.index') }}?status=liquidation_filed" class="db-action-btn{{ $pendingLiquidation > 0 ? ' primary' : '' }}">
                     <span class="db-action-left">🗂 Approve Liquidations
                         @if($pendingLiquidation > 0)<span class="db-action-count">{{ $pendingLiquidation }}</span>@endif
                     </span><span>→</span>
                 </a>
-                <a href="{{ route('tev.index') }}" class="db-action-btn">
+                <a href="{{ route('tev.requests.index') }}" class="db-action-btn">
                     <span class="db-action-left">✈ All TEV Requests</span><span>→</span>
                 </a>
             </div>
@@ -1493,7 +1505,7 @@
         <div class="db-card">
             <div class="db-card-head">
                 <h3>✈ Recent TEV Requests</h3>
-                <a href="{{ route('tev.index') }}" class="btn btn-outline btn-sm" style="flex-shrink:0;">View All</a>
+                <a href="{{ route('tev.requests.index') }}" class="btn btn-outline btn-sm" style="flex-shrink:0;">View All</a>
             </div>
             <div class="db-card-body">
                 @if($recentTev->isEmpty())
@@ -1517,7 +1529,7 @@
                                     <span class="db-badge {{ $tk[1] }}">{{ $tk[0] }}</span>
                                     <span class="db-badge {{ $t[1] }}">{{ $t[0] }}</span>
                                 </div>
-                                <a href="{{ route('tev.show', $tev->id) }}" class="db-view-link">View →</a>
+                                <a href="{{ route('tev.requests.show', $tev->id) }}" class="db-view-link">View →</a>
                             </div>
                         </li>
                         @endforeach
@@ -1546,12 +1558,12 @@
         <div class="db-card">
             <div class="db-card-head"><h3>⚡ Quick Actions</h3></div>
             <div class="db-actions">
-                <a href="{{ route('tev.index') }}?status=submitted" class="db-action-btn primary">
+                <a href="{{ route('tev.requests.index') }}?status=submitted" class="db-action-btn primary">
                     <span class="db-action-left">📥 TEV Submissions
                         @if($pendingTev > 0)<span class="db-action-count">{{ $pendingTev }}</span>@endif
                     </span><span>→</span>
                 </a>
-                <a href="{{ route('tev.index') }}" class="db-action-btn">
+                <a href="{{ route('tev.requests.index') }}" class="db-action-btn">
                     <span class="db-action-left">✈ All TEV Requests</span><span>→</span>
                 </a>
                 <a href="{{ route('reports.index') }}" class="db-action-btn">

@@ -21,19 +21,70 @@ class TevController extends Controller
     public function __construct(private TevComputationService $tevService) {}
 
     // =====================================================================
+    //  DASHBOARD
+    // =====================================================================
+
+    /**
+     * TEV Dashboard - overview of TEV requests and pending actions.
+     * Accessible to all authenticated users (employees can see their own requests).
+     */
+    public function dashboard()
+    {
+        $user = Auth::user();
+        $userId = $user->id;
+
+        // Count of pending TEV requests (submitted status)
+        $pendingRequests = TevRequest::where('status', 'submitted')->count();
+
+        // Count of requests pending my approval based on role
+        $pendingMyApproval = 0;
+        if ($user->hasAnyRole(['accountant'])) {
+            $pendingMyApproval = TevRequest::where('status', 'submitted')->count();
+        } elseif ($user->hasAnyRole(['ard', 'chief_admin_officer'])) {
+            $pendingMyApproval = TevRequest::where('status', 'accountant_certified')->count();
+        } elseif ($user->hasAnyRole(['cashier'])) {
+            $pendingMyApproval = TevRequest::whereIn('status', ['rd_approved', 'liquidation_filed'])->count();
+        }
+
+        // Count of my requests this month (submitted by me)
+        $myRequestsThisMonth = TevRequest::where('submitted_by', $userId)
+            ->whereMonth('created_at', now()->month)
+            ->whereYear('created_at', now()->year)
+            ->count();
+
+        // 5 most recent TEV requests
+        $recentRequests = TevRequest::with(['employee', 'officeOrder'])
+            ->orderByDesc('id')
+            ->limit(5)
+            ->get();
+
+        return view('tev.dashboard', compact(
+            'pendingRequests',
+            'pendingMyApproval',
+            'myRequestsThisMonth',
+            'recentRequests'
+        ));
+    }
+
+    // =====================================================================
     //  INDEX
     // =====================================================================
 
     /**
      * List all TEV requests with optional filtering by track, status, and year.
      *
-     * Accessible to all roles involved in the TEV approval pipeline.
+     * - Officers: Can see all requests
+     * - Employees: Can only see their own requests
      */
     public function index(Request $request)
     {
-        $this->authorizeRole(['hrmo', 'accountant', 'budget_officer', 'ard', 'chief_admin_officer', 'cashier']);
-
+        $user = Auth::user();
         $query = TevRequest::with(['employee', 'officeOrder'])->orderByDesc('id');
+
+        // Employees can only see their own requests
+        if (!$user->hasAnyRole(['hrmo', 'accountant', 'budget_officer', 'ard', 'chief_admin_officer', 'cashier', 'super_admin'])) {
+            $query->where('employee_id', session('hris_employee_id'));
+        }
 
         if ($request->filled('track'))  $query->where('track', $request->track);
         if ($request->filled('status')) $query->where('status', $request->status);
@@ -52,44 +103,54 @@ class TevController extends Controller
     /**
      * Show the form for filing a new TEV request.
      *
-     * Only approved office orders are eligible as the basis for a TEV —
-     * unapproved orders have not yet been authorised for travel.
-     * Per diem rates are grouped by travel type for use in the itinerary
-     * line builder on the form.
+     * - HRMO: Can file TEVs for any employee with approved office orders
+     * - Employees: Can file TEVs for themselves (no office order required)
      */
     public function create()
     {
-        $this->authorizeRole(['hrmo']);
+        $user = Auth::user();
+        $isEmployee = !$user->hasAnyRole(['hrmo', 'accountant', 'budget_officer', 'ard', 'chief_admin_officer', 'cashier', 'super_admin']);
 
-        $approvedOrders = OfficeOrder::with('employee')
-            ->where('status', 'approved')
-            ->orderByDesc('id')
-            ->get();
+        $approvedOrders = null;
+        if (!$isEmployee) {
+            // HRMO can see approved office orders
+            $approvedOrders = OfficeOrder::with('employee')
+                ->where('status', 'approved')
+                ->orderByDesc('id')
+                ->get();
+        }
 
         $perDiemRates = PerDiemRate::all()->groupBy('travel_type');
 
-        return view('tev.create', compact('approvedOrders', 'perDiemRates'));
+        return view('tev.create', compact('approvedOrders', 'perDiemRates', 'isEmployee'));
     }
 
     /**
      * Persist a new TEV request and auto-submit it to the accountant queue.
      *
-     * TEVs are always filed by HRMO on behalf of employees, so there is no
-     * separate draft/submit step — the record enters 'submitted' status
-     * immediately on creation. The itinerary lines and totals are created
-     * within a single transaction to keep the record consistent.
+     * - HRMO: Files TEVs on behalf of employees using office orders
+     * - Employees: File TEVs for themselves directly
      */
     public function store(StoreTevRequest $request)
     {
-        $this->authorizeRole(['hrmo']);
+        $user = Auth::user();
+        $isEmployee = !$user->hasAnyRole(['hrmo', 'accountant', 'budget_officer', 'ard', 'chief_admin_officer', 'cashier', 'super_admin']);
 
         $validated = $request->validated();
 
-        DB::transaction(function () use ($validated, $request) {
+        DB::transaction(function () use ($validated, $request, $user, $isEmployee) {
+            // Determine employee_id
+            $employeeId = $isEmployee
+                ? session('hris_employee_id') // Employee filing for themselves
+                : OfficeOrder::findOrFail($validated['office_order_id'])->employee_id; // HRMO filing for employee
+
+            // For employees, office_order_id is optional (can be null)
+            $officeOrderId = $isEmployee ? null : $validated['office_order_id'];
+
             $tev = TevRequest::create([
                 'tev_no'               => $this->tevService->generateTevNo(),
-                'office_order_id'      => $validated['office_order_id'],
-                'employee_id'          => OfficeOrder::findOrFail($validated['office_order_id'])->employee_id,
+                'office_order_id'      => $officeOrderId,
+                'employee_id'          => $employeeId,
                 'track'                => $validated['track'],
                 'purpose'              => $validated['purpose'],
                 'destination'          => $validated['destination'],
@@ -97,7 +158,7 @@ class TevController extends Controller
                 'travel_date_start'    => $validated['travel_date_start'],
                 'travel_date_end'      => $validated['travel_date_end'],
                 'total_other_expenses' => 0,
-                // Auto-submitted: HRMO files directly to the accountant queue
+                // Auto-submitted: enters 'submitted' status immediately
                 'status'               => 'submitted',
                 'submitted_by'         => Auth::id(),
                 'submitted_at'         => now(),
@@ -128,7 +189,7 @@ class TevController extends Controller
                 'user_id'        => Auth::id(),
                 'step'           => 'submitted',
                 'action'         => 'approved',
-                'remarks'        => 'Auto-submitted on creation by HRMO.',
+                'remarks'        => $isEmployee ? 'Auto-submitted on creation by Employee.' : 'Auto-submitted on creation by HRMO.',
                 'ip_address'     => $request->ip(),
             ]);
 
@@ -158,13 +219,13 @@ class TevController extends Controller
     /**
      * Display a single TEV request with its full approval timeline.
      *
-     * Approval logs are eager-loaded in chronological order so the view can
-     * render the complete history. resolveApproval() determines whether the
-     * current user has an actionable next step to present.
+     * - Officers: Can view any TEV request
+     * - Employees: Can only view their own requests
      */
     public function show(int $id)
     {
-        $this->authorizeRole(['hrmo', 'accountant', 'budget_officer', 'ard', 'chief_admin_officer', 'cashier']);
+        $user = Auth::user();
+        $isEmployee = !$user->hasAnyRole(['hrmo', 'accountant', 'budget_officer', 'ard', 'chief_admin_officer', 'cashier', 'super_admin']);
 
         $tev = TevRequest::with([
             'employee',
@@ -173,6 +234,11 @@ class TevController extends Controller
             'approvalLogs' => fn($q) => $q->with('user')->orderBy('performed_at'),
             'certification.certifier',
         ])->findOrFail($id);
+
+        // Employees can only view their own requests
+        if ($isEmployee && $tev->employee_id !== session('hris_employee_id')) {
+            abort(403, 'You can only view your own TEV requests.');
+        }
 
         [$canApprove, $nextAction] = $this->resolveApproval($tev);
 
@@ -384,7 +450,12 @@ class TevController extends Controller
             return back()->with('error', 'Liquidation can only be filed after the cash advance is released.');
         }
 
-        $isOwner = $tev->employee && $tev->employee->user_id === $user->id;
+        // Check if user is the employee who owns this TEV (for HRIS users, check session)
+        $isOwner = false;
+        if ($tev->employee) {
+            $isOwner = ($tev->employee->user_id === $user->id) ||
+                       ($tev->employee_id === session('hris_employee_id'));
+        }
         $isStaff = $user->hasAnyRole(['hrmo']);
 
         if (!$isOwner && !$isStaff) {

@@ -231,11 +231,11 @@
         <h1>Regular Payroll Batches</h1>
         <p>Semi-monthly payroll for all DOLE RO9 regular employees.</p>
     </div>
-@role('payroll_officer')
+@canCreatePayroll
 <a href="{{ route('payroll.create') }}" class="btn btn-primary">
     + New Payroll Batch
 </a>
-@endrole
+@endcanCreatePayroll
 </div>
 
 {{-- ── Alerts ──────────────────────────────────────────────── --}}
@@ -401,11 +401,11 @@
                                     <a href="{{ route('payroll.show', $batch) }}"
                                        class="btn btn-outline btn-sm"
                                        onclick="event.stopPropagation();">View</a>
-                                    @role('payroll_officer')
+                                    @role('payroll_officer|super_admin')
                                         @if ($batch->status === 'draft')
                                             <form method="POST"
                                                   action="{{ route('payroll.destroy', $batch) }}"
-                                                  onsubmit="event.stopPropagation(); return confirm('Delete this draft batch? This cannot be undone.')">
+                                                  onsubmit="return confirm('Delete this payroll batch? This cannot be undone.')">
                                                 @csrf
                                                 @method('DELETE')
                                                 <button class="btn btn-danger btn-sm"
@@ -459,7 +459,7 @@
                                 <div class="pr-detail-actions">
                                     <a href="{{ route('payroll.show', $batch) }}"
                                        class="btn btn-outline btn-sm">View</a>
-                                    @role('payroll_officer')
+                                    @canCreatePayroll
                                         @if ($batch->status === 'draft')
                                             <form method="POST"
                                                   action="{{ route('payroll.destroy', $batch) }}"
@@ -470,7 +470,7 @@
                                                 <button class="btn btn-danger btn-sm" style="width:100%;">Delete</button>
                                             </form>
                                         @endif
-                                    @endrole
+                                    @endcanCreatePayroll
                                 </div>
                             </td>
                         </tr>
@@ -479,9 +479,9 @@
                         <tr>
                             <td colspan="9" style="text-align:center; padding:40px; color:var(--text-light);">
                                 No payroll batches found.
-                                @role('payroll_officer')
+                                @canCreatePayroll
                                     <a href="{{ route('payroll.create') }}">Create one now →</a>
-                                @endrole
+                                @endcanCreatePayroll
                             </td>
                         </tr>
                     @endforelse

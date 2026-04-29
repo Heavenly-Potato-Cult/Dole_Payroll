@@ -5,7 +5,7 @@
       $currentYear — int
 --}}
 
-@extends('layouts.app')
+@extends('layouts.tev')
 
 @section('title', 'TEV Requests')
 @section('page-title', 'Travel (TEV)')
@@ -232,9 +232,7 @@
         <h1>TEV Requests</h1>
         <p>Travel Expense Vouchers — Cash Advance and Reimbursement.</p>
     </div>
-    @if (auth()->user()->hasAnyRole(['payroll_officer', 'hrmo']))
-        <a href="{{ route('tev.create') }}" class="btn btn-primary">+ New TEV</a>
-    @endif
+    <a href="{{ route('tev.requests.create') }}" class="btn btn-primary">+ New TEV</a>
 </div>
 
 @if (session('success'))
@@ -247,7 +245,7 @@
 {{-- ── Filter bar ── --}}
 <div class="card mb-3">
     <div class="card-body" style="padding:14px 20px;">
-        <form method="GET" action="{{ route('tev.index') }}" class="filter-form">
+        <form method="GET" action="{{ route('tev.office-orders.index') }}" class="filter-form">
 
             <div class="ff-group" style="min-width:180px;">
                 <label for="track">Track</label>
@@ -258,34 +256,9 @@
                 </select>
             </div>
 
-            <div class="ff-group" style="min-width:200px;">
-                <label for="status">Status</label>
-                <select name="status" id="status">
-                    <option value="">All Statuses</option>
-                    <option value="draft"                {{ request('status') === 'draft'                ? 'selected' : '' }}>Draft</option>
-                    <option value="submitted"            {{ request('status') === 'submitted'            ? 'selected' : '' }}>Submitted</option>
-                    <option value="hr_approved"          {{ request('status') === 'hr_approved'          ? 'selected' : '' }}>HR Approved</option>
-                    <option value="accountant_certified" {{ request('status') === 'accountant_certified' ? 'selected' : '' }}>Accountant Certified</option>
-                    <option value="rd_approved"          {{ request('status') === 'rd_approved'          ? 'selected' : '' }}>RD Approved</option>
-                    <option value="cashier_released"     {{ request('status') === 'cashier_released'     ? 'selected' : '' }}>Released</option>
-                    <option value="reimbursed"           {{ request('status') === 'reimbursed'           ? 'selected' : '' }}>Reimbursed</option>
-                    <option value="rejected"             {{ request('status') === 'rejected'             ? 'selected' : '' }}>Rejected</option>
-                </select>
-            </div>
-
-            <div class="ff-group" style="min-width:120px;">
-                <label for="year">Year</label>
-                <select name="year" id="year">
-                    <option value="">All Years</option>
-                    @foreach (range($currentYear, $currentYear - 3) as $y)
-                        <option value="{{ $y }}" {{ request('year') == $y ? 'selected' : '' }}>{{ $y }}</option>
-                    @endforeach
-                </select>
-            </div>
-
             <div class="ff-btns">
                 <button type="submit" class="btn btn-primary btn-sm">Filter</button>
-                <a href="{{ route('tev.index') }}" class="btn btn-outline btn-sm">Reset</a>
+                <a href="{{ route('tev.office-orders.index') }}" class="btn btn-outline btn-sm">Reset</a>
             </div>
 
         </form>
@@ -331,7 +304,7 @@
                             };
                             $statusLabel = ucwords(str_replace('_', ' ', $tev->status));
 
-                            $isOwner  = $emp && $emp->user_id === auth()->id();
+                            $isOwner  = $emp && ($emp->user_id === auth()->id() || $emp->employee_id === session('hris_employee_id'));
                             $canSubmit = $tev->status === 'draft'
                                 && ($isOwner || auth()->user()->hasAnyRole(['payroll_officer', 'hrmo']));
                         @endphp
@@ -383,13 +356,13 @@
 
                             <td class="col-actions">
                                 <div class="d-flex gap-2" style="justify-content:center;">
-                                    <a href="{{ route('tev.show', $tev->id) }}"
+                                    <a href="{{ route('tev.requests.show', $tev->id) }}"
                                        class="btn btn-outline btn-sm"
                                        onclick="event.stopPropagation();">View</a>
 
                                     @if ($canSubmit)
                                         <form method="POST"
-                                              action="{{ route('tev.submit', $tev->id) }}"
+                                              action="{{ route('tev.requests.submit', $tev->id) }}"
                                               onsubmit="event.stopPropagation(); return confirm('Submit this TEV for approval?')">
                                             @csrf
                                             <button type="submit" class="btn btn-sm btn-primary"
@@ -444,12 +417,12 @@
                                     </div>
                                 </div>
                                 <div class="sd-detail-actions">
-                                    <a href="{{ route('tev.show', $tev->id) }}"
+                                    <a href="{{ route('tev.requests.show', $tev->id) }}"
                                        class="btn btn-outline btn-sm">View</a>
 
                                     @if ($canSubmit)
                                         <form method="POST"
-                                              action="{{ route('tev.submit', $tev->id) }}"
+                                              action="{{ route('tev.requests.submit', $tev->id) }}"
                                               style="flex:1;"
                                               onsubmit="return confirm('Submit this TEV for approval?')">
                                             @csrf
@@ -465,9 +438,7 @@
                         <tr>
                             <td colspan="8" style="text-align:center; padding:40px; color:var(--text-light);">
                                 No TEV requests found.
-                                @if (auth()->user()->hasAnyRole(['payroll_officer', 'hrmo']))
-                                    <a href="{{ route('tev.create') }}">Create one now →</a>
-                                @endif
+                                <a href="{{ route('tev.requests.create') }}">Create one now →</a>
                             </td>
                         </tr>
                     @endforelse

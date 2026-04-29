@@ -37,8 +37,11 @@ class StoreTevRequest extends FormRequest
 
     public function rules(): array
     {
+        $isEmployee = !auth()->user()->hasAnyRole(['hrmo', 'accountant', 'budget_officer', 'ard', 'chief_admin_officer', 'cashier', 'super_admin']);
+
         return [
-            'office_order_id'             => ['required', 'integer', 'exists:office_orders,id'],
+            // office_order_id is required for HRMO, optional for employees
+            'office_order_id'             => [$isEmployee ? 'nullable' : 'required', 'integer', 'exists:office_orders,id'],
             'track'                       => ['required', 'in:cash_advance,reimbursement'],
             'purpose'                     => ['required', 'string', 'max:500'],
             'destination'                 => ['required', 'string', 'max:255'],

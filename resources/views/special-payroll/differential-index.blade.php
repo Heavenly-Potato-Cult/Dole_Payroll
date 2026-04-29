@@ -227,7 +227,7 @@
         <h1>Salary Differential</h1>
         <p>Payroll records for promotions, step increments, and salary adjustments.</p>
     </div>
-@if (auth()->user()->hasRole('payroll_officer'))
+@if (auth()->user()->hasRole('payroll_officer|super_admin'))
     <a href="{{ route('special-payroll.differential.create') }}" class="btn btn-primary">
         + New Entry
     </a>
@@ -380,7 +380,7 @@
                                        class="btn btn-outline btn-sm"
                                        onclick="event.stopPropagation();">View</a>
 
-                                    @if ($batch->status === 'draft' && auth()->user()->hasRole('payroll_officer'))
+                                    @if ($batch->status === 'draft' && auth()->user()->hasRole('payroll_officer|super_admin'))
                                         <form method="POST"
                                               action="{{ route('special-payroll.differential.destroy', $batch->id) }}"
                                               onsubmit="event.stopPropagation(); return confirm('Delete this draft record? This cannot be undone.')">
@@ -455,7 +455,7 @@
                                 <div class="sd-detail-actions">
                                     <a href="{{ route('special-payroll.differential.show', $batch->id) }}"
                                        class="btn btn-outline btn-sm">View</a>
-                                    @if ($batch->status === 'draft' && auth()->user()->hasRole('payroll_officer'))
+                                    @if ($batch->status === 'draft' && auth()->user()->hasRole('payroll_officer|super_admin'))
                                         <form method="POST"
                                               action="{{ route('special-payroll.differential.destroy', $batch->id) }}"
                                               style="flex:1;"
@@ -476,7 +476,7 @@
                         <tr>
                             <td colspan="12" style="text-align:center; padding:40px; color:var(--text-light);">
                                 No records found.
-@if (auth()->user()->hasRole('payroll_officer'))
+@if (auth()->user()->hasRole('payroll_officer|super_admin'))
     <a href="{{ route('special-payroll.differential.create') }}">
         Create one now →
     </a>

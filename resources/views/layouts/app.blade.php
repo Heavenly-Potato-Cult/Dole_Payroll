@@ -58,7 +58,6 @@
                 <span class="nav-icon">💰</span> Regular Payroll
             </a>
 
-            @role('payroll_officer|hrmo|accountant|ard|chief_admin_officer|super_admin')
             <div class="nav-section-label" style="padding-left:12px; font-size:0.65rem;">Special Payroll</div>
             <a href="{{ route('special-payroll.newly-hired.index') }}"
                class="nav-item {{ request()->routeIs('special-payroll.newly-hired.*') ? 'active' : '' }}"
@@ -75,8 +74,12 @@
                style="padding-left:28px;">
                 <span class="nav-icon">📑</span> NOSI / NOSA
             </a>
-            @endrole
-
+            @else
+            <div class="nav-section-label">Payroll</div>
+            <a href="{{ route('my-payslip') }}"
+               class="nav-item {{ request()->routeIs('my-payslip') ? 'active' : '' }}">
+                <span class="nav-icon">💰</span> My Payslip
+            </a>
             @endrole
 
             {{-- ── Deductions & Loans CMS ─────────────────────────────── --}}
@@ -88,29 +91,9 @@
             </a>
             @endrole
 
-            {{-- ── Travel (TEV) ───────────────────────────────────────── --}}
-            @role('hrmo|accountant|budget_officer|ard|cashier|chief_admin_officer|super_admin')
-            <div class="nav-section-label">Travel (TEV)</div>
-            <a href="{{ route('office-orders.index') }}"
-               class="nav-item {{ request()->routeIs('office-orders.*') ? 'active' : '' }}">
-                <span class="nav-icon">📝</span> Office Orders
-            </a>
-            <a href="{{ route('tev.index') }}"
-               class="nav-item {{ request()->routeIs('tev.*') ? 'active' : '' }}">
-                <span class="nav-icon">✈</span> TEV Requests
-            </a>
-            @endrole
-
             {{-- ── Reports ─────────────────────────────────────────────── --}}
             @role('payroll_officer|hrmo|accountant|ard|cashier|chief_admin_officer|budget_officer|super_admin')
             <div class="nav-section-label">Reports</div>
-
-            @role('hrmo|accountant|budget_officer|ard|cashier|chief_admin_officer|super_admin')
-            <a href="{{ route('reports.tev-register') }}"
-               class="nav-item {{ request()->routeIs('reports.tev-register*') ? 'active' : '' }}">
-                <span class="nav-icon">📊</span> TEV Register
-            </a>
-            @endrole
 
             @role('payroll_officer|hrmo|accountant|super_admin')
             <a href="{{ route('reports.gsis') }}"
@@ -165,10 +148,17 @@
                     <span>{{ auth()->user()->getRoleNames()->first() ?? 'No Role' }}</span>
                 </div>
             </div>
+            @role('super_admin')
             <form method="POST" action="{{ route('logout') }}">
                 @csrf
                 <button type="submit" class="btn-logout">⏻ Sign Out</button>
             </form>
+            @else
+            <form method="POST" action="{{ route('logout') }}" onsubmit="setTimeout(() => { window.location.href = 'http://localhost:3001'; }, 100);">
+                @csrf
+                <button type="submit" class="btn-logout" style="text-decoration:none;">← Back to HRIS</button>
+            </form>
+            @endrole
         </div>
 
     </aside>

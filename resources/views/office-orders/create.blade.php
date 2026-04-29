@@ -4,7 +4,7 @@
       $employees — collection of active Employee models
 --}}
 
-@extends('layouts.app')
+@extends('layouts.tev')
 
 @section('title', 'New Office Order')
 @section('page-title', 'Travel (TEV)')
@@ -16,7 +16,7 @@
         <h1>New Office Order</h1>
         <p>Issue a travel authority document for an employee.</p>
     </div>
-    <a href="{{ route('office-orders.index') }}" class="btn btn-outline btn-sm">
+    <a href="{{ route('tev.office-orders.index') }}" class="btn btn-outline btn-sm">
         ← Back to List
     </a>
 </div>
@@ -36,7 +36,7 @@
         <h3>📝 Office Order Details</h3>
     </div>
     <div class="card-body">
-        <form method="POST" action="{{ route('office-orders.store') }}">
+        <form method="POST" action="{{ route('tev.office-orders.store') }}">
             @csrf
 
             {{-- OO No. + Employee in 2-col grid --}}
@@ -173,7 +173,7 @@
 
             <div style="display:flex; gap:12px; margin-top:8px;">
                 <button type="submit" class="btn btn-primary">Save Office Order</button>
-                <a href="{{ route('office-orders.index') }}" class="btn btn-outline">Cancel</a>
+                <a href="{{ route('tev.office-orders.index') }}" class="btn btn-outline">Cancel</a>
             </div>
 
         </form>

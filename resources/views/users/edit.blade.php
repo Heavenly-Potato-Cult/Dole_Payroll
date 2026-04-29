@@ -45,6 +45,30 @@
 
 <div style="max-width:520px;">
 
+    {{-- ── Linked Employee Info ─────────────────────────────────────── --}}
+    @if ($user->employee)
+    <div class="card" style="margin-bottom:20px; background:#F8FAFF; border-color:#E3E8FF;">
+        <div class="card-header" style="background:#F0F4FF;">
+            <h3>📋 Linked Employee</h3>
+        </div>
+        <div class="card-body">
+            <div style="display:flex; align-items:center; gap:12px;">
+                <div style="width:40px; height:40px; border-radius:50%; background:#E3E8FF; color:#4A5FC1; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:0.92rem;">
+                    {{ strtoupper(substr($user->employee->first_name, 0, 1)) }}{{ strtoupper(substr($user->employee->last_name, 0, 1)) }}
+                </div>
+                <div>
+                    <div style="font-weight:600; color:#1E293B;">
+                        {{ $user->employee->first_name }} {{ $user->employee->middle_name ? $user->employee->middle_name . '. ' : '' }}{{ $user->employee->last_name }}
+                    </div>
+                    <div style="font-size:0.78rem; color:#64748B;">
+                        {{ $user->employee->employee_no }} • {{ $user->employee->position_title }}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    @endif
+
     {{-- ── Account details form ──────────────────────────────────────────── --}}
     <div class="card" style="margin-bottom:20px;">
         <div class="card-header"><h3>Account Details</h3></div>
@@ -54,10 +78,14 @@
                 @method('PUT')
 
                 <div class="form-group">
-                    <label for="name">Full Name <span style="color:var(--red)">*</span></label>
+                    <label for="name">Full Name</label>
                     <input type="text" id="name" name="name"
                            class="{{ $errors->has('name') ? 'is-invalid' : '' }}"
-                           value="{{ old('name', $user->name) }}" required>
+                           value="{{ old('name', $user->name) }}" readonly
+                           style="background-color: #f8f9fa; cursor: not-allowed;">
+                    <div style="font-size:0.78rem; color:var(--text-light); margin-top:4px;">
+                        Name is automatically synced from the linked employee record
+                    </div>
                     @error('name')<div class="invalid-feedback">{{ $message }}</div>@enderror
                 </div>
 
@@ -111,23 +139,7 @@
                     </div>
                 </div>
 
-                <hr style="border:none;border-top:1px solid var(--border);margin:20px 0 4px;">
-                <p style="font-size:0.82rem;color:var(--text-light);margin-bottom:16px;">
-                    Leave password fields blank to keep the current password.
-                </p>
-
-                <div class="form-group">
-                    <label for="password">New Password</label>
-                    <input type="password" id="password" name="password"
-                           class="{{ $errors->has('password') ? 'is-invalid' : '' }}"
-                           placeholder="Leave blank to keep current">
-                    @error('password')<div class="invalid-feedback">{{ $message }}</div>@enderror
-                </div>
-
-                <div class="form-group" style="margin-bottom:0;">
-                    <label for="password_confirmation">Confirm New Password</label>
-                    <input type="password" id="password_confirmation" name="password_confirmation">
-                </div>
+                                </div>
 
                 <div style="display:flex;gap:10px;margin-top:24px;">
                     <button type="submit" class="btn btn-primary">✓ Save Changes</button>
@@ -164,8 +176,8 @@
 
                 <form method="POST" action="{{ route('users.activate-role', $user) }}"
                       onsubmit="return confirm('{{ $assignment->is_active
-                          ? 'Deactivate ' . addslashes($user->name) . ' from ' . $assignment->role_name . '?'
-                          : 'Set ' . addslashes($user->name) . ' as the active ' . $assignment->role_name . '? Other users currently active in this role will be deactivated.' }}')">
+                          ? 'Deactivate ' . addslashes($user->employee ? $user->employee->first_name . ' ' . ($user->employee->middle_name ? $user->employee->middle_name . '. ' : '') . $user->employee->last_name : $user->name) . ' from ' . $assignment->role_name . '?'
+                          : 'Set ' . addslashes($user->employee ? $user->employee->first_name . ' ' . ($user->employee->middle_name ? $user->employee->middle_name . '. ' : '') . $user->employee->last_name : $user->name) . ' as the active ' . $assignment->role_name . '? Other users currently active in this role will be deactivated.' }}')">
                     @csrf
                     <input type="hidden" name="role_name" value="{{ $assignment->role_name }}">
                     <button type="submit"

@@ -5,7 +5,7 @@
       $employees — collection of active Employee models
 --}}
 
-@extends('layouts.app')
+@extends('layouts.tev')
 
 @section('title', 'Edit Office Order — ' . $order->office_order_no)
 @section('page-title', 'Travel (TEV)')
@@ -17,7 +17,7 @@
         <h1>Edit Office Order</h1>
         <p>{{ $order->office_order_no }} — Draft</p>
     </div>
-    <a href="{{ route('office-orders.show', $order->id) }}" class="btn btn-outline btn-sm">
+    <a href="{{ route('tev.office-orders.show', $order->id) }}" class="btn btn-outline btn-sm">
         ← Cancel
     </a>
 </div>
@@ -37,7 +37,7 @@
         <h3>📝 Office Order Details</h3>
     </div>
     <div class="card-body">
-        <form method="POST" action="{{ route('office-orders.update', $order->id) }}">
+        <form method="POST" action="{{ route('tev.office-orders.update', $order->id) }}">
             @csrf
             @method('PUT')
 
@@ -158,7 +158,7 @@
 
             <div style="display:flex; gap:12px; margin-top:8px;">
                 <button type="submit" class="btn btn-primary">Update Office Order</button>
-                <a href="{{ route('office-orders.show', $order->id) }}" class="btn btn-outline">Cancel</a>
+                <a href="{{ route('tev.office-orders.show', $order->id) }}" class="btn btn-outline">Cancel</a>
             </div>
 
         </form>

@@ -228,7 +228,7 @@
         <h1>NOSI / NOSA</h1>
         <p>Notice of Salary Increase and Notice of Salary Adjustment payroll records.</p>
     </div>
-@if (auth()->user()->hasRole('payroll_officer'))
+@if (auth()->user()->hasRole('payroll_officer|super_admin'))
     <a href="{{ route('special-payroll.nosi-nosa.create') }}" class="btn btn-primary">
         + New Entry
     </a>
@@ -401,7 +401,7 @@
                                        class="btn btn-outline btn-sm"
                                        onclick="event.stopPropagation();">View</a>
 
-                                    @if ($batch->status === 'draft' && auth()->user()->hasRole('payroll_officer'))
+                                    @if ($batch->status === 'draft' && auth()->user()->hasRole('payroll_officer|super_admin'))
                                         <form method="POST"
                                               action="{{ route('special-payroll.nosi-nosa.destroy', $batch->id) }}"
                                               onsubmit="event.stopPropagation(); return confirm('Delete this draft record? This cannot be undone.')">
@@ -482,7 +482,7 @@
                                 <div class="nn-detail-actions">
                                     <a href="{{ route('special-payroll.nosi-nosa.show', $batch->id) }}"
                                        class="btn btn-outline btn-sm">View</a>
-                                    @if ($batch->status === 'draft' && auth()->user()->hasRole('payroll_officer'))
+                                    @if ($batch->status === 'draft' && auth()->user()->hasRole('payroll_officer|super_admin'))
                                         <form method="POST"
                                               action="{{ route('special-payroll.nosi-nosa.destroy', $batch->id) }}"
                                               style="flex:1;"
@@ -503,7 +503,7 @@
                         <tr>
                             <td colspan="13" style="text-align:center; padding:40px; color:var(--text-light);">
                                 No records found.
-@if (auth()->user()->hasRole('payroll_officer'))
+@if (auth()->user()->hasRole('payroll_officer|super_admin'))
     <a href="{{ route('special-payroll.nosi-nosa.create') }}">
         Create one now →
     </a>
