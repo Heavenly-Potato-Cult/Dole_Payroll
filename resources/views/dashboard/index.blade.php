@@ -53,59 +53,89 @@
 .db-stat-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
-    gap: 12px;
+    gap: 8px;
     margin-bottom: 18px;
 }
 @media (min-width: 480px) { .db-stat-grid { grid-template-columns: repeat(2, 1fr); } }
 @media (min-width: 768px) { .db-stat-grid { grid-template-columns: repeat(4, 1fr); } }
 
 .db-stat {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 14px 15px 13px;
-    box-shadow: var(--shadow);
-    border-top: 3px solid var(--navy);
+    background: #fff;
+    border: 0.5px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 1.1rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
     min-width: 0;
-    position: relative;
-    overflow: hidden;
+    display: flex;
+    align-items: stretch;
+    gap: 0;
 }
-.db-stat.gold  { border-top-color: var(--gold); }
-.db-stat.red   { border-top-color: var(--red); }
-.db-stat.green { border-top-color: var(--success); }
-.db-stat.teal  { border-top-color: #00838F; }
 
-.db-stat-icon {
-    font-size: 1.4rem;
-    margin-bottom: 6px;
-    line-height: 1;
-    display: block;
+.db-stat-left {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    min-height: 90px;
+    padding-right: 12px;
 }
-.db-stat-label {
-    font-size: 0.65rem;
-    font-weight: 700;
-    letter-spacing: 0.07em;
-    text-transform: uppercase;
-    color: var(--text-light);
-    margin-bottom: 4px;
+
+.db-stat-divider {
+    width: 0.5px;
+    background: #e2e8f0;
+    flex-shrink: 0;
 }
-.db-stat-value {
-    font-size: clamp(1.55rem, 4vw, 1.9rem);
-    font-weight: 700;
-    color: var(--navy);
-    line-height: 1;
-    margin-bottom: 4px;
+
+.db-stat-right {
     display: flex;
     align-items: center;
-    gap: 6px;
+    justify-content: center;
+    padding-left: 12px;
+    min-width: 70px;
 }
-.db-stat-value.is-alert { color: var(--red); }
-.db-stat-sub {
-    font-size: 0.72rem;
-    color: var(--text-light);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+
+.db-stat-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 4px;
+}
+
+.db-stat-subtitle {
+    font-size: 13px;
+    color: #94a3b8;
+}
+
+.db-stat-tag {
+    display: inline-flex;
+    font-size: 12px;
+    font-weight: 500;
+    padding: 4px 10px;
+    border-radius: 4px;
+    align-self: flex-start;
+}
+
+.db-stat.purple .db-stat-tag {
+    background: #EEEDFE;
+    color: #534AB7;
+}
+
+.db-stat.coral .db-stat-tag {
+    background: #FAECE7;
+    color: #993C1D;
+}
+
+.db-stat.neutral .db-stat-tag {
+    background: #EEEDFE;
+    color: #534AB7;
+}
+
+.db-stat-value {
+    font-size: 56px;
+    font-weight: 600;
+    letter-spacing: -3px;
+    line-height: 1;
+    color: #534AB7;
 }
 
 /* ── Pulsing dot ─────────────────────────────────────────────── */
@@ -514,125 +544,181 @@
 <div class="db-stat-grid">
 
     {{-- Card 1: Active Employees — all roles --}}
-    <div class="db-stat">
-        <span class="db-stat-icon">👥</span>
-        <div class="db-stat-label">Active Employees</div>
-        <div class="db-stat-value">{{ number_format($totalEmployees) }}</div>
-        <div class="db-stat-sub">Plantilla items</div>
+    <div class="db-stat purple">
+        <div class="db-stat-left">
+            <div>
+                <div class="db-stat-title">Active Employees</div>
+                <div class="db-stat-subtitle">Plantilla items</div>
+            </div>
+            <div class="db-stat-tag">HRIS</div>
+        </div>
+        <div class="db-stat-divider"></div>
+        <div class="db-stat-right">
+            <div class="db-stat-value">{{ number_format($totalEmployees) }}</div>
+        </div>
     </div>
 
     {{-- Card 2: Current Cut-off — payroll roles only; TEV info for others --}}
     @role('payroll_officer|hrmo|accountant|ard|chief_admin_officer')
-    <div class="db-stat gold">
-        <span class="db-stat-icon">📅</span>
-        <div class="db-stat-label">Current Cut-off</div>
-        <div class="db-stat-value">{{ $currentCutoff }}</div>
-        <div class="db-stat-sub">{{ $currentMonth }} &mdash; {{ now()->day <= 15 ? '1–15' : '16–'.now()->daysInMonth }}</div>
+    <div class="db-stat neutral">
+        <div class="db-stat-left">
+            <div>
+                <div class="db-stat-title">Current Cut-off</div>
+                <div class="db-stat-subtitle">{{ $currentMonth }} &mdash; {{ now()->day <= 15 ? '1–15' : '16–'.now()->daysInMonth }}</div>
+            </div>
+            <div class="db-stat-tag">Payroll</div>
+        </div>
+        <div class="db-stat-divider"></div>
+        <div class="db-stat-right">
+            <div class="db-stat-value">{{ $currentCutoff }}</div>
+        </div>
     </div>
     @endrole
-    @role('cashier|budget_officer')
-    <div class="db-stat teal">
-        <span class="db-stat-icon">✈</span>
-        <div class="db-stat-label">TEV This Month</div>
-        <div class="db-stat-value">{{ $tevThisMonth }}</div>
-        <div class="db-stat-sub">{{ $currentMonth }}</div>
-    </div>
-    @endrole
-    @role('super_admin')
-    <div class="db-stat teal">
-        <span class="db-stat-icon">✈</span>
-        <div class="db-stat-label">TEV This Month</div>
-        <div class="db-stat-value">{{ $tevThisMonth }}</div>
-        <div class="db-stat-sub">{{ $currentMonth }}</div>
+    @role('cashier|budget_officer|super_admin')
+    <div class="db-stat neutral">
+        <div class="db-stat-left">
+            <div>
+                <div class="db-stat-title">TEV This Month</div>
+                <div class="db-stat-subtitle">{{ $currentMonth }}</div>
+            </div>
+            <div class="db-stat-tag">Travel</div>
+        </div>
+        <div class="db-stat-divider"></div>
+        <div class="db-stat-right">
+            <div class="db-stat-value">{{ $tevThisMonth }}</div>
+        </div>
     </div>
     @endrole
 
     {{-- Card 3: Pending Approvals — tailored sub-label per role --}}
-    <div class="db-stat red">
-        <span class="db-stat-icon">⏳</span>
-        <div class="db-stat-label">Pending Action</div>
-        <div class="db-stat-value {{ $pendingApprovals > 0 ? 'is-alert' : '' }}">
-            {{ $pendingApprovals }}@if($pendingApprovals > 0)<span class="db-dot"></span>@endif
+    <div class="db-stat coral">
+        <div class="db-stat-left">
+            <div>
+                <div class="db-stat-title">Pending Action</div>
+                <div class="db-stat-subtitle">
+                    @if($pendingApprovals > 0)
+                        @if($pendingPayroll > 0){{ $pendingPayroll }} Payroll @endif
+                        @if($pendingTev > 0){{ $pendingTev }} TEV @endif
+                        @if($pendingLiquidation > 0){{ $pendingLiquidation }} Liq. @endif
+                    @else
+                        All clear
+                    @endif
+                </div>
+            </div>
+            <div class="db-stat-tag">Resolve Now</div>
         </div>
-        {{-- Breakdown pills --}}
-        @if($pendingApprovals > 0)
-        <div class="db-breakdown">
-            @if($pendingPayroll > 0)
-                <span class="db-breakdown-pill db-bp-payroll">{{ $pendingPayroll }} Payroll</span>
-            @endif
-            @if($pendingTev > 0)
-                @role('hrmo')
-                <span class="db-breakdown-pill db-bp-liq">{{ $pendingTev }} Liq. Filing</span>
-                @else
-                <span class="db-breakdown-pill db-bp-tev">{{ $pendingTev }} TEV</span>
-                @endrole
-            @endif
-            @if($pendingLiquidation > 0)
-                <span class="db-breakdown-pill db-bp-liq">{{ $pendingLiquidation }} Liq.</span>
-            @endif
+        <div class="db-stat-divider"></div>
+        <div class="db-stat-right">
+            <div class="db-stat-value">{{ $pendingApprovals }}</div>
         </div>
-        @else
-        <div class="db-stat-sub">All clear ✓</div>
-        @endif
     </div>
 
     {{-- Card 4: Role-specific 4th stat --}}
     @role('payroll_officer')
-    <div class="db-stat green">
-        <span class="db-stat-icon">📋</span>
-        <div class="db-stat-label">Special Payroll</div>
-        @php $spPending = \App\Models\SpecialPayrollBatch::whereIn('status',['draft','computed'])->count(); @endphp
-        <div class="db-stat-value {{ $spPending > 0 ? 'is-alert' : '' }}">{{ $spPending }}</div>
-        <div class="db-stat-sub">Draft / computed batches</div>
+    <div class="db-stat neutral">
+        <div class="db-stat-left">
+            <div>
+                @php $spPending = \App\Models\SpecialPayrollBatch::whereIn('status',['draft','computed'])->count(); @endphp
+                <div class="db-stat-title">Special Payroll</div>
+                <div class="db-stat-subtitle">Draft / computed batches</div>
+            </div>
+            <div class="db-stat-tag">Payroll</div>
+        </div>
+        <div class="db-stat-divider"></div>
+        <div class="db-stat-right">
+            <div class="db-stat-value">{{ $spPending }}</div>
+        </div>
     </div>
     @endrole
     @role('hrmo')
-    <div class="db-stat green">
-        <span class="db-stat-icon">✈</span>
-        <div class="db-stat-label">TEV This Month</div>
-        <div class="db-stat-value">{{ $tevThisMonth }}</div>
-        <div class="db-stat-sub">{{ $currentMonth }}</div>
+    <div class="db-stat neutral">
+        <div class="db-stat-left">
+            <div>
+                <div class="db-stat-title">TEV This Month</div>
+                <div class="db-stat-subtitle">{{ $currentMonth }}</div>
+            </div>
+            <div class="db-stat-tag">Travel</div>
+        </div>
+        <div class="db-stat-divider"></div>
+        <div class="db-stat-right">
+            <div class="db-stat-value">{{ $tevThisMonth }}</div>
+        </div>
     </div>
     @endrole
     @role('accountant')
-    <div class="db-stat green">
-        <span class="db-stat-icon">📋</span>
-        <div class="db-stat-label">TEV for Certification</div>
-        <div class="db-stat-value {{ $pendingTev > 0 ? 'is-alert' : '' }}">{{ $pendingTev }}</div>
-        <div class="db-stat-sub">Awaiting accountant cert.</div>
+    <div class="db-stat neutral">
+        <div class="db-stat-left">
+            <div>
+                <div class="db-stat-title">TEV for Certification</div>
+                <div class="db-stat-subtitle">Awaiting accountant cert.</div>
+            </div>
+            <div class="db-stat-tag">Travel</div>
+        </div>
+        <div class="db-stat-divider"></div>
+        <div class="db-stat-right">
+            <div class="db-stat-value">{{ $pendingTev }}</div>
+        </div>
     </div>
     @endrole
     @role('ard|chief_admin_officer')
-    <div class="db-stat green">
-        <span class="db-stat-icon">✅</span>
-        <div class="db-stat-label">TEV for Approval</div>
-        <div class="db-stat-value {{ $pendingTev > 0 ? 'is-alert' : '' }}">{{ $pendingTev }}</div>
-        <div class="db-stat-sub">Acct. certified, needs RD</div>
+    <div class="db-stat neutral">
+        <div class="db-stat-left">
+            <div>
+                <div class="db-stat-title">TEV for Approval</div>
+                <div class="db-stat-subtitle">Acct. certified, needs RD</div>
+            </div>
+            <div class="db-stat-tag">Travel</div>
+        </div>
+        <div class="db-stat-divider"></div>
+        <div class="db-stat-right">
+            <div class="db-stat-value">{{ $pendingTev }}</div>
+        </div>
     </div>
     @endrole
     @role('cashier')
-    <div class="db-stat green">
-        <span class="db-stat-icon">💵</span>
-        <div class="db-stat-label">Liquidations Pending</div>
-        <div class="db-stat-value {{ $pendingLiquidation > 0 ? 'is-alert' : '' }}">{{ $pendingLiquidation }}</div>
-        <div class="db-stat-sub">Awaiting cashier approval</div>
+    <div class="db-stat neutral">
+        <div class="db-stat-left">
+            <div>
+                <div class="db-stat-title">Liquidations Pending</div>
+                <div class="db-stat-subtitle">Awaiting cashier approval</div>
+            </div>
+            <div class="db-stat-tag">Travel</div>
+        </div>
+        <div class="db-stat-divider"></div>
+        <div class="db-stat-right">
+            <div class="db-stat-value">{{ $pendingLiquidation }}</div>
+        </div>
     </div>
     @endrole
     @role('budget_officer')
-    <div class="db-stat green">
-        <span class="db-stat-icon">📥</span>
-        <div class="db-stat-label">TEV Submissions</div>
-        <div class="db-stat-value">{{ $pendingTev }}</div>
-        <div class="db-stat-sub">Submitted, for monitoring</div>
+    <div class="db-stat neutral">
+        <div class="db-stat-left">
+            <div>
+                <div class="db-stat-title">TEV Submissions</div>
+                <div class="db-stat-subtitle">Submitted, for monitoring</div>
+            </div>
+            <div class="db-stat-tag">Travel</div>
+        </div>
+        <div class="db-stat-divider"></div>
+        <div class="db-stat-right">
+            <div class="db-stat-value">{{ $pendingTev }}</div>
+        </div>
     </div>
     @endrole
     @role('super_admin')
-    <div class="db-stat green">
-        <span class="db-stat-icon">👤</span>
-        <div class="db-stat-label">System Users</div>
-        @php $totalUsers = \App\Models\User::count(); @endphp
-        <div class="db-stat-value">{{ $totalUsers }}</div>
-        <div class="db-stat-sub">Registered accounts</div>
+    <div class="db-stat purple">
+        <div class="db-stat-left">
+            <div>
+                @php $totalUsers = \App\Models\User::count(); @endphp
+                <div class="db-stat-title">System Users</div>
+                <div class="db-stat-subtitle">Registered accounts</div>
+            </div>
+            <div class="db-stat-tag">Admin</div>
+        </div>
+        <div class="db-stat-divider"></div>
+        <div class="db-stat-right">
+            <div class="db-stat-value">{{ $totalUsers }}</div>
+        </div>
     </div>
     @endrole
 
