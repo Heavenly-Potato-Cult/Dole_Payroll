@@ -367,9 +367,14 @@ p { margin-bottom: 0.6rem; color: var(--text-mid); }
     display: flex; align-items: center; gap: 10px;
     padding: 9px 18px;
     color: rgba(255,255,255,0.70);
-    font-size: 0.875rem; font-weight: 500;
+    font-size: 0.95rem; font-weight: 500;
     border-left: 3px solid transparent;
     transition: all 0.15s;
+    
+}
+
+.nav-item .nav-icon {
+    margin-top: 0px;
 }
 
 .nav-item:hover {
@@ -386,7 +391,69 @@ p { margin-bottom: 0.6rem; color: var(--text-mid); }
     font-weight: 600;
 }
 
-.nav-icon { width: 18px; text-align: center; font-size: 0.95rem; flex-shrink: 0; }
+.nav-icon { 
+    width: 18px; 
+    height: 18px;
+    text-align: center; 
+    font-size: 0.95rem; 
+    flex-shrink: 0; 
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    align-self: center; 
+    margin-top: 0;
+}
+
+.nav-icon img {
+    width: 16px;
+    height: 16px;
+    object-fit: contain;
+    display: block;
+    pointer-events: none;
+    user-select: none;
+}
+
+/* Alternative approach using CSS background images */
+.nav-icon.svg-icon {
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    pointer-events: none;
+    user-select: none;
+    filter: invert(1);
+}
+
+.nav-icon.svg-icon.user-icon {
+    background-image: url('/assets/img/user.svg');
+}
+
+.nav-icon.svg-icon.division-icon {
+    background-image: url('/assets/img/division.svg');
+}
+
+.nav-icon.svg-icon.payroll-icon {
+    background-image: url('/assets/img/payroll.svg');
+}
+
+.nav-icon.svg-icon.new-hired-icon {
+    background-image: url('/assets/img/new-hired.svg');
+}
+
+.nav-icon.svg-icon.salary-pie-icon {
+    background-image: url('/assets/img/salary-pie.svg');
+}
+
+.nav-icon.svg-icon.document-signed-icon {
+    background-image: url('/assets/img/document-signed.svg');
+}
+
+.nav-item.nav-indented {
+    padding-left: 28px !important;
+}
+
+.nav-item.nav-indented .nav-icon {
+    margin-left: -10px;
+}
 
 .sidebar-footer {
     padding: 14px 18px;
