@@ -23,9 +23,7 @@ class RoleService
      * Roles that can create payroll batches
      */
     const PAYROLL_CREATE_ROLES = [
-        'payroll_officer',
-        'hrmo',
-        'super_admin'
+        'payroll_officer'
     ];
 
     /**

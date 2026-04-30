@@ -18,6 +18,46 @@
 @section('styles')
 <style>
 /* ─────────────────────────────────────────────────────
+   TABS
+───────────────────────────────────────────────────── */
+.pr-tabs {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 16px;
+    border-bottom: 2px solid var(--border);
+}
+.pr-tab-btn {
+    padding: 10px 20px;
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-mid);
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-bottom: -2px;
+}
+.pr-tab-btn:hover {
+    color: var(--text);
+    background: var(--bg, #f8f9fb);
+}
+.pr-tab-btn.active {
+    color: var(--navy, #1e3a5f);
+    border-bottom-color: var(--navy, #1e3a5f);
+}
+.pr-tab-content {
+    display: none !important;
+}
+.pr-tab-content.active,
+div#tab-locked.active,
+div#tab-active.active {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+}
+
+/* ─────────────────────────────────────────────────────
    FILTER FORM — buttons match input/select height
 ───────────────────────────────────────────────────── */
 .filter-form {
@@ -226,6 +266,11 @@
 
 @section('content')
 
+@php
+    $activeBatches = $batches->filter(fn($b) => $b->status !== 'locked');
+    // $lockedBatches is now passed from controller separately
+@endphp
+
 <div class="page-header">
     <div class="page-header-left">
         <h1>Regular Payroll Batches</h1>
@@ -302,26 +347,217 @@
     </div>
 </div>
 
-{{-- ── Table ──────────────────────────────────────────────── --}}
-<div class="card">
-    <div class="card-body" style="padding:0;">
-        <div class="table-wrap">
-            <table class="pr-table">
-                <thead>
-                    <tr>
-                        <th>Period</th>
-                        <th>Cut-off</th>
-                        <th>Status</th>
-                        <th class="text-right">Employees</th>
-                        <th class="text-right">Total Gross</th>
-                        <th class="text-right">Total Deductions</th>
-                        <th class="text-right">Total Net Pay</th>
-                        <th>Created By</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @forelse ($batches as $batch)
+{{-- ── Tab Navigation ──────────────────────────────────────────── --}}
+<div class="pr-tabs">
+    <button class="pr-tab-btn active" data-tab="active" onclick="switchTab('active')">
+        Active Batches ({{ $activeBatches->count() }})
+    </button>
+    <button class="pr-tab-btn" data-tab="locked" onclick="switchTab('locked')">
+        Locked Batches ({{ $lockedBatches->count() }})
+    </button>
+</div>
+
+{{-- ── Active Batches Table ─────────────────────────────────────── --}}
+<div class="pr-tab-content active" id="tab-active">
+    <div class="card">
+        <div class="card-body" style="padding:0;">
+            <div class="table-wrap">
+                <table class="pr-table">
+                    <thead>
+                        <tr>
+                            <th>Period</th>
+                            <th>Cut-off</th>
+                            <th>Status</th>
+                            <th class="text-right">Employees</th>
+                            <th class="text-right">Total Gross</th>
+                            <th class="text-right">Total Deductions</th>
+                            <th class="text-right">Total Net Pay</th>
+                            <th>Created By</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse ($activeBatches as $batch)
+                        @php
+                            $months = [
+                                '', 'January', 'February', 'March', 'April', 'May', 'June',
+                                'July', 'August', 'September', 'October', 'November', 'December',
+                            ];
+                            $periodLabel = ($months[$batch->period_month] ?? '?')
+                                . ' ' . ($batch->cutoff === '1st' ? '1–15' : '16–30/31')
+                                . ', ' . $batch->period_year;
+
+                            $entryCount = $batch->entries_count ?? 0;
+                            $totalGross = $batch->entries_sum_gross_income ?? 0;
+                            $totalDeds  = $batch->entries_sum_total_deductions ?? 0;
+                            $totalNet   = $batch->entries_sum_net_amount ?? 0;
+
+                            $statusClass = match ($batch->status) {
+                                'draft'              => 'badge-draft',
+                                'computed'           => 'badge-computed',
+                                'pending_accountant',
+                                'pending_rd'         => 'badge-pending',
+                                'released'           => 'badge-released',
+                                'locked'             => 'badge-locked',
+                                default              => 'badge-draft',
+                            };
+
+                            $statusLabels = [
+                                'draft'               => 'Draft',
+                                'computed'            => 'Computed',
+                                'pending_accountant'  => 'Pending Accountant',
+                                'pending_rd'          => 'Pending RD / ARD',
+                                'released'            => 'Released',
+                                'locked'              => 'Locked',
+                            ];
+                            $statusLabel = $statusLabels[$batch->status] ?? ucfirst(str_replace('_', ' ', $batch->status));
+                        @endphp
+
+                        {{-- ── Main visible row ── --}}
+                        <tr class="pr-main-row" data-id="{{ $batch->id }}" onclick="togglePrRow(this)">
+                            <td class="col-period">
+                                <span class="pr-period-label">{{ $periodLabel }}</span>
+                                <span class="pr-period-sub">{{ $batch->cutoff }} cut-off</span>
+                            </td>
+                            <td class="col-cutoff">
+                                <span class="badge {{ $batch->cutoff === '1st' ? 'badge-computed' : 'badge-released' }}">
+                                    {{ $batch->cutoff }} Cut-off
+                                </span>
+                            </td>
+                            <td class="col-status">
+                                <span class="badge {{ $statusClass }}">{{ $statusLabel }}</span>
+                            </td>
+                            <td class="col-employees text-right">{{ $entryCount }}</td>
+                            <td class="col-gross text-right">
+                                {{ $entryCount > 0 ? '₱' . number_format($totalGross, 2) : '—' }}
+                            </td>
+                            <td class="col-deductions text-right">
+                                {{ $entryCount > 0 ? '₱' . number_format($totalDeds, 2) : '—' }}
+                            </td>
+                            <td class="col-netpay text-right fw-bold">
+                                {{ $entryCount > 0 ? '₱' . number_format($totalNet, 2) : '—' }}
+                            </td>
+                            <td class="col-creator text-muted" style="font-size:0.82rem;">
+                                {{ $batch->creator->name ?? '—' }}<br>
+                                <span style="font-size:0.75rem;">
+                                    {{ $batch->created_at->format('M d, Y') }}
+                                </span>
+                            </td>
+                            <td class="col-actions">
+                                <div class="d-flex gap-2 flex-wrap">
+                                    <a href="{{ route('payroll.show', $batch) }}"
+                                       class="btn btn-outline btn-sm"
+                                       onclick="event.stopPropagation();">View</a>
+                                    @role('payroll_officer|super_admin')
+                                        @if ($batch->status === 'draft')
+                                            <form method="POST"
+                                                  action="{{ route('payroll.destroy', $batch) }}"
+                                                  onsubmit="return confirm('Delete this payroll batch? This cannot be undone.')">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button class="btn btn-danger btn-sm"
+                                                        onclick="event.stopPropagation();">Delete</button>
+                                            </form>
+                                        @endif
+                                    @endrole
+                                </div>
+                                <span class="pr-expand-btn" aria-label="Expand">▼</span>
+                            </td>
+                        </tr>
+
+                        {{-- ── Expandable detail row (mobile only) ── --}}
+                        <tr class="pr-detail-row" id="pr-detail-{{ $batch->id }}">
+                            <td colspan="9">
+                                <div class="pr-detail-grid">
+                                    <div class="pr-detail-item">
+                                        <label>Cut-off</label>
+                                        <span>
+                                            <span class="badge {{ $batch->cutoff === '1st' ? 'badge-computed' : 'badge-released' }}">
+                                                {{ $batch->cutoff }} Cut-off
+                                            </span>
+                                        </span>
+                                    </div>
+                                    <div class="pr-detail-item">
+                                        <label>Employees</label>
+                                        <span>{{ $entryCount }}</span>
+                                    </div>
+                                    <div class="pr-detail-item">
+                                        <label>Total Gross</label>
+                                        <span class="mono">{{ $entryCount > 0 ? '₱' . number_format($totalGross, 2) : '—' }}</span>
+                                    </div>
+                                    <div class="pr-detail-item">
+                                        <label>Total Deductions</label>
+                                        <span class="mono">{{ $entryCount > 0 ? '₱' . number_format($totalDeds, 2) : '—' }}</span>
+                                    </div>
+                                    <div class="pr-detail-item">
+                                        <label>Total Net Pay</label>
+                                        <span class="mono" style="font-weight:700;">{{ $entryCount > 0 ? '₱' . number_format($totalNet, 2) : '—' }}</span>
+                                    </div>
+                                    <div class="pr-detail-item">
+                                        <label>Created By</label>
+                                        <span>{{ $batch->creator->name ?? '—' }}<br>
+                                            <small style="color:var(--text-light);">{{ $batch->created_at->format('M d, Y') }}</small>
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="pr-detail-actions">
+                                    <a href="{{ route('payroll.show', $batch) }}"
+                                       class="btn btn-outline btn-sm">View</a>
+                                    @canCreatePayroll
+                                        @if ($batch->status === 'draft')
+                                            <form method="POST"
+                                                  action="{{ route('payroll.destroy', $batch) }}"
+                                                  style="flex:1;"
+                                                  onsubmit="return confirm('Delete this draft batch? This cannot be undone.')">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button class="btn btn-danger btn-sm" style="width:100%;">Delete</button>
+                                            </form>
+                                        @endif
+                                    @endcanCreatePayroll
+                                </div>
+                            </td>
+                        </tr>
+
+                    @empty
+                        <tr>
+                            <td colspan="9" style="text-align:center; padding:40px; color:var(--text-light);">
+                                No active payroll batches found.
+                                @canCreatePayroll
+                                    <a href="{{ route('payroll.create') }}">Create one now →</a>
+                                @endcanCreatePayroll
+                            </td>
+                        </tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+</div>
+
+{{-- ── Locked Batches Table ─────────────────────────────────────── --}}
+<!-- DEBUG: tab-locked starts here -->
+<div class="pr-tab-content" id="tab-locked">
+    <div class="card">
+        <div class="card-body" style="padding:0;">
+            <div class="table-wrap">
+                <table class="pr-table">
+                    <thead>
+                        <tr>
+                            <th>Period</th>
+                            <th>Cut-off</th>
+                            <th>Status</th>
+                            <th class="text-right">Employees</th>
+                            <th class="text-right">Total Gross</th>
+                            <th class="text-right">Total Deductions</th>
+                            <th class="text-right">Total Net Pay</th>
+                            <th>Created By</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse ($lockedBatches as $batch)
                         @php
                             $months = [
                                 '', 'January', 'February', 'March', 'April', 'May', 'June',
@@ -401,18 +637,6 @@
                                     <a href="{{ route('payroll.show', $batch) }}"
                                        class="btn btn-outline btn-sm"
                                        onclick="event.stopPropagation();">View</a>
-                                    @role('payroll_officer|super_admin')
-                                        @if ($batch->status === 'draft')
-                                            <form method="POST"
-                                                  action="{{ route('payroll.destroy', $batch) }}"
-                                                  onsubmit="return confirm('Delete this payroll batch? This cannot be undone.')">
-                                                @csrf
-                                                @method('DELETE')
-                                                <button class="btn btn-danger btn-sm"
-                                                        onclick="event.stopPropagation();">Delete</button>
-                                            </form>
-                                        @endif
-                                    @endrole
                                 </div>
 
                                 {{-- Mobile expand chevron --}}
@@ -459,18 +683,6 @@
                                 <div class="pr-detail-actions">
                                     <a href="{{ route('payroll.show', $batch) }}"
                                        class="btn btn-outline btn-sm">View</a>
-                                    @canCreatePayroll
-                                        @if ($batch->status === 'draft')
-                                            <form method="POST"
-                                                  action="{{ route('payroll.destroy', $batch) }}"
-                                                  style="flex:1;"
-                                                  onsubmit="return confirm('Delete this draft batch? This cannot be undone.')">
-                                                @csrf
-                                                @method('DELETE')
-                                                <button class="btn btn-danger btn-sm" style="width:100%;">Delete</button>
-                                            </form>
-                                        @endif
-                                    @endcanCreatePayroll
                                 </div>
                             </td>
                         </tr>
@@ -478,10 +690,7 @@
                     @empty
                         <tr>
                             <td colspan="9" style="text-align:center; padding:40px; color:var(--text-light);">
-                                No payroll batches found.
-                                @canCreatePayroll
-                                    <a href="{{ route('payroll.create') }}">Create one now →</a>
-                                @endcanCreatePayroll
+                                No locked payroll batches found.
                             </td>
                         </tr>
                     @endforelse
@@ -497,6 +706,22 @@
 
 @section('scripts')
 <script>
+function switchTab(tabName) {
+    // Update tab buttons
+    document.querySelectorAll('.pr-tab-btn').forEach(btn => {
+        btn.classList.remove('active');
+        if (btn.dataset.tab === tabName) {
+            btn.classList.add('active');
+        }
+    });
+
+    // Update tab content
+    document.querySelectorAll('.pr-tab-content').forEach(content => {
+        content.classList.remove('active');
+    });
+    document.getElementById('tab-' + tabName).classList.add('active');
+}
+
 function togglePrRow(mainRow) {
     if (window.innerWidth > 768) return;
 

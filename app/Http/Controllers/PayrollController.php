@@ -48,7 +48,24 @@ class PayrollController extends Controller
 
         $batches = $query->paginate(15)->withQueryString();
 
-        return view('payroll.index', compact('batches'));
+        // Fetch locked batches separately (ignoring status filter for the locked tab)
+        $lockedQuery = PayrollBatch::with('creator')
+            ->withCount('entries')
+            ->withSum('entries', 'gross_income')
+            ->withSum('entries', 'total_deductions')
+            ->withSum('entries', 'net_amount')
+            ->where('status', 'locked')
+            ->orderByDesc('period_year')
+            ->orderByDesc('period_month')
+            ->orderByDesc('id');
+
+        // Apply year/month filters to locked batches as well
+        if ($request->filled('year'))  $lockedQuery->where('period_year',  $request->year);
+        if ($request->filled('month')) $lockedQuery->where('period_month', $request->month);
+
+        $lockedBatches = $lockedQuery->get();
+
+        return view('payroll.index', compact('batches', 'lockedBatches'));
     }
 
     public function myPayslip(Request $request)
