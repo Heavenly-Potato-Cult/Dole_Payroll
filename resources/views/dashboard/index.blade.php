@@ -424,6 +424,150 @@
 }
 .db-sysinfo-val { color: var(--text); min-width: 0; word-break: break-word; }
 
+/* ── Queue Grid Layout ───────────────────────────────────────── */
+.db-queue-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    margin-bottom: 16px;
+}
+
+@media (max-width: 767px) {
+    .db-queue-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* ── Queue List ───────────────────────────────────────────────── */
+.db-queue-section {
+    background: #fff;
+    border: 0.5px solid #e2e8f0;
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.db-queue-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    border-bottom: 0.5px solid #e2e8f0;
+}
+
+.db-queue-label {
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--text);
+}
+
+.db-queue-viewall {
+    font-size: 12px;
+    color: #534AB7;
+    text-decoration: none;
+}
+
+.db-queue-viewall:hover {
+    text-decoration: underline;
+}
+
+.db-queue-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    border-bottom: 0.5px solid #e2e8f0;
+    cursor: pointer;
+    text-decoration: none;
+    transition: background 0.12s;
+}
+
+.db-queue-row:hover,
+.db-queue-row:hover .db-queue-label-text,
+.db-queue-row:hover .db-queue-subtitle,
+.db-queue-row:hover .db-queue-number,
+.db-queue-row:hover .db-queue-chevron {
+    text-decoration: none;
+}
+
+.db-queue-row:last-child {
+    border-bottom: none;
+}
+
+.db-queue-row:hover {
+    background: #f8fafc;
+}
+
+.db-queue-left {
+    display: flex;
+    flex-direction: column;
+}
+
+.db-queue-label-text {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text);
+}
+
+.db-queue-subtitle {
+    font-size: 11px;
+    color: #94a3b8;
+}
+
+.db-queue-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.db-queue-number {
+    font-size: 20px;
+    font-weight: 500;
+    letter-spacing: -1px;
+    color: var(--text);
+}
+
+.db-queue-chevron {
+    font-size: 1.2rem;
+    color: #cbd5e1;
+}
+
+.db-queue-badge {
+    font-size: 10px;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+/* ── Urgent row styling (Pending RD) ─────────────────────────── */
+.db-queue-row.urgent {
+    background: #FFFAF9;
+}
+
+.db-queue-row.urgent:hover {
+    background: #FFF5F2;
+}
+
+.db-queue-row.urgent .db-queue-label-text {
+    color: #D85A30;
+}
+
+.db-queue-row.urgent .db-queue-number {
+    color: #D85A30;
+}
+
+.db-queue-row.urgent .db-queue-chevron {
+    color: #D85A30;
+}
+
+.db-queue-row.urgent .db-queue-badge {
+    background: #FAECE7;
+    color: #993C1D;
+}
+
 /* ── TEV Summary mini-table ─────────────────────────────────── */
 .db-mini-table { width: 100%; border-collapse: collapse; }
 .db-mini-table td {
@@ -748,64 +892,116 @@
         $saTevLiqFiled     = \App\Models\TevRequest::where('status','liquidation_filed')->count();
     @endphp
 
-    {{-- ── Payroll Queue Strip ──────────────────────────────────── --}}
-    @role('payroll_officer|hrmo|accountant|ard|cashier|chief_admin_officer|super_admin')
-    <div class="sa-pipeline-card">
-        <div class="sa-pipeline-label">💰 Payroll Queue</div>
-        <div class="sa-pipeline-grid">
-            <a href="{{ route('payroll.index') }}?status=draft" class="sa-pitem">
-                <span class="sa-pitem-val {{ $saPayrollDraft > 0 ? 'is-alert' : '' }}">{{ $saPayrollDraft }}</span>
-                <span class="sa-pitem-key">Draft / Computed</span>
-            </a>
-            <span class="sa-pipe-arrow">›</span>
-            <a href="{{ route('payroll.index') }}?status=pending_accountant" class="sa-pitem">
-                <span class="sa-pitem-val {{ $saPayrollAcct > 0 ? 'is-alert' : '' }}">{{ $saPayrollAcct }}</span>
-                <span class="sa-pitem-key">Pending Acct.</span>
-            </a>
-            <span class="sa-pipe-arrow">›</span>
-            <a href="{{ route('payroll.index') }}?status=pending_rd" class="sa-pitem">
-                <span class="sa-pitem-val {{ $saPayrollRd > 0 ? 'is-alert' : '' }}">{{ $saPayrollRd }}</span>
-                <span class="sa-pitem-key">Pending RD</span>
-            </a>
-        </div>
-    </div>
-    @else
-    <div class="sa-pipeline-card">
-        <div class="sa-pipeline-label">💰 Payroll Status</div>
-        <div class="sa-pipeline-grid">
-            <a href="{{ route('my-payslip') }}" class="sa-pitem">
-                <span class="sa-pitem-val">📄</span>
-                <span class="sa-pitem-key">View My Payslip</span>
-            </a>
-        </div>
-    </div>
-    @endrole
+    {{-- ── Queue Grid: Payroll & TEV ─────────────────────────────── --}}
+    <div class="db-queue-grid">
 
-    {{-- ── TEV Queue Strip ──────────────────────────────────────── --}}
-    <div class="sa-pipeline-card">
-        <div class="sa-pipeline-label">✈ TEV Queue</div>
-        <div class="sa-pipeline-grid sa-pipeline-grid--tev">
-            <a href="{{ route('tev.requests.index') }}?status=submitted" class="sa-pitem">
-                <span class="sa-pitem-val {{ $saTevSubmitted > 0 ? 'is-alert' : '' }}">{{ $saTevSubmitted }}</span>
-                <span class="sa-pitem-key">Submitted</span>
+        {{-- Payroll Queue Section --}}
+        @role('payroll_officer|hrmo|accountant|ard|cashier|chief_admin_officer|super_admin')
+        <div class="db-queue-section">
+            <div class="db-queue-header">
+                <span class="db-queue-label">Payroll Queue</span>
+                <a href="{{ route('payroll.index') }}" class="db-queue-viewall">View all →</a>
+            </div>
+            <a href="{{ route('payroll.index') }}?status=draft" class="db-queue-row">
+                <div class="db-queue-left">
+                    <div class="db-queue-label-text">Draft / Computed</div>
+                    <div class="db-queue-subtitle">Awaiting review</div>
+                </div>
+                <div class="db-queue-right">
+                    <div class="db-queue-number">{{ $saPayrollDraft }}</div>
+                    <span class="db-queue-chevron">›</span>
+                </div>
             </a>
-            <span class="sa-pipe-arrow">›</span>
-            <a href="{{ route('tev.requests.index') }}?status=accountant_certified" class="sa-pitem">
-                <span class="sa-pitem-val {{ $saTevCertified > 0 ? 'is-alert' : '' }}">{{ $saTevCertified }}</span>
-                <span class="sa-pitem-key">Acct. Certified</span>
+            <a href="{{ route('payroll.index') }}?status=pending_accountant" class="db-queue-row">
+                <div class="db-queue-left">
+                    <div class="db-queue-label-text">Pending Acct.</div>
+                    <div class="db-queue-subtitle">Accountant review</div>
+                </div>
+                <div class="db-queue-right">
+                    <div class="db-queue-number">{{ $saPayrollAcct }}</div>
+                    <span class="db-queue-chevron">›</span>
+                </div>
             </a>
-            <span class="sa-pipe-arrow">›</span>
-            <a href="{{ route('tev.requests.index') }}?status=rd_approved" class="sa-pitem">
-                <span class="sa-pitem-val {{ $saTevRdApproved > 0 ? 'is-alert' : '' }}">{{ $saTevRdApproved }}</span>
-                <span class="sa-pitem-key">RD Approved</span>
-            </a>
-            <span class="sa-pipe-arrow">›</span>
-            <a href="{{ route('tev.requests.index') }}?status=liquidation_filed" class="sa-pitem">
-                <span class="sa-pitem-val {{ $saTevLiqFiled > 0 ? 'is-alert' : '' }}">{{ $saTevLiqFiled }}</span>
-                <span class="sa-pitem-key">Liq. Filed</span>
+            <a href="{{ route('payroll.index') }}?status=pending_rd" class="db-queue-row {{ $saPayrollRd > 0 ? 'urgent' : '' }}">
+                <div class="db-queue-left">
+                    <div class="db-queue-label-text">Pending RD</div>
+                    <div class="db-queue-subtitle">Regional Director approval</div>
+                </div>
+                <div class="db-queue-right">
+                    @if($saPayrollRd > 0)
+                    <span class="db-queue-badge">Action required</span>
+                    @endif
+                    <div class="db-queue-number">{{ $saPayrollRd }}</div>
+                    <span class="db-queue-chevron">›</span>
+                </div>
             </a>
         </div>
-    </div>
+        @else
+        <div class="db-queue-section">
+            <div class="db-queue-header">
+                <span class="db-queue-label">Payroll Status</span>
+            </div>
+            <a href="{{ route('my-payslip') }}" class="db-queue-row">
+                <div class="db-queue-left">
+                    <div class="db-queue-label-text">View My Payslip</div>
+                    <div class="db-queue-subtitle">Personal payroll records</div>
+                </div>
+                <div class="db-queue-right">
+                    <span class="db-queue-chevron">›</span>
+                </div>
+            </a>
+        </div>
+        @endrole
+
+        {{-- TEV Queue Section --}}
+        <div class="db-queue-section">
+            <div class="db-queue-header">
+                <span class="db-queue-label">TEV Queue</span>
+                <a href="{{ route('tev.requests.index') }}" class="db-queue-viewall">View all →</a>
+            </div>
+            <a href="{{ route('tev.requests.index') }}?status=submitted" class="db-queue-row">
+                <div class="db-queue-left">
+                    <div class="db-queue-label-text">Submitted</div>
+                    <div class="db-queue-subtitle">Awaiting HRMO review</div>
+                </div>
+                <div class="db-queue-right">
+                    <div class="db-queue-number">{{ $saTevSubmitted }}</div>
+                    <span class="db-queue-chevron">›</span>
+                </div>
+            </a>
+            <a href="{{ route('tev.requests.index') }}?status=accountant_certified" class="db-queue-row">
+                <div class="db-queue-left">
+                    <div class="db-queue-label-text">Acct. Certified</div>
+                    <div class="db-queue-subtitle">Accountant certified</div>
+                </div>
+                <div class="db-queue-right">
+                    <div class="db-queue-number">{{ $saTevCertified }}</div>
+                    <span class="db-queue-chevron">›</span>
+                </div>
+            </a>
+            <a href="{{ route('tev.requests.index') }}?status=rd_approved" class="db-queue-row">
+                <div class="db-queue-left">
+                    <div class="db-queue-label-text">RD Approved</div>
+                    <div class="db-queue-subtitle">Regional Director approved</div>
+                </div>
+                <div class="db-queue-right">
+                    <div class="db-queue-number">{{ $saTevRdApproved }}</div>
+                    <span class="db-queue-chevron">›</span>
+                </div>
+            </a>
+            <a href="{{ route('tev.requests.index') }}?status=liquidation_filed" class="db-queue-row">
+                <div class="db-queue-left">
+                    <div class="db-queue-label-text">Liq. Filed</div>
+                    <div class="db-queue-subtitle">Liquidation filed</div>
+                </div>
+                <div class="db-queue-right">
+                    <div class="db-queue-number">{{ $saTevLiqFiled }}</div>
+                    <span class="db-queue-chevron">›</span>
+                </div>
+            </a>
+        </div>
+
+    </div>{{-- /.db-queue-grid --}}
 
     {{-- Row 1: Recent Payroll | Recent TEV --}}
     <div class="db-row">
