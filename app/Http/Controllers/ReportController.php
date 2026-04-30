@@ -180,13 +180,127 @@ class ReportController extends Controller
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    //  Reports Index
-    //  GET /reports
+    //  Reports Index - Unified Tabbed Interface
+    //  GET /reports?tab=gsis|hdmf|phic|caress|mass|provident|lbp|btr|sss
     // ─────────────────────────────────────────────────────────────────────────
-    public function index()
+    public function index(Request $request)
     {
         $this->authorizeRole(['payroll_officer', 'hrmo', 'accountant', 'ard', 'cashier']);
-        return view('reports.index');
+
+        $tab = $request->get('tab', 'gsis');
+        $year = (int) $request->get('year', now()->year);
+        $month = (int) $request->get('month', now()->month);
+        $cutoff = $request->get('cutoff', 'both');
+
+        $data = [
+            'activeTab' => $tab,
+            'year' => $year,
+            'month' => $month,
+            'cutoff' => $cutoff,
+            'currentYear' => now()->year,
+            'months' => $this->monthNames(),
+        ];
+
+        // Load data based on active tab
+        switch ($tab) {
+            case 'gsis':
+                $summaryExport = new GsisSummaryExport($year, $month, $cutoff);
+                $totals = $summaryExport->getTotals();
+                $employeeCount = $summaryExport->getEmployeeCount();
+                $grandTotal = array_sum($totals);
+                $labelMap = [
+                    'GSIS_LIFE_RETIREMENT' => 'Life/Retirement Premium Personal Share',
+                    'GSIS_EMERGENCY' => 'Emergency Loan',
+                    'GSIS_EDUC' => 'Educational Assistance Loan',
+                    'GSIS_MPL_LITE' => 'Multi-Purpose Loan Lite (MPL Lite)',
+                    'GSIS_CONSO' => 'Consolidated Loan',
+                    'GSIS_HELP' => 'Home Emergency Loan',
+                    'GSIS_GFAL' => 'GSIS Financial Assistance Program (GFAL)',
+                    'GSIS_MPL' => 'Multi-Purpose Loan (MPL)',
+                    'GSIS_CPL' => 'GSIS Computer Loan (CPL)',
+                    'GSIS_POLICY' => 'Policy Loan - optional',
+                    'GSIS_REAL_ESTATE' => 'Real Estate Loan',
+                ];
+                $data = array_merge($data, compact('totals', 'labelMap', 'employeeCount', 'grandTotal'));
+                break;
+
+            case 'hdmf':
+                $p1 = new HdmfP1Export($year, $month, $cutoff);
+                $p2 = new HdmfP2Export($year, $month, $cutoff);
+                $mpl = new HdmfMplExport($year, $month, $cutoff);
+                $cal = new HdmfCalExport($year, $month, $cutoff);
+                $housing = new HdmfHousingExport($year, $month, $cutoff);
+
+                $sheets = [
+                    ['label' => 'Pag-IBIG I (P1)', 'program' => 'F1', 'count' => $p1->getCount(), 'total' => $p1->getTotal()],
+                    ['label' => 'Modified Pag-IBIG II (P2)', 'program' => 'M2', 'count' => $p2->getCount(), 'total' => $p2->getTotal()],
+                    ['label' => 'Multi-Purpose Loan (MPL)', 'program' => 'MPL', 'count' => $mpl->getCount(), 'total' => $mpl->getTotal()],
+                    ['label' => 'Calamity Loan (CAL)', 'program' => 'CAL', 'count' => $cal->getCount(), 'total' => $cal->getTotal()],
+                    ['label' => 'Housing Loan (HL)', 'program' => 'HL', 'count' => $housing->getCount(), 'total' => $housing->getTotal()],
+                ];
+
+                $grandTotal = array_sum(array_column($sheets, 'total'));
+                $employeeCount = $p1->getCount();
+                $data = array_merge($data, compact('sheets', 'grandTotal', 'employeeCount'));
+                break;
+
+            case 'phic':
+            case 'sss':
+                // These are CSV-only exports, no preview data needed
+                $data['employeeCount'] = 0;
+                $data['grandTotal'] = 0;
+                break;
+
+            case 'caress_union':
+            case 'caress_mortuary':
+            case 'mass':
+            case 'provident_fund':
+            case 'lbp':
+            case 'btr':
+                // Load preview data for these tabs
+                $batches = \App\Models\PayrollBatch::query()
+                    ->whereYear('period_start', $year)
+                    ->whereMonth('period_start', $month)
+                    ->when($cutoff === '1st', fn($q) => $q->whereDay('period_start', '<=', 15))
+                    ->when($cutoff === '2nd', fn($q) => $q->whereDay('period_start', '>', 15))
+                    ->pluck('id');
+
+                $codeMap = [
+                    'caress_union' => 'CARESS_UNION',
+                    'caress_mortuary' => 'CARESS_MORTUARY',
+                    'mass' => 'MASS',
+                    'provident_fund' => 'PROVIDENT_FUND',
+                    'lbp' => 'LBP_LOAN',
+                    'btr' => null, // Special case: multiple deduction types
+                ];
+
+                if ($tab === 'btr') {
+                    $deductionTypes = \App\Models\DeductionType::whereIn('code', ['WHT', 'REFUND_VARIOUS'])->pluck('id');
+
+                    $rows = \App\Models\PayrollDeduction::with(['entry.employee', 'deductionType'])
+                        ->whereIn('payroll_entry_id', fn($q) => $q->select('id')->from('payroll_entries')->whereIn('payroll_batch_id', $batches))
+                        ->whereIn('deduction_type_id', $deductionTypes)
+                        ->where('amount', '>', 0)
+                        ->get();
+                } else {
+                    $deductionTypeId = \App\Models\DeductionType::where('code', $codeMap[$tab])->value('id');
+
+                    $rows = \App\Models\PayrollDeduction::with('entry.employee')
+                        ->whereIn('payroll_entry_id', fn($q) => $q->select('id')->from('payroll_entries')->whereIn('payroll_batch_id', $batches))
+                        ->where('deduction_type_id', $deductionTypeId)
+                        ->where('amount', '>', 0)
+                        ->get();
+                }
+
+                $data = array_merge($data, [
+                    'reportRows' => $rows,
+                    'grandTotal' => $rows->sum('amount'),
+                    'employeeCount' => $rows->count(),
+                ]);
+                break;
+        }
+
+        return view('reports.index', $data);
     }
 
     // ─────────────────────────────────────────────────────────────────────────
