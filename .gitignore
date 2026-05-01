@@ -30,3 +30,34 @@ rclone.conf
 
 # HRIS Simulation Server - exclude node_modules only
 HRIS/node_modules/
+
+# Laravel Modules
+modules_statuses.json
+bootstrap/cache/*.php
+Modules/*/node_modules/
+Modules/*/public/
+Modules/*/dist/
+
+# IDE and Development Files
+_ide_helper.php
+_ide_helper_models.php
+.windsurf/
+stubs/
+
+# Development Documentation (keep only final docs)
+ARCHITECTURE_ANALYSIS.md
+SYSTEM-GAP-ANALYSIS.md
+TEAM-SETUP.md
+
+# Development Scripts
+vite-module-loader.js
+
+# Backup and Debug Files
+backup-data.bat
+debug_auth_roles.php
+data-backups/
+*.sql
+
+# Test files (keep structure, ignore examples)
+tests/Feature/ExampleTest.php
+tests/Unit/ExampleTest.php

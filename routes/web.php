@@ -2,22 +2,19 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
-use App\Http\Controllers\DashboardController;
-use App\Http\Controllers\DeductionTypeController;
-use App\Http\Controllers\EmployeeController;
-use App\Http\Controllers\EmployeeDeductionController;
-use App\Http\Controllers\EmployeePromotionController;
-use App\Http\Controllers\PayrollController;
-use App\Http\Controllers\PayrollEntryController;
-use App\Http\Controllers\SpecialPayrollController;
-use App\Http\Controllers\TevController;
-use App\Http\Controllers\TevItineraryController;
-use App\Http\Controllers\OfficeOrderController;
-use App\Http\Controllers\ReportController;
-use App\Http\Controllers\DivisionController;
-use App\Http\Controllers\UserController;
-use App\Http\Controllers\SalaryIndexTableController;
-use App\Http\Controllers\SignatoryController;
+use Modules\Payroll\Http\Controllers\DeductionTypeController;
+use Modules\Payroll\Http\Controllers\EmployeeController;
+use Modules\Payroll\Http\Controllers\EmployeeDeductionController;
+use Modules\Payroll\Http\Controllers\EmployeePromotionController;
+use Modules\Payroll\Http\Controllers\PayrollEntryController;
+use Modules\Payroll\Http\Controllers\SpecialPayrollController;
+use Modules\Payroll\Http\Controllers\OfficeOrderController;
+use Modules\Payroll\Http\Controllers\PayrollReportController;
+use Modules\Payroll\Http\Controllers\DivisionController;
+use Modules\Payroll\Http\Controllers\UserController;
+use Modules\Payroll\Http\Controllers\SalaryIndexTableController;
+use Modules\Payroll\Http\Controllers\SignatoryController;
+use Modules\Tev\Http\Controllers\TevReportController;
 
 /*
 |--------------------------------------------------------------------------
@@ -43,9 +40,6 @@ Route::middleware(['auth'])->group(function () {
 
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
-    // ── Dashboard ────────────────────────────────────────────────
-    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
-
     // ── Employees ────────────────────────────────────────────────
     Route::middleware(['role:payroll_officer|hrmo|accountant|chief_admin_officer|super_admin'])
         ->group(function () {
@@ -68,7 +62,7 @@ Route::middleware(['auth'])->group(function () {
 
             // Employee TEV History
             Route::get('/employees/{employee}/tev-history',
-                       [ReportController::class, 'employeeTevHistory'])->name('employees.tev-history');
+                       [TevReportController::class, 'employeeTevHistory'])->name('employees.tev-history');
         });
 
     // ── Deduction Types CMS ──────────────────────────────────────
@@ -96,59 +90,8 @@ Route::middleware(['auth'])->group(function () {
             Route::resource('divisions', DivisionController::class);
         });
 
-    // ── Payroll ──────────────────────────────────────────────────
-    // Employee access - My Payslip page
-    Route::middleware(['auth'])
-        ->group(function () {
-            Route::get('/my-payslip', [PayrollController::class, 'myPayslip'])->name('my-payslip');
-        });
-
-    // Officer access - full payroll management
-    Route::middleware(['role:' . implode('|', \App\Services\RoleService::getRoleGroup('payroll'))])
-        ->prefix('payroll')
-        ->name('payroll.')
-        ->group(function () {
-            // Officer routes - specific routes first
-            Route::get('/', [PayrollController::class, 'index'])->name('index');
-            Route::get('/create', [PayrollController::class, 'create'])->name('create');
-            Route::post('/', [PayrollController::class, 'store'])->name('store');
-            Route::get('/{payroll}', [PayrollController::class, 'show'])->name('show');
-            Route::get('/{payroll}/edit', [PayrollController::class, 'edit'])->name('edit');
-            Route::put('/{payroll}', [PayrollController::class, 'update'])->name('update');
-            Route::delete('/{payroll}', [PayrollController::class, 'destroy'])->name('destroy');
-
-            // Payroll workflow actions
-            Route::post('/{payroll}/compute',    [PayrollController::class, 'compute'])   ->name('compute');
-            Route::post('/{payroll}/submit',     [PayrollController::class, 'submit'])    ->name('submit');
-            Route::post('/{payroll}/certify',    [PayrollController::class, 'certify'])   ->name('certify');
-            Route::post('/{payroll}/approve',    [PayrollController::class, 'approve'])   ->name('approve');
-            Route::post('/{payroll}/lock',       [PayrollController::class, 'lock'])      ->name('lock');
-            Route::get( '/{payroll}/verify',     [PayrollController::class, 'verify'])    ->name('verify');
-            Route::post('/{payroll}/force-edit', [PayrollController::class, 'forceEdit'])->name('forceEdit');
-            Route::post('/{payroll}/pull-attendance', [PayrollController::class, 'pullAttendance'])->name('pullAttendance');
-
-            // ── Payslip generation (released / locked batches only) ──────
-            // ?mode=consolidated (default) | per_batch
-            // ?entry_id=<PayrollEntry id>  (optional — single employee)
-            Route::get('/{payroll}/payslips/generate',
-                       [PayrollController::class, 'generatePayslips'])
-                ->name('payslips.generate');
-
-            // Payroll entries
-            Route::get('/{payrollBatch}/entries',
-                       [PayrollEntryController::class, 'index'])->name('entries.index');
-            Route::get('/{payrollBatch}/entries/{entry}',
-                       [PayrollEntryController::class, 'show'])->name('entries.show');
-            Route::put('/{payrollBatch}/entries/{entry}',
-                       [PayrollEntryController::class, 'update'])->name('entries.update');
-            
-            // Individual payslip
-            Route::get('/{payrollBatch}/payslip/{entry}',
-                       [PayrollEntryController::class, 'payslip'])->name('payslip');
-        });
-
     // ── Special Payroll — Newly Hired ────────────────────────────
-    Route::middleware(['role:' . implode('|', \App\Services\RoleService::getRoleGroup('special_payroll'))])
+    Route::middleware(['role:' . implode('|', \App\SharedKernel\Services\RoleService::getRoleGroup('special_payroll'))])
         ->group(function () {
             Route::get(   '/special-payroll/newly-hired',
                           [SpecialPayrollController::class, 'newHireIndex'])
@@ -174,7 +117,7 @@ Route::middleware(['auth'])->group(function () {
         });
 
     // ── Special Payroll — Salary Differential ────────────────────
-    Route::middleware(['role:' . implode('|', \App\Services\RoleService::getRoleGroup('special_payroll'))])
+    Route::middleware(['role:' . implode('|', \App\SharedKernel\Services\RoleService::getRoleGroup('special_payroll'))])
         ->group(function () {
             Route::get(   '/special-payroll/differential',
                           [SpecialPayrollController::class, 'differentialIndex'])
@@ -200,7 +143,7 @@ Route::middleware(['auth'])->group(function () {
         });
 
     // ── Special Payroll — NOSI / NOSA ────────────────────────────
-    Route::middleware(['role:' . implode('|', \App\Services\RoleService::getRoleGroup('special_payroll'))])
+    Route::middleware(['role:' . implode('|', \App\SharedKernel\Services\RoleService::getRoleGroup('special_payroll'))])
         ->group(function () {
             Route::get(    '/special-payroll/nosi-nosa',
                            [SpecialPayrollController::class, 'nosiNosaIndex'])
@@ -230,119 +173,47 @@ Route::middleware(['auth'])->group(function () {
                 ->where('id', '[0-9]+');
         });
 
-    // ── TEV (Travel & Expense Voucher) ─────────────────────────────
-    Route::middleware(['auth'])
-        ->prefix('tev')
-        ->name('tev.')
-        ->group(function () {
-            // TEV Dashboard - accessible to all authenticated users
-            Route::get('/', [TevController::class, 'dashboard'])->name('dashboard');
-
-            // TEV Requests - employees can create/view their own requests
-            Route::resource('requests', TevController::class, [
-                'names' => [
-                    'index' => 'requests.index',
-                    'create' => 'requests.create',
-                    'store' => 'requests.store',
-                    'show' => 'requests.show',
-                    'edit' => 'requests.edit',
-                    'update' => 'requests.update',
-                    'destroy' => 'requests.destroy',
-                ]
-            ]);
-
-            // Employee actions - submit own requests
-            Route::post('/requests/{tevRequest}/submit',  [TevController::class, 'submit'])->name('requests.submit');
-
-            // Itinerary management - employees can manage their own itinerary
-            Route::post(  '/requests/{tevRequest}/itinerary',
-                          [TevItineraryController::class, 'store'])->name('requests.itinerary.store');
-            Route::put(   '/requests/{tevRequest}/itinerary/{line}',
-                          [TevItineraryController::class, 'update'])->name('requests.itinerary.update');
-            Route::delete('/requests/{tevRequest}/itinerary/{line}',
-                          [TevItineraryController::class, 'destroy'])->name('requests.itinerary.destroy');
-
-            // TEV Liquidation - employees can file their own liquidation
-            Route::post('/requests/{tevRequest}/liquidate',
-                        [TevController::class, 'fileLiquidation'])->name('requests.liquidate');
-
-            // ── Officer-only actions ─────────────────────────────────
-            Route::middleware(['role:hrmo|accountant|budget_officer|ard|cashier|chief_admin_officer|super_admin'])
-                ->group(function () {
-                    // Office Orders
-                    Route::resource('office-orders', OfficeOrderController::class, [
-                        'names' => [
-                            'index' => 'office-orders.index',
-                            'create' => 'office-orders.create',
-                            'store' => 'office-orders.store',
-                            'show' => 'office-orders.show',
-                            'edit' => 'office-orders.edit',
-                            'update' => 'office-orders.update',
-                            'destroy' => 'office-orders.destroy',
-                        ]
-                    ]);
-
-                    Route::post('/office-orders/{id}/approve',
-                                [OfficeOrderController::class, 'approve'])
-                        ->name('office-orders.approve')
-                        ->where('id', '[0-9]+');
-
-                    Route::post('/office-orders/{id}/cancel',
-                                [OfficeOrderController::class, 'cancel'])
-                        ->name('office-orders.cancel')
-                        ->where('id', '[0-9]+');
-
-                    // Approval actions
-                    Route::post('/requests/{tevRequest}/approve', [TevController::class, 'approve'])->name('requests.approve');
-                    Route::post('/requests/{tevRequest}/certify', [TevController::class, 'certify'])->name('requests.certify');
-                    Route::post('/requests/{tevRequest}/reject',  [TevController::class, 'reject'])->name('requests.reject');
-
-                    // Liquidation approval
-                    Route::post('/requests/{tevRequest}/liquidation/approve',
-                                [TevController::class, 'approveLiquidation'])->name('requests.liquidation.approve');
-                });
-        });
 
     // ── Reports ──────────────────────────────────────────────────
     Route::middleware(['role:payroll_officer|hrmo|accountant|ard|cashier|chief_admin_officer|budget_officer|super_admin'])
         ->group(function () {
-            Route::get('/reports',                    [ReportController::class, 'index'])->name('reports.index');
-            Route::get('/reports/payroll-register',   [ReportController::class, 'payrollRegister'])->name('reports.payroll-register');
-            Route::get('/reports/payslip',            [ReportController::class, 'payslip'])->name('reports.payslip');
+            Route::get('/reports',                    [PayrollReportController::class, 'index'])->name('reports.index');
+            Route::get('/reports/payroll-register',   [PayrollReportController::class, 'payrollRegister'])->name('reports.payroll-register');
+            Route::get('/reports/payslip',            [PayrollEntryController::class, 'payslip'])->name('reports.payslip');
 
             // ── GSIS ─────────────────────────────────────────────────────────
-            Route::get('/reports/gsis-summary',       [ReportController::class, 'gsisSummary'])->name('reports.gsis-summary');
-            Route::get('/reports/gsis-detailed',      [ReportController::class, 'gsisDetailed'])->name('reports.gsis-detailed');
-            Route::get('/reports/gsis',               [ReportController::class, 'gsisIndex'])->name('reports.gsis');
+            Route::get('/reports/gsis-summary',       [PayrollReportController::class, 'gsisSummary'])->name('reports.gsis-summary');
+            Route::get('/reports/gsis-detailed',      [PayrollReportController::class, 'gsisDetailed'])->name('reports.gsis-detailed');
+            Route::get('/reports/gsis',               [PayrollReportController::class, 'gsisIndex'])->name('reports.gsis');
 
             // ── HDMF / Pag-IBIG ──────────────────────────────────────────────
-            Route::get('/reports/hdmf',          [ReportController::class, 'hdmfIndex'])->name('reports.hdmf');
-            Route::get('/reports/hdmf/download', [ReportController::class, 'hdmf'])->name('reports.hdmf-download');
+            Route::get('/reports/hdmf',          [PayrollReportController::class, 'hdmfIndex'])->name('reports.hdmf');
+            Route::get('/reports/hdmf/download', [PayrollReportController::class, 'hdmf'])->name('reports.hdmf-download');
 
             // ── Other remittances ─────────────────────────────────────────────
-            Route::get('/reports/remittances',     [ReportController::class, 'remittancesHub'])->name('reports.remittances');
-            Route::get('/reports/phic-csv',        [ReportController::class, 'phicCsv'])->name('reports.phic-csv');
-            Route::get('/reports/sss',             [ReportController::class, 'sssVoluntary'])->name('reports.sss');
-            Route::get('/reports/lbp-loan',        [ReportController::class, 'lbpLoan'])->name('reports.lbp-loan');
-            Route::get('/reports/caress-union',    [ReportController::class, 'caressUnion'])->name('reports.caress-union');
-            Route::get('/reports/caress-mortuary', [ReportController::class, 'caressMortuary'])->name('reports.caress-mortuary');
-            Route::get('/reports/mass',            [ReportController::class, 'mass'])->name('reports.mass');
-            Route::get('/reports/provident-fund',  [ReportController::class, 'providentFund'])->name('reports.provident-fund');
-            Route::get('/reports/btr-refund',      [ReportController::class, 'btrRefund'])->name('reports.btr-refund');
+            Route::get('/reports/remittances',     [PayrollReportController::class, 'remittancesHub'])->name('reports.remittances');
+            Route::get('/reports/phic-csv',        [PayrollReportController::class, 'phicCsv'])->name('reports.phic-csv');
+            Route::get('/reports/sss',             [PayrollReportController::class, 'sssVoluntary'])->name('reports.sss');
+            Route::get('/reports/lbp-loan',        [PayrollReportController::class, 'lbpLoan'])->name('reports.lbp-loan');
+            Route::get('/reports/caress-union',    [PayrollReportController::class, 'caressUnion'])->name('reports.caress-union');
+            Route::get('/reports/caress-mortuary', [PayrollReportController::class, 'caressMortuary'])->name('reports.caress-mortuary');
+            Route::get('/reports/mass',            [PayrollReportController::class, 'mass'])->name('reports.mass');
+            Route::get('/reports/provident-fund',  [PayrollReportController::class, 'providentFund'])->name('reports.provident-fund');
+            Route::get('/reports/btr-refund',      [PayrollReportController::class, 'btrRefund'])->name('reports.btr-refund');
 
             // TEV PDF reports
             Route::get('/reports/tev/{tevRequest}/itinerary',
-                       [ReportController::class, 'tevItinerary'])->name('reports.tev-itinerary');
+                       [TevReportController::class, 'tevItinerary'])->name('reports.tev-itinerary');
             Route::get('/reports/tev/{tevRequest}/travel-completed',
-                       [ReportController::class, 'tevTravelCompleted'])->name('reports.tev-travel-completed');
+                       [TevReportController::class, 'tevTravelCompleted'])->name('reports.tev-travel-completed');
             Route::get('/reports/tev/{tevRequest}/annex-a',
-                       [ReportController::class, 'tevAnnexA'])->name('reports.tev-annex-a');
+                       [TevReportController::class, 'tevAnnexA'])->name('reports.tev-annex-a');
 
             // TEV Register report + export
             Route::get('/reports/tev-register/export',
-                       [ReportController::class, 'tevRegisterExport'])->name('reports.tev-register.export');
+                       [TevReportController::class, 'tevRegisterExport'])->name('reports.tev-register.export');
             Route::get('/reports/tev-register',
-                       [ReportController::class, 'tevRegister'])->name('reports.tev-register');
+                       [TevReportController::class, 'tevRegister'])->name('reports.tev-register');
         });
 
     // ── Users ────────────────────────────────────────────────────

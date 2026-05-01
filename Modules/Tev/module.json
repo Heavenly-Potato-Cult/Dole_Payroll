@@ -1,0 +1,11 @@
+{
+    "name": "Tev",
+    "alias": "tev",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\Tev\\Providers\\TevServiceProvider"
+    ],
+    "files": []
+}

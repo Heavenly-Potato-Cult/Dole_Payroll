@@ -62,7 +62,7 @@
             {{-- ── Switch to Payroll ───────────────────────────────────── --}}
             @role('payroll_officer|hrmo|accountant|ard|cashier|chief_admin_officer|super_admin')
             <div style="margin-top: 20px; padding-top: 15px; border-top: 1px solid var(--border);">
-                <a href="{{ route('dashboard') }}"
+                <a href="{{ route('payroll.dashboard') }}"
                    class="nav-item"
                    style="font-size: 0.75rem; color: var(--text-light);">
                     <span class="nav-icon">💰</span> Switch to Payroll

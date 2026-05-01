@@ -30,8 +30,8 @@
 
         <nav class="sidebar-nav">
 
-            <a href="{{ route('dashboard') }}"
-               class="nav-item {{ request()->routeIs('dashboard') ? 'active' : '' }}">
+            <a href="{{ route('payroll.dashboard') }}"
+               class="nav-item {{ request()->routeIs('payroll.dashboard') ? 'active' : '' }}">
                 <span class="nav-icon">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="white" style="display: block;">
                         <path d="M21,3H3c-1.654,0-3,1.346-3,3v15H24V6c0-1.654-1.346-3-3-3Zm-13,14.5c-2.761,0-5-2.239-5-5,0-2.419,1.718-4.436,4-4.899v5.313l3.754,3.754c-.79,.523-1.736,.832-2.754,.832Zm4.168-2.246l-3.168-3.168V7.601c2.282,.463,4,2.48,4,4.899,0,1.019-.308,1.964-.832,2.754Zm8.832,1.746h-5v-2h5v2Zm0-4h-5v-2h5v2Zm0-4h-5v-2h5v2Z"/>
@@ -66,7 +66,7 @@
             @role('payroll_officer|hrmo|accountant|ard|cashier|chief_admin_officer|super_admin')
             <div class="nav-section-label">Payroll</div>
             <a href="{{ route('payroll.index') }}"
-               class="nav-item {{ request()->routeIs('payroll.*') ? 'active' : '' }}">
+               class="nav-item {{ request()->routeIs('payroll.index') ? 'active' : '' }}">
                 <span class="nav-icon">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="white" style="display: block;">
                         <path d="m24,5v3H0v-3c0-1.654,1.346-3,3-3h3V0h2v2h8V0h2v2h3c1.654,0,3,1.346,3,3Zm-5,9h2c.552,0,1,.448,1,1h2c0-1.654-1.346-3-3-3v-2h-2v2c-1.654,0-3,1.346-3,3,0,1.359.974,2.51,2.315,2.733l3.04.506c.374.062.645.382.645.761,0,.552-.448,1-1,1h-2c-.552,0-1-.448-1-1h-2c0,1.654,1.346,3,3,3v2h2v-2c1.654,0,3-1.346,3-3,0-1.359-.974-2.51-2.315-2.733l-3.04-.506c-.374-.062-.645-.382-.645-.761,0-.552.448-1,1-1Zm-5,5v-4c0-2.045,1.237-3.802,3-4.576v-.424H0v14h17v-.424c-1.763-.774-3-2.531-3-4.576Z"/>

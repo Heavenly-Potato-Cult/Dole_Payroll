@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use App\Models\Employee;
+use App\SharedKernel\Models\Employee;
 use App\Models\User;
 
 class AuthController extends Controller
@@ -23,7 +23,7 @@ class AuthController extends Controller
 
         if (Auth::attempt($credentials, $request->boolean('remember'))) {
             $request->session()->regenerate();
-            return redirect()->intended(route('dashboard'));
+            return redirect()->intended(route('payroll.dashboard'));
         }
 
         return back()
@@ -44,7 +44,7 @@ class AuthController extends Controller
      */
     public function hrisAuth(Request $request)
     {
-        return $this->handleHrisAuth($request, route('dashboard'));
+        return $this->handleHrisAuth($request, route('payroll.dashboard'));
     }
 
     /**
