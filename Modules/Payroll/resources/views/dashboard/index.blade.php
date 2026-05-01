@@ -702,7 +702,7 @@
         </div>
     </div>
 
-    {{-- Card 2: Current Cut-off — payroll roles only; TEV info for others --}}
+    {{-- Card 2: Current Cut-off — payroll roles only --}}
     @role('payroll_officer|hrmo|accountant|ard|chief_admin_officer')
     <div class="db-stat neutral">
         <div class="db-stat-left">
@@ -722,14 +722,14 @@
     <div class="db-stat neutral">
         <div class="db-stat-left">
             <div>
-                <div class="db-stat-title">TEV This Month</div>
-                <div class="db-stat-subtitle">{{ $currentMonth }}</div>
+                <div class="db-stat-title">Payroll Batches</div>
+                <div class="db-stat-subtitle">This month</div>
             </div>
-            <div class="db-stat-tag">Travel</div>
+            <div class="db-stat-tag">Payroll</div>
         </div>
         <div class="db-stat-divider"></div>
         <div class="db-stat-right">
-            <div class="db-stat-value">{{ $tevThisMonth }}</div>
+            <div class="db-stat-value">{{ Modules\Payroll\Models\PayrollBatch::whereMonth('created_at', now()->month)->whereYear('created_at', now()->year)->count() }}</div>
         </div>
     </div>
     @endrole
@@ -742,14 +742,12 @@
                 <div class="db-stat-subtitle">
                     @if($pendingApprovals > 0)
                         @if($pendingPayroll > 0){{ $pendingPayroll }} Payroll @endif
-                        @if($pendingTev > 0){{ $pendingTev }} TEV @endif
-                        @if($pendingLiquidation > 0){{ $pendingLiquidation }} Liq. @endif
                     @else
                         All clear
                     @endif
                 </div>
             </div>
-            <div class="db-stat-tag">Resolve Now</div>
+            <div class="db-stat-tag">Payroll</div>
         </div>
         <div class="db-stat-divider"></div>
         <div class="db-stat-right">
@@ -778,14 +776,14 @@
     <div class="db-stat neutral">
         <div class="db-stat-left">
             <div>
-                <div class="db-stat-title">TEV This Month</div>
-                <div class="db-stat-subtitle">{{ $currentMonth }}</div>
+                <div class="db-stat-title">Payroll Batches</div>
+                <div class="db-stat-subtitle">This month</div>
             </div>
-            <div class="db-stat-tag">Travel</div>
+            <div class="db-stat-tag">Payroll</div>
         </div>
         <div class="db-stat-divider"></div>
         <div class="db-stat-right">
-            <div class="db-stat-value">{{ $tevThisMonth }}</div>
+            <div class="db-stat-value">{{ Modules\Payroll\Models\PayrollBatch::whereMonth('created_at', now()->month)->whereYear('created_at', now()->year)->count() }}</div>
         </div>
     </div>
     @endrole
@@ -793,14 +791,14 @@
     <div class="db-stat neutral">
         <div class="db-stat-left">
             <div>
-                <div class="db-stat-title">TEV for Certification</div>
+                <div class="db-stat-title">Payroll for Review</div>
                 <div class="db-stat-subtitle">Awaiting accountant cert.</div>
             </div>
-            <div class="db-stat-tag">Travel</div>
+            <div class="db-stat-tag">Payroll</div>
         </div>
         <div class="db-stat-divider"></div>
         <div class="db-stat-right">
-            <div class="db-stat-value">{{ $pendingTev }}</div>
+            <div class="db-stat-value">{{ $pendingPayroll }}</div>
         </div>
     </div>
     @endrole
@@ -808,14 +806,14 @@
     <div class="db-stat neutral">
         <div class="db-stat-left">
             <div>
-                <div class="db-stat-title">TEV for Approval</div>
+                <div class="db-stat-title">Payroll for Approval</div>
                 <div class="db-stat-subtitle">Acct. certified, needs RD</div>
             </div>
-            <div class="db-stat-tag">Travel</div>
+            <div class="db-stat-tag">Payroll</div>
         </div>
         <div class="db-stat-divider"></div>
         <div class="db-stat-right">
-            <div class="db-stat-value">{{ $pendingTev }}</div>
+            <div class="db-stat-value">{{ $pendingPayroll }}</div>
         </div>
     </div>
     @endrole
@@ -823,14 +821,14 @@
     <div class="db-stat neutral">
         <div class="db-stat-left">
             <div>
-                <div class="db-stat-title">Liquidations Pending</div>
-                <div class="db-stat-subtitle">Awaiting cashier approval</div>
+                <div class="db-stat-title">Payroll Released</div>
+                <div class="db-stat-subtitle">This month</div>
             </div>
-            <div class="db-stat-tag">Travel</div>
+            <div class="db-stat-tag">Payroll</div>
         </div>
         <div class="db-stat-divider"></div>
         <div class="db-stat-right">
-            <div class="db-stat-value">{{ $pendingLiquidation }}</div>
+            <div class="db-stat-value">{{ Modules\Payroll\Models\PayrollBatch::where('status', 'released')->whereMonth('updated_at', now()->month)->whereYear('updated_at', now()->year)->count() }}</div>
         </div>
     </div>
     @endrole
@@ -838,14 +836,14 @@
     <div class="db-stat neutral">
         <div class="db-stat-left">
             <div>
-                <div class="db-stat-title">TEV Submissions</div>
-                <div class="db-stat-subtitle">Submitted, for monitoring</div>
+                <div class="db-stat-title">Payroll Batches</div>
+                <div class="db-stat-subtitle">This month</div>
             </div>
-            <div class="db-stat-tag">Travel</div>
+            <div class="db-stat-tag">Payroll</div>
         </div>
         <div class="db-stat-divider"></div>
         <div class="db-stat-right">
-            <div class="db-stat-value">{{ $pendingTev }}</div>
+            <div class="db-stat-value">{{ Modules\Payroll\Models\PayrollBatch::whereMonth('created_at', now()->month)->whereYear('created_at', now()->year)->count() }}</div>
         </div>
     </div>
     @endrole
@@ -892,7 +890,7 @@
         $saTevLiqFiled     = \Modules\Tev\Models\TevRequest::where('status','liquidation_filed')->count();
     @endphp
 
-    {{-- ── Queue Grid: Payroll & TEV ─────────────────────────────── --}}
+    {{-- ── Queue Grid: Payroll Queue, Recent Payroll Batches, Quick Access ─────────────────────────────── --}}
     <div class="db-queue-grid">
 
         {{-- Payroll Queue Section --}}
@@ -953,166 +951,45 @@
         </div>
         @endrole
 
-        {{-- TEV Queue Section --}}
+        {{-- Recent Payroll Batches --}}
         <div class="db-queue-section">
             <div class="db-queue-header">
-                <span class="db-queue-label">TEV Queue</span>
-                <a href="{{ route('tev.requests.index') }}" class="db-queue-viewall">View all →</a>
+                <span class="db-queue-label">💰 Recent Payroll Batches</span>
+                <a href="{{ route('payroll.index') }}" class="db-queue-viewall">View all →</a>
             </div>
-            <a href="{{ route('tev.requests.index') }}?status=submitted" class="db-queue-row">
-                <div class="db-queue-left">
-                    <div class="db-queue-label-text">Submitted</div>
-                    <div class="db-queue-subtitle">Awaiting HRMO review</div>
-                </div>
-                <div class="db-queue-right">
-                    <div class="db-queue-number">{{ $saTevSubmitted }}</div>
-                    <span class="db-queue-chevron">›</span>
-                </div>
-            </a>
-            <a href="{{ route('tev.requests.index') }}?status=accountant_certified" class="db-queue-row">
-                <div class="db-queue-left">
-                    <div class="db-queue-label-text">Acct. Certified</div>
-                    <div class="db-queue-subtitle">Accountant certified</div>
-                </div>
-                <div class="db-queue-right">
-                    <div class="db-queue-number">{{ $saTevCertified }}</div>
-                    <span class="db-queue-chevron">›</span>
-                </div>
-            </a>
-            <a href="{{ route('tev.requests.index') }}?status=rd_approved" class="db-queue-row">
-                <div class="db-queue-left">
-                    <div class="db-queue-label-text">RD Approved</div>
-                    <div class="db-queue-subtitle">Regional Director approved</div>
-                </div>
-                <div class="db-queue-right">
-                    <div class="db-queue-number">{{ $saTevRdApproved }}</div>
-                    <span class="db-queue-chevron">›</span>
-                </div>
-            </a>
-            <a href="{{ route('tev.requests.index') }}?status=liquidation_filed" class="db-queue-row">
-                <div class="db-queue-left">
-                    <div class="db-queue-label-text">Liq. Filed</div>
-                    <div class="db-queue-subtitle">Liquidation filed</div>
-                </div>
-                <div class="db-queue-right">
-                    <div class="db-queue-number">{{ $saTevLiqFiled }}</div>
-                    <span class="db-queue-chevron">›</span>
-                </div>
-            </a>
+            @if($recentPayroll->isEmpty())
+                <div class="db-empty"><div class="db-empty-icon">📭</div>No payroll batches yet.</div>
+            @else
+                @foreach($recentPayroll as $batch)
+                @php
+                    $mn = \Carbon\Carbon::create()->month($batch->period_month)->format('M');
+                    $sm = ['draft'=>['Draft','db-b-draft'],'computed'=>['Computed','db-b-computed'],'pending_accountant'=>['Acct. Review','db-b-pending'],'pending_rd'=>['RD Review','db-b-pending'],'released'=>['Released','db-b-released'],'locked'=>['Locked','db-b-locked']];
+                    $s  = $sm[$batch->status] ?? [$batch->status,'db-b-draft'];
+                    $cutLabel = $batch->cutoff === '1st' ? '1st (1–15)' : '2nd (16–end)';
+                @endphp
+                <a href="{{ route('payroll.show', $batch->id) }}" class="db-queue-row">
+                    <div class="db-queue-left">
+                        <div class="db-queue-label-text">{{ $mn }} {{ $batch->period_year }}</div>
+                        <div class="db-queue-subtitle">{{ $cutLabel }}@if($batch->creator) &mdash; {{ $batch->creator->name }}@endif</div>
+                    </div>
+                    <div class="db-queue-right">
+                        <span class="db-queue-badge {{ $s[1] }}">{{ $s[0] }}</span>
+                        <span class="db-queue-chevron">›</span>
+                    </div>
+                </a>
+                @endforeach
+            @endif
         </div>
 
-    </div>{{-- /.db-queue-grid --}}
-
-    {{-- Row 1: Recent Payroll | Recent TEV --}}
-    <div class="db-row">
-
-        <div class="db-card">
-            <div class="db-card-head">
-                <h3>💰 Recent Payroll Batches</h3>
-                <a href="{{ route('payroll.index') }}" class="btn btn-outline btn-sm" style="flex-shrink:0;">View All</a>
+        {{-- Quick Access --}}
+        <div class="db-queue-section" style="grid-column: span 2;">
+            <div class="db-queue-header">
+                <span class="db-queue-label">⚡ Quick Access</span>
             </div>
-            <div class="db-card-body">
-                @if($recentPayroll->isEmpty())
-                    <div class="db-empty"><div class="db-empty-icon">📭</div>No payroll batches yet.</div>
-                @else
-                    <ul class="db-list">
-                        @foreach($recentPayroll as $batch)
-                        @php
-                            $mn = \Carbon\Carbon::create()->month($batch->period_month)->format('M');
-                            $sm = ['draft'=>['Draft','db-b-draft'],'computed'=>['Computed','db-b-computed'],'pending_accountant'=>['Acct. Review','db-b-pending'],'pending_rd'=>['RD Review','db-b-pending'],'released'=>['Released','db-b-released'],'locked'=>['Locked','db-b-locked']];
-                            $s  = $sm[$batch->status] ?? [$batch->status,'db-b-draft'];
-                            $cutLabel = $batch->cutoff === '1st' ? '1st (1–15)' : '2nd (16–end)';
-                        @endphp
-                        <li class="db-list-item">
-                            <div class="db-list-main">
-                                <div class="db-list-title">{{ $mn }} {{ $batch->period_year }}</div>
-                                <div class="db-list-sub">{{ $cutLabel }}@if($batch->creator) &mdash; {{ $batch->creator->name }}@endif</div>
-                            </div>
-                            <div class="db-list-right">
-                                <span class="db-badge {{ $s[1] }}">{{ $s[0] }}</span>
-                                <a href="{{ route('payroll.show', $batch->id) }}" class="db-view-link">View →</a>
-                            </div>
-                        </li>
-                        @endforeach
-                    </ul>
-                @endif
-            </div>
-        </div>
-
-        <div class="db-card">
-            <div class="db-card-head">
-                <h3>✈ Recent TEV Requests</h3>
-                <a href="{{ route('tev.requests.index') }}" class="btn btn-outline btn-sm" style="flex-shrink:0;">View All</a>
-            </div>
-            <div class="db-card-body">
-                @if($recentTev->isEmpty())
-                    <div class="db-empty"><div class="db-empty-icon">✈</div>No TEV requests yet.</div>
-                @else
-                    <ul class="db-list">
-                        @foreach($recentTev as $tev)
-                        @php
-                            $tevSt = ['draft'=>['Draft','db-b-draft'],'submitted'=>['Submitted','db-b-pending'],'accountant_certified'=>['Acct. Cert.','db-b-computed'],'rd_approved'=>['RD Approved','db-b-released'],'cashier_released'=>['CA Released','db-b-gold'],'reimbursed'=>['Reimbursed','db-b-released'],'liquidation_filed'=>['Liq. Filed','db-b-pending'],'liquidated'=>['Liquidated','db-b-locked'],'rejected'=>['Rejected','db-b-red']];
-                            $t  = $tevSt[$tev->status] ?? [ucwords(str_replace('_',' ',$tev->status)),'db-b-draft'];
-                            $tk = $tev->track === 'cash_advance' ? ['CA','db-b-navy'] : ['Reimb','db-b-gold'];
-                            $en = $tev->employee ? $tev->employee->last_name.', '.substr($tev->employee->first_name,0,1).'.' : '—';
-                        @endphp
-                        <li class="db-list-item">
-                            <div class="db-list-main">
-                                <div class="db-list-title" style="font-family:monospace;font-size:0.79rem;">{{ $tev->tev_no }}</div>
-                                <div class="db-list-sub">{{ $en }} &mdash; ₱{{ number_format($tev->grand_total,2) }}</div>
-                            </div>
-                            <div class="db-list-right">
-                                <div style="display:flex;gap:3px;flex-wrap:wrap;justify-content:flex-end;">
-                                    <span class="db-badge {{ $tk[1] }}">{{ $tk[0] }}</span>
-                                    <span class="db-badge {{ $t[1] }}">{{ $t[0] }}</span>
-                                </div>
-                                <a href="{{ route('tev.requests.show', $tev->id) }}" class="db-view-link">View →</a>
-                            </div>
-                        </li>
-                        @endforeach
-                    </ul>
-                @endif
-            </div>
-        </div>
-
-    </div>
-
-    {{-- Row 2: Payroll Pipeline Chart | TEV Status Summary + Quick Actions --}}
-    <div class="db-row">
-
-        @if($recentPayroll->isNotEmpty())
-        <div class="db-card">
-            <div class="db-card-head"><h3>📊 Payroll Pipeline Overview</h3></div>
-            <div class="db-chart-body">
-                <div class="db-chart-wrap"><canvas id="payrollChart"></canvas></div>
-            </div>
-        </div>
-        @endif
-
-        <div class="db-card">
-            <div class="db-card-head"><h3>📊 TEV Status Summary</h3></div>
-            <div class="db-card-body">
-                <table class="db-mini-table">
-                    @foreach(['submitted'=>'Submitted','accountant_certified'=>'Acct. Certified','rd_approved'=>'RD Approved','cashier_released'=>'CA Released','liquidation_filed'=>'Liq. Filed','liquidated'=>'Liquidated','reimbursed'=>'Reimbursed','cancelled'=>'Cancelled'] as $key=>$label)
-                    <tr>
-                        <td class="db-mt-label">{{ $label }}</td>
-                        <td class="db-mt-val">{{ $tevByStatus[$key] ?? 0 }}</td>
-                    </tr>
-                    @endforeach
-                </table>
-            </div>
-        </div>
-
-    </div>
-
-    {{-- Row 3: Quick Access — all modules --}}
-    <div class="db-row" style="grid-template-columns: 1fr;">
-        <div class="db-card">
-            <div class="db-card-head"><h3>⚡ Quick Access</h3></div>
-            <div class="db-actions db-actions-3col">
+            <div class="db-actions db-actions-2col">
                 <div class="db-actions-col">
-                    <div class="db-action-sep">Payroll</div>
-                    <a href="{{ route('payroll.index') }}" class="db-action-btn primary">
+                    <div class="db-action-sep">Payroll Operations</div>
+                    <a href="{{ route('payroll.index') }}" class="db-action-btn">
                         <span class="db-action-left">💰 Regular Payroll</span><span>→</span>
                     </a>
                     <a href="{{ route('special-payroll.newly-hired.index') }}" class="db-action-btn">
@@ -1121,115 +998,69 @@
                     <a href="{{ route('special-payroll.differential.index') }}" class="db-action-btn">
                         <span class="db-action-left">📈 Salary Differential</span><span>→</span>
                     </a>
-                </div>
-                <div class="db-actions-col">
-                    <div class="db-action-sep">Travel (TEV)</div>
-                    <a href="{{ route('tev.office-orders.index') }}" class="db-action-btn">
-                        <span class="db-action-left">📝 Office Orders</span><span>→</span>
-                    </a>
-                    <a href="{{ route('tev.requests.index') }}" class="db-action-btn">
-                        <span class="db-action-left">✈ TEV Requests</span><span>→</span>
-                    </a>
-                    <a href="{{ route('reports.tev-register') }}" class="db-action-btn">
-                        <span class="db-action-left">📊 TEV Register</span><span>→</span>
+                    <a href="{{ route('special-payroll.nosi-nosa.index') }}" class="db-action-btn">
+                        <span class="db-action-left">🏥 NOSI/NOSA Payroll</span><span>→</span>
                     </a>
                 </div>
                 <div class="db-actions-col">
-                    <div class="db-action-sep">Administration</div>
-                    <a href="{{ route('users.index') }}" class="db-action-btn primary">
-                        <span class="db-action-left">⚙ User Management</span><span>→</span>
+                    <div class="db-action-sep">Reports & Admin</div>
+                    <a href="{{ route('reports.index') }}" class="db-action-btn">
+                        <span class="db-action-left">📊 Payroll Reports</span><span>→</span>
                     </a>
                     <a href="{{ route('employees.index') }}" class="db-action-btn">
                         <span class="db-action-left">👤 Employees</span><span>→</span>
                     </a>
-                    <a href="{{ route('reports.remittances') }}" class="db-action-btn">
-                        <span class="db-action-left">📑 All Remittances</span><span>→</span>
+                    <a href="{{ route('users.index') }}" class="db-action-btn">
+                        <span class="db-action-left">⚙ User Management</span><span>→</span>
+                    </a>
+                    <a href="{{ route('tev.dashboard') }}" class="db-action-btn">
+                        <span class="db-action-left">✈ TEV Dashboard</span><span>→</span>
                     </a>
                 </div>
             </div>
         </div>
+
     </div>
 
 @endrole
 
 {{-- ─────────────────────────────────────────────────────────────
      HRMO LAYOUT
-     Row 1: Recent Payroll Batches | Recent TEV Requests
+     Row 1: Recent Payroll Batches (full width)
      Row 2: Chart + Quick Actions
      ───────────────────────────────────────────────────────────── --}}
 @role('hrmo')
 
-    <div class="db-row">
+    <div class="db-row" style="grid-template-columns: 1fr;">
 
         {{-- Recent Payroll Batches --}}
-        <div class="db-card">
-            <div class="db-card-head">
-                <h3>💰 Recent Payroll Batches</h3>
-                <a href="{{ route('payroll.index') }}" class="btn btn-outline btn-sm" style="flex-shrink:0;">View All</a>
+        <div class="db-queue-section">
+            <div class="db-queue-header">
+                <span class="db-queue-label">💰 Recent Payroll Batches</span>
+                <a href="{{ route('payroll.index') }}" class="db-queue-viewall">View all →</a>
             </div>
-            <div class="db-card-body">
-                @if($recentPayroll->isEmpty())
-                    <div class="db-empty"><div class="db-empty-icon">📭</div>No payroll batches yet.</div>
-                @else
-                    <ul class="db-list">
-                        @foreach($recentPayroll as $batch)
-                        @php
-                            $mn = \Carbon\Carbon::create()->month($batch->period_month)->format('M');
-                            $sm = ['draft'=>['Draft','db-b-draft'],'computed'=>['Computed','db-b-computed'],'pending_accountant'=>['Acct. Review','db-b-pending'],'pending_rd'=>['RD Review','db-b-pending'],'released'=>['Released','db-b-released'],'locked'=>['Locked','db-b-locked']];
-                            $s  = $sm[$batch->status] ?? [$batch->status,'db-b-draft'];
-                            $cutLabel = $batch->cutoff === '1st' ? '1st (1–15)' : '2nd (16–end)';
-                        @endphp
-                        <li class="db-list-item">
-                            <div class="db-list-main">
-                                <div class="db-list-title">{{ $mn }} {{ $batch->period_year }}</div>
-                                <div class="db-list-sub">{{ $cutLabel }}@if($batch->creator) &mdash; {{ $batch->creator->name }}@endif</div>
-                            </div>
-                            <div class="db-list-right">
-                                <span class="db-badge {{ $s[1] }}">{{ $s[0] }}</span>
-                                <a href="{{ route('payroll.show', $batch->id) }}" class="db-view-link">View →</a>
-                            </div>
-                        </li>
-                        @endforeach
-                    </ul>
-                @endif
-            </div>
-        </div>
-
-        {{-- Recent TEV Requests --}}
-        <div class="db-card">
-            <div class="db-card-head">
-                <h3>✈ Recent TEV Requests</h3>
-                <a href="{{ route('tev.requests.index') }}" class="btn btn-outline btn-sm" style="flex-shrink:0;">View All</a>
-            </div>
-            <div class="db-card-body">
-                @if($recentTev->isEmpty())
-                    <div class="db-empty"><div class="db-empty-icon">✈</div>No TEV requests yet.</div>
-                @else
-                    <ul class="db-list">
-                        @foreach($recentTev as $tev)
-                        @php
-                            $tevSt = ['draft'=>['Draft','db-b-draft'],'submitted'=>['Submitted','db-b-pending'],'accountant_certified'=>['Acct. Cert.','db-b-computed'],'rd_approved'=>['RD Approved','db-b-released'],'cashier_released'=>['CA Released','db-b-gold'],'reimbursed'=>['Reimbursed','db-b-released'],'liquidation_filed'=>['Liq. Filed','db-b-pending'],'liquidated'=>['Liquidated','db-b-locked'],'rejected'=>['Rejected','db-b-red']];
-                            $t  = $tevSt[$tev->status] ?? [ucwords(str_replace('_',' ',$tev->status)),'db-b-draft'];
-                            $tk = $tev->track === 'cash_advance' ? ['CA','db-b-navy'] : ['Reimb','db-b-gold'];
-                            $en = $tev->employee ? $tev->employee->last_name.', '.substr($tev->employee->first_name,0,1).'.' : '—';
-                        @endphp
-                        <li class="db-list-item">
-                            <div class="db-list-main">
-                                <div class="db-list-title" style="font-family:monospace;font-size:0.79rem;">{{ $tev->tev_no }}</div>
-                                <div class="db-list-sub">{{ $en }}</div>
-                            </div>
-                            <div class="db-list-right">
-                                <div style="display:flex;gap:3px;flex-wrap:wrap;justify-content:flex-end;">
-                                    <span class="db-badge {{ $tk[1] }}">{{ $tk[0] }}</span>
-                                    <span class="db-badge {{ $t[1] }}">{{ $t[0] }}</span>
-                                </div>
-                                <a href="{{ route('tev.requests.show', $tev->id) }}" class="db-view-link">View →</a>
-                            </div>
-                        </li>
-                        @endforeach
-                    </ul>
-                @endif
-            </div>
+            @if($recentPayroll->isEmpty())
+                <div class="db-empty"><div class="db-empty-icon">📭</div>No payroll batches yet.</div>
+            @else
+                @foreach($recentPayroll as $batch)
+                @php
+                    $mn = \Carbon\Carbon::create()->month($batch->period_month)->format('M');
+                    $sm = ['draft'=>['Draft','db-b-draft'],'computed'=>['Computed','db-b-computed'],'pending_accountant'=>['Acct. Review','db-b-pending'],'pending_rd'=>['RD Review','db-b-pending'],'released'=>['Released','db-b-released'],'locked'=>['Locked','db-b-locked']];
+                    $s  = $sm[$batch->status] ?? [$batch->status,'db-b-draft'];
+                    $cutLabel = $batch->cutoff === '1st' ? '1st (1–15)' : '2nd (16–end)';
+                @endphp
+                <a href="{{ route('payroll.show', $batch->id) }}" class="db-queue-row">
+                    <div class="db-queue-left">
+                        <div class="db-queue-label-text">{{ $mn }} {{ $batch->period_year }}</div>
+                        <div class="db-queue-subtitle">{{ $cutLabel }}@if($batch->creator) &mdash; {{ $batch->creator->name }}@endif</div>
+                    </div>
+                    <div class="db-queue-right">
+                        <span class="db-queue-badge {{ $s[1] }}">{{ $s[0] }}</span>
+                        <span class="db-queue-chevron">›</span>
+                    </div>
+                </a>
+                @endforeach
+            @endif
         </div>
 
     </div>{{-- /.db-row --}}
@@ -1250,7 +1081,7 @@
             <div class="db-card-head"><h3>⚡ Quick Actions</h3></div>
             <div class="db-actions db-actions-2col">
                 <div class="db-actions-col">
-                    <div class="db-action-sep">Payroll</div>
+                    <div class="db-action-sep">Payroll Operations</div>
                     <a href="{{ route('payroll.create') }}" class="db-action-btn primary">
                         <span class="db-action-left">💰 New Payroll Batch</span><span>→</span>
                     </a>
@@ -1259,23 +1090,20 @@
                             @if($pendingPayroll > 0)<span class="db-action-count">{{ $pendingPayroll }}</span>@endif
                         </span><span>→</span>
                     </a>
+                    <a href="{{ route('special-payroll.newly-hired.index') }}" class="db-action-btn">
+                        <span class="db-action-left">🆕 Newly Hired Payroll</span><span>→</span>
+                    </a>
                 </div>
                 <div class="db-actions-col">
-                    <div class="db-action-sep">Travel (TEV)</div>
-                    <a href="{{ route('tev.office-orders.create') }}" class="db-action-btn">
-                        <span class="db-action-left">📝 New Office Order</span><span>→</span>
-                    </a>
-                    <a href="{{ route('tev.requests.create') }}" class="db-action-btn gold-btn">
-                        <span class="db-action-left">✈ New TEV Request</span><span>→</span>
-                    </a>
-                    @if($pendingTev > 0)
-                    <a href="{{ route('tev.requests.index') }}?status=cashier_released&track=cash_advance" class="db-action-btn primary">
-                        <span class="db-action-left">🗂 File CA Liquidation <span class="db-action-count">{{ $pendingTev }}</span></span><span>→</span>
-                    </a>
-                    @endif
-                    <div class="db-action-sep">Reports</div>
+                    <div class="db-action-sep">Reports & Admin</div>
                     <a href="{{ route('reports.index') }}" class="db-action-btn">
-                        <span class="db-action-left">📊 Reports</span><span>→</span>
+                        <span class="db-action-left">📊 Payroll Reports</span><span>→</span>
+                    </a>
+                    <a href="{{ route('employees.index') }}" class="db-action-btn">
+                        <span class="db-action-left">� Employees</span><span>→</span>
+                    </a>
+                    <a href="{{ route('tev.dashboard') }}" class="db-action-btn">
+                        <span class="db-action-left">✈ TEV Dashboard</span><span>→</span>
                     </a>
                 </div>
             </div>
@@ -1296,37 +1124,33 @@
     <div class="db-row">
 
         {{-- Recent Regular Payroll Batches --}}
-        <div class="db-card">
-            <div class="db-card-head">
-                <h3>💰 Recent Payroll Batches</h3>
-                <a href="{{ route('payroll.index') }}" class="btn btn-outline btn-sm" style="flex-shrink:0;">View All</a>
+        <div class="db-queue-section">
+            <div class="db-queue-header">
+                <span class="db-queue-label">💰 Recent Payroll Batches</span>
+                <a href="{{ route('payroll.index') }}" class="db-queue-viewall">View all →</a>
             </div>
-            <div class="db-card-body">
-                @if($recentPayroll->isEmpty())
-                    <div class="db-empty"><div class="db-empty-icon">📭</div>No payroll batches yet.</div>
-                @else
-                    <ul class="db-list">
-                        @foreach($recentPayroll as $batch)
-                        @php
-                            $mn = \Carbon\Carbon::create()->month($batch->period_month)->format('M');
-                            $sm = ['draft'=>['Draft','db-b-draft'],'computed'=>['Computed','db-b-computed'],'pending_accountant'=>['Acct. Review','db-b-pending'],'pending_rd'=>['RD Review','db-b-pending'],'released'=>['Released','db-b-released'],'locked'=>['Locked','db-b-locked']];
-                            $s  = $sm[$batch->status] ?? [$batch->status,'db-b-draft'];
-                            $cutLabel = $batch->cutoff === '1st' ? '1st (1–15)' : '2nd (16–end)';
-                        @endphp
-                        <li class="db-list-item">
-                            <div class="db-list-main">
-                                <div class="db-list-title">{{ $mn }} {{ $batch->period_year }}</div>
-                                <div class="db-list-sub">{{ $cutLabel }}@if($batch->creator) &mdash; {{ $batch->creator->name }}@endif</div>
-                            </div>
-                            <div class="db-list-right">
-                                <span class="db-badge {{ $s[1] }}">{{ $s[0] }}</span>
-                                <a href="{{ route('payroll.show', $batch->id) }}" class="db-view-link">View →</a>
-                            </div>
-                        </li>
-                        @endforeach
-                    </ul>
-                @endif
-            </div>
+            @if($recentPayroll->isEmpty())
+                <div class="db-empty"><div class="db-empty-icon">📭</div>No payroll batches yet.</div>
+            @else
+                @foreach($recentPayroll as $batch)
+                @php
+                    $mn = \Carbon\Carbon::create()->month($batch->period_month)->format('M');
+                    $sm = ['draft'=>['Draft','db-b-draft'],'computed'=>['Computed','db-b-computed'],'pending_accountant'=>['Acct. Review','db-b-pending'],'pending_rd'=>['RD Review','db-b-pending'],'released'=>['Released','db-b-released'],'locked'=>['Locked','db-b-locked']];
+                    $s  = $sm[$batch->status] ?? [$batch->status,'db-b-draft'];
+                    $cutLabel = $batch->cutoff === '1st' ? '1st (1–15)' : '2nd (16–end)';
+                @endphp
+                <a href="{{ route('payroll.show', $batch->id) }}" class="db-queue-row">
+                    <div class="db-queue-left">
+                        <div class="db-queue-label-text">{{ $mn }} {{ $batch->period_year }}</div>
+                        <div class="db-queue-subtitle">{{ $cutLabel }}@if($batch->creator) &mdash; {{ $batch->creator->name }}@endif</div>
+                    </div>
+                    <div class="db-queue-right">
+                        <span class="db-queue-badge {{ $s[1] }}">{{ $s[0] }}</span>
+                        <span class="db-queue-chevron">›</span>
+                    </div>
+                </a>
+                @endforeach
+            @endif
         </div>
 
         {{-- Special Payroll Overview --}}
@@ -1859,35 +1683,6 @@
 
 </div>{{-- /.db-main --}}
 
-{{-- ── System Info ─────────────────────────────────────────────── --}}
-<div class="db-card" style="margin-bottom:16px;">
-    <div class="db-card-head"><h3>⚙ System Information</h3></div>
-    <div class="db-sysinfo">
-        <div class="db-sysinfo-row">
-            <span class="db-sysinfo-key">Laravel</span>
-            <span class="db-sysinfo-val">{{ app()->version() }}</span>
-        </div>
-        <div class="db-sysinfo-row">
-            <span class="db-sysinfo-key">PHP</span>
-            <span class="db-sysinfo-val">{{ PHP_VERSION }}</span>
-        </div>
-        <div class="db-sysinfo-row">
-            <span class="db-sysinfo-key">Environment</span>
-            <span class="db-sysinfo-val">{{ config('app.env') }}</span>
-        </div>
-        <div class="db-sysinfo-row">
-            <span class="db-sysinfo-key">Logged in as</span>
-            <span class="db-sysinfo-val">
-                {{ auth()->user()->name }} &mdash;
-                <span class="role-badge">{{ auth()->user()->getRoleNames()->first() }}</span>
-            </span>
-        </div>
-        <div class="db-sysinfo-row">
-            <span class="db-sysinfo-key">Server Time</span>
-            <span class="db-sysinfo-val">{{ now()->format('D, d M Y H:i:s T') }}</span>
-        </div>
-    </div>
-</div>
 
 @endsection
 

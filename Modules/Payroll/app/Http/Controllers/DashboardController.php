@@ -5,7 +5,6 @@ namespace Modules\Payroll\Http\Controllers;
 use App\Http\Controllers\Controller;
 use App\SharedKernel\Models\Employee;
 use Modules\Payroll\Models\PayrollBatch;
-use Modules\Tev\Models\TevRequest;
 use Illuminate\Support\Facades\Auth;
 
 class DashboardController extends Controller
@@ -55,15 +54,9 @@ class DashboardController extends Controller
 
 
 
-        // Total TEVs filed this month - role-neutral, used across stat cards
-        $tevThisMonth = TevRequest::whereMonth('created_at', now()->month)
-            ->whereYear('created_at', now()->year)
-            ->count();
-
         if ($user->hasRole('super_admin')) {
             // Super admin sees everything across all queues (view-only context)
             $pendingPayroll = PayrollBatch::whereIn('status', ['draft', 'computed', 'pending_accountant', 'pending_rd'])->count();
-            $pendingTev     = TevRequest::whereNotIn('status', ['released', 'reimbursed', 'cancelled'])->count();
 
         } elseif ($user->hasRole('payroll_officer')) {
             $pendingPayroll = PayrollBatch::whereIn('status', ['draft', 'computed'])->count();
@@ -71,33 +64,23 @@ class DashboardController extends Controller
         } elseif ($user->hasAnyRole(['hrmo'])) {
             $pendingPayroll = PayrollBatch::whereIn('status', ['draft', 'computed'])->count();
 
-            // Only cash_advance TEVs land back on HRMO after cashier releases them.
-            // Reimbursement-track TEVs skip this step entirely.
-            $pendingTev = TevRequest::where('status', 'cashier_released')
-                            ->where('track', 'cash_advance')
-                            ->count();
-
         } elseif ($user->hasRole('accountant')) {
             $pendingPayroll = PayrollBatch::where('status', 'pending_accountant')->count();
-            $pendingTev     = TevRequest::where('status', 'submitted')->count();
 
         } elseif ($user->hasAnyRole(['ard', 'chief_admin_officer'])) {
             $pendingPayroll = PayrollBatch::where('status', 'pending_rd')->count();
-            $pendingTev     = TevRequest::where('status', 'accountant_certified')->count();
 
         } elseif ($user->hasRole('cashier')) {
-            $pendingTev         = TevRequest::where('status', 'rd_approved')->count();
-            $pendingLiquidation = TevRequest::where('status', 'liquidation_filed')->count();
+            // Cashier only sees payroll-related approvals
+            $pendingPayroll = 0;
 
         } elseif ($user->hasRole('budget_officer')) {
-            // Budget officer has no approval action — this count is for monitoring only
-            $pendingTev = TevRequest::where('status', 'submitted')->count();
+            // Budget officer has no approval action for payroll
+            $pendingPayroll = 0;
         }
 
-
-
         // Single badge total shown on the dashboard stat card header
-        $pendingApprovals = $pendingPayroll + $pendingTev + $pendingLiquidation;
+        $pendingApprovals = $pendingPayroll;
 
 
 
@@ -111,13 +94,6 @@ class DashboardController extends Controller
             ->orderByDesc('id')
             ->limit(5)
             ->get();
-
-        $recentTev = TevRequest::with(['employee', 'officeOrder'])
-            ->orderByDesc('id')
-            ->limit(5)
-            ->get();
-
-
 
         // ----------------------------------------------------------------
         // Chart datasets
@@ -139,33 +115,14 @@ class DashboardController extends Controller
             $payrollStatusData[$s] = $rawCounts[$s] ?? 0;
         }
 
-        // TEV breakdown by track (cash_advance vs reimbursement) and by status
-        $tevByTrack = TevRequest::selectRaw('track, count(*) as total')
-            ->groupBy('track')
-            ->pluck('total', 'track')
-            ->toArray();
-
-        $tevByStatus = TevRequest::selectRaw('status, count(*) as total')
-            ->groupBy('status')
-            ->pluck('total', 'status')
-            ->toArray();
-
-
-
         return view('payroll::dashboard.index', compact(
             'totalEmployees',
             'currentCutoff',
             'currentMonth',
             'pendingApprovals',
             'pendingPayroll',
-            'pendingTev',
-            'pendingLiquidation',
-            'tevThisMonth',
             'recentPayroll',
-            'recentTev',
             'payrollStatusData',
-            'tevByTrack',
-            'tevByStatus',
         ));
     }
 }

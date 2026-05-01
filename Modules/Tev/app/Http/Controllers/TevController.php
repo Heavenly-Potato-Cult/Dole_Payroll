@@ -26,25 +26,24 @@ class TevController extends Controller
     // =====================================================================
 
     /**
-     * TEV Dashboard - overview of TEV requests and pending actions.
-     * Accessible to all authenticated users (employees can see their own requests).
+     * TEV Employee Dashboard - personalized view for regular employees.
+     * Shows their own TEV requests and basic system status.
      */
     public function dashboard()
     {
         $user = Auth::user();
         $userId = $user->id;
+        $employeeId = session('hris_employee_id');
 
-        // Count of pending TEV requests (submitted status)
+        // Count of pending TEV requests (system-wide - for info only)
         $pendingRequests = TevRequest::where('status', 'submitted')->count();
 
-        // Count of requests pending my approval based on role
+        // Count of my requests pending approval
         $pendingMyApproval = 0;
-        if ($user->hasAnyRole(['accountant'])) {
-            $pendingMyApproval = TevRequest::where('status', 'submitted')->count();
-        } elseif ($user->hasAnyRole(['ard', 'chief_admin_officer'])) {
-            $pendingMyApproval = TevRequest::where('status', 'accountant_certified')->count();
-        } elseif ($user->hasAnyRole(['cashier'])) {
-            $pendingMyApproval = TevRequest::whereIn('status', ['rd_approved', 'liquidation_filed'])->count();
+        if ($employeeId) {
+            $pendingMyApproval = TevRequest::where('employee_id', $employeeId)
+                ->whereNotIn('status', ['released', 'reimbursed', 'cancelled'])
+                ->count();
         }
 
         // Count of my requests this month (submitted by me)
@@ -53,8 +52,9 @@ class TevController extends Controller
             ->whereYear('created_at', now()->year)
             ->count();
 
-        // 5 most recent TEV requests
+        // 5 most recent MY TEV requests only
         $recentRequests = TevRequest::with(['employee', 'officeOrder'])
+            ->where('submitted_by', $userId)
             ->orderByDesc('id')
             ->limit(5)
             ->get();
@@ -64,6 +64,89 @@ class TevController extends Controller
             'pendingMyApproval',
             'myRequestsThisMonth',
             'recentRequests'
+        ));
+    }
+
+    /**
+     * TEV Officer Dashboard - comprehensive view for officers and admins.
+     * Shows TEV pipeline, queue counts, and system-wide metrics.
+     */
+    public function officerDashboard()
+    {
+        $user = Auth::user();
+
+        // ----------------------------------------------------------------
+        // Shared context
+        // ----------------------------------------------------------------
+        $totalEmployees = \App\SharedKernel\Models\Employee::where('status', 'active')->count();
+        $currentMonth   = now()->format('F Y');
+
+        // Total TEVs filed this month
+        $tevThisMonth = TevRequest::whereMonth('created_at', now()->month)
+            ->whereYear('created_at', now()->year)
+            ->count();
+
+        // ----------------------------------------------------------------
+        // Role-scoped pending counts for TEV
+        // ----------------------------------------------------------------
+        $pendingTev = 0;
+        $pendingLiquidation = 0;
+        $pendingApprovals = 0;
+
+        if ($user->hasRole('super_admin')) {
+            $pendingTev = TevRequest::whereNotIn('status', ['released', 'reimbursed', 'cancelled'])->count();
+        } elseif ($user->hasRole('accountant')) {
+            $pendingTev = TevRequest::where('status', 'submitted')->count();
+        } elseif ($user->hasAnyRole(['ard', 'chief_admin_officer'])) {
+            $pendingTev = TevRequest::where('status', 'accountant_certified')->count();
+        } elseif ($user->hasRole('cashier')) {
+            $pendingTev = TevRequest::where('status', 'rd_approved')->count();
+            $pendingLiquidation = TevRequest::where('status', 'liquidation_filed')->count();
+        } elseif ($user->hasRole('budget_officer')) {
+            $pendingTev = TevRequest::where('status', 'submitted')->count();
+        } elseif ($user->hasRole('hrmo')) {
+            // HRMO monitors cash advances that need liquidation
+            $pendingTev = TevRequest::where('status', 'cashier_released')
+                ->where('track', 'cash_advance')
+                ->count();
+        }
+
+        $pendingApprovals = $pendingTev + $pendingLiquidation;
+
+        // ----------------------------------------------------------------
+        // TEV Queue counts for pipeline overview
+        // ----------------------------------------------------------------
+        $tevSubmitted    = TevRequest::where('status', 'submitted')->count();
+        $tevCertified    = TevRequest::where('status', 'accountant_certified')->count();
+        $tevRdApproved   = TevRequest::where('status', 'rd_approved')->count();
+        $tevLiqFiled     = TevRequest::where('status', 'liquidation_filed')->count();
+        $tevCashReleased = TevRequest::where('status', 'cashier_released')->where('track', 'cash_advance')->count();
+        $tevLiquidated   = TevRequest::where('status', 'liquidated')->count();
+        $tevReimbursement = TevRequest::where('track', 'reimbursement')->count();
+
+        // ----------------------------------------------------------------
+        // Recent TEV activity (all requests for officers)
+        // ----------------------------------------------------------------
+        $recentTev = TevRequest::with(['employee', 'officeOrder'])
+            ->orderByDesc('id')
+            ->limit(5)
+            ->get();
+
+        return view('tev::officer-dashboard', compact(
+            'totalEmployees',
+            'currentMonth',
+            'pendingApprovals',
+            'pendingTev',
+            'pendingLiquidation',
+            'tevThisMonth',
+            'tevSubmitted',
+            'tevCertified',
+            'tevRdApproved',
+            'tevLiqFiled',
+            'tevCashReleased',
+            'tevLiquidated',
+            'tevReimbursement',
+            'recentTev'
         ));
     }
 

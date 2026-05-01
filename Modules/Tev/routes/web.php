@@ -20,8 +20,20 @@ Route::middleware(['auth'])
     ->prefix('tev')
     ->name('tev.')
     ->group(function () {
-        // TEV Dashboard - accessible to all authenticated users
-        Route::get('/', [TevController::class, 'dashboard'])->name('dashboard');
+        // TEV Dashboard - role-based routing
+        Route::get('/', function () {
+            $user = auth()->user();
+            // Officers get the comprehensive dashboard, employees get personal dashboard
+            if ($user->hasAnyRole(['hrmo', 'accountant', 'budget_officer', 'ard', 'chief_admin_officer', 'cashier', 'super_admin'])) {
+                return app(TevController::class)->officerDashboard();
+            } else {
+                return app(TevController::class)->dashboard();
+            }
+        })->name('dashboard');
+        
+        // Explicit routes for each dashboard type
+        Route::get('/employee', [TevController::class, 'dashboard'])->name('dashboard.employee');
+        Route::get('/officer', [TevController::class, 'officerDashboard'])->name('dashboard.officer');
 
         // TEV Requests - employees can create/view their own requests
         Route::resource('requests', TevController::class, [
