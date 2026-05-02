@@ -30,8 +30,7 @@
         <a href="{{ route('employees.deductions', $employee) }}" class="btn btn-outline">💳 Deductions</a>
         <a href="{{ route('employees.edit', $employee) }}" class="btn btn-primary">✎ Edit</a>
         @endrole
-        <a href="{{ route('employees.tev-history', $employee) }}" class="btn btn-outline">✈ TEV History</a>
-        <a href="{{ route('employees.index') }}" class="btn btn-outline">← Back</a>
+                <a href="{{ route('employees.index') }}" class="btn btn-outline">← Back</a>
     </div>
 </div>
 

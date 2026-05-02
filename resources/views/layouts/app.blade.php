@@ -6,6 +6,91 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'Dashboard') — DOLE RO9 Payroll</title>
     <link rel="stylesheet" href="{{ asset('css/app.css') }}">
+    <style>
+    /* ── Topbar User Pill Container ─────────────────────────────────── */
+    .topbar-user-pill {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        background: #f5f6f8;
+        border: 0.5px solid rgba(0,0,0,0.1);
+        border-radius: 999px;
+        padding: 5px 6px 5px 10px;
+    }
+
+    /* ── User Info Section ─────────────────────────────────────────── */
+    .user-info {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        text-align: right;
+        margin-right: 4px;
+    }
+
+    .user-name {
+        font-size: 12px;
+        font-weight: 500;
+        color: #2c3e50;
+        line-height: 1.2;
+    }
+
+    .user-role {
+        font-size: 10px;
+        color: #7f8c8d;
+        line-height: 1;
+        margin-top: 1px;
+    }
+
+    /* ── User Avatar Circle ─────────────────────────────────────────── */
+    .user-avatar {
+        width: 32px;
+        height: 32px;
+        background: #0F1B4C;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 13px;
+        font-weight: 500;
+        flex-shrink: 0;
+    }
+
+    /* ── Vertical Divider ─────────────────────────────────────────── */
+    .user-divider {
+        width: 0.5px;
+        height: 20px;
+        background: #dfe6e9;
+        flex-shrink: 0;
+    }
+
+    /* ── Sign Out Button ─────────────────────────────────────────── */
+    .sign-out-btn {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        background: #c0392b;
+        color: white;
+        border: none;
+        border-radius: 999px;
+        padding: 6px 10px;
+        font-size: 12px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: background 0.2s;
+        white-space: nowrap;
+    }
+
+    .sign-out-btn:hover {
+        background: #a93226;
+    }
+
+    .sign-out-icon {
+        font-size: 11px;
+        display: flex;
+        align-items: center;
+    }
+    </style>
     @yield('styles')
 </head>
 <body>
@@ -171,29 +256,7 @@
 
         </nav>
 
-        <div class="sidebar-footer">
-            <div class="sidebar-user">
-                <div class="sidebar-avatar">
-                    {{ strtoupper(substr(auth()->user()->name, 0, 1)) }}
-                </div>
-                <div class="sidebar-user-info">
-                    <strong>{{ auth()->user()->name }}</strong>
-                    <span>{{ auth()->user()->getRoleNames()->first() ?? 'No Role' }}</span>
-                </div>
-            </div>
-            @role('super_admin')
-            <form method="POST" action="{{ route('logout') }}">
-                @csrf
-                <button type="submit" class="btn-logout">⏻ Sign Out</button>
-            </form>
-            @else
-            <form method="POST" action="{{ route('logout') }}" onsubmit="setTimeout(() => { window.location.href = 'http://localhost:3001'; }, 100);">
-                @csrf
-                <button type="submit" class="btn-logout" style="text-decoration:none;">← Back to HRIS</button>
-            </form>
-            @endrole
-        </div>
-
+        
     </aside>
 
     {{-- ═══ MAIN AREA ═══ --}}
@@ -209,11 +272,32 @@
                 <span class="topbar-title">@yield('page-title', 'Dashboard')</span>
             </div>
             <div class="topbar-right">
-                <div class="topbar-user">
-                    <span>{{ auth()->user()->name }}</span>
-                    <span class="role-badge">
-                        {{ str_replace('_', ' ', auth()->user()->getRoleNames()->first() ?? '') }}
-                    </span>
+                <div class="topbar-user-pill">
+                    <div class="user-info">
+                        <div class="user-name">{{ auth()->user()->name }}</div>
+                        <div class="user-role">{{ str_replace('_', ' ', ucwords(auth()->user()->getRoleNames()->first() ?? '')) }}</div>
+                    </div>
+                    <div class="user-avatar">
+                        {{ strtoupper(substr(auth()->user()->name, 0, 1)) }}
+                    </div>
+                    <div class="user-divider"></div>
+                    @role('super_admin')
+                    <form method="POST" action="{{ route('logout') }}" style="display: inline;">
+                        @csrf
+                        <button type="submit" class="sign-out-btn">
+                            <span class="sign-out-icon">⏻</span>
+                            Sign Out
+                        </button>
+                    </form>
+                    @else
+                    <form method="POST" action="{{ route('logout') }}" onsubmit="setTimeout(() => { window.location.href = 'http://localhost:3001'; }, 100);" style="display: inline;">
+                        @csrf
+                        <button type="submit" class="sign-out-btn">
+                            <span class="sign-out-icon">←</span>
+                            Back to HRIS
+                        </button>
+                    </form>
+                    @endrole
                 </div>
             </div>
         </header>

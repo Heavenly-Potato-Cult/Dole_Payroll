@@ -79,7 +79,6 @@
                 </div>
                 <div class="sidebar-user-info">
                     <strong>{{ auth()->user()->name }}</strong>
-                    <span>{{ auth()->user()->getRoleNames()->first() ?? 'No Role' }}</span>
                 </div>
             </div>
             @role('super_admin')
