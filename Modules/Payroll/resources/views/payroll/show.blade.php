@@ -73,6 +73,55 @@
 .ded-toggle:hover { background: var(--navy-light); }
 .ded-panel { display: none; background: var(--bg); border-top: 1px solid var(--border); padding: 10px 14px; }
 .ded-panel.open { display: block; }
+
+/* ── Virtual Scrolling ── */
+.table-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+#payrollRegisterTable,
+#virtualScrollContainer table,
+#payrollRegisterTableFooter {
+    table-layout: fixed;
+    width: 1260px; /* sum of all col widths above */
+}
+
+.virtual-scroll-container {
+    height: 480px;
+    overflow-x: hidden; /* horizontal scroll is handled by .table-wrap parent */
+    overflow-y: auto;
+    width: 1260px; /* match table width exactly so no internal reflow */
+    position: relative;
+}
+.virtual-scroll-table {
+    table-layout: fixed;
+}
+.virtual-scroll-thead {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: var(--navy);
+}
+.virtual-scroll-thead th {
+    background: var(--navy);
+    border-bottom: 2px solid var(--border);
+    color: white !important;
+}
+.virtual-scroll-tfoot {
+    position: sticky;
+    bottom: 0;
+    z-index: 10;
+}
+.virtual-spacer {
+    height: 0;
+}
+#payrollRegisterTable tbody tr {
+    height: 44px;
+}
+#payrollRegisterTable tbody tr.deduction-detail-row {
+    height: auto;
+}
 .ded-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
@@ -500,138 +549,92 @@
 </div>
     </div>
 
-    <div class="scroll-hint">Scroll horizontally to see all columns</div>
+    <div class="scroll-hint">Scroll vertically for more employees</div>
 
     <div class="card-body" style="padding:0;">
         <div class="table-wrap">
-            <table id="payrollRegisterTable">
-                <thead>
+            <table id="payrollRegisterTable" class="virtual-scroll-table">
+                <colgroup>
+                    <col style="width:40px;">
+                    <col style="width:180px;">
+                    <col style="width:80px;">
+                    <col style="width:100px;">
+                    <col style="width:85px;">
+                    <col style="width:85px;">
+                    <col style="width:110px;">
+                    <col style="width:100px;">
+                    <col style="width:80px;">
+                    <col style="width:90px;">
+                    <col style="width:110px;">
+                    <col style="width:110px;">
+                    <col style="width:90px;">
+                </colgroup>
+                <thead class="virtual-scroll-thead">
                     <tr>
-                        <th style="width:36px;">#</th>
-                        <th>Employee</th>
-                        <th>SG–Step</th>
-                        <th class="text-right">Basic Earned</th>
-                        <th class="text-right">PERA</th>
-                        <th class="text-right">RATA</th>
-                        <th class="text-right" style="background:rgba(249,168,37,0.22); color:var(--gold-dark);">Gross</th>
-                        <th class="text-right">Tardiness</th>
-                        <th class="text-right">LWOP</th>
-                        <th class="text-right">Ded. Lines</th>
-                        <th class="text-right" style="background:rgba(183,28,28,0.12); color:#8B0000;">Total Ded.</th>
-                        <th class="text-right" style="background:rgba(27,94,32,0.12); color:#1B5E20;">Net Pay</th>
-                        <th style="width:100px;">Actions</th>
+                        <th style="color:white;">#</th>
+                        <th style="color:white;">Employee</th>
+                        <th style="color:white;">SG–Step</th>
+                        <th style="color:white;" class="text-right">Basic Earned</th>
+                        <th style="color:white;" class="text-right">PERA</th>
+                        <th style="color:white;" class="text-right">RATA</th>
+                        <th style="background:rgba(249,168,37,0.22); color:white;" class="text-right">Gross</th>
+                        <th style="color:white;" class="text-right">Tardiness</th>
+                        <th style="color:white;" class="text-right">LWOP</th>
+                        <th style="color:white;" class="text-right">Ded. Lines</th>
+                        <th style="background:rgba(183,28,28,0.12); color:white;" class="text-right">Total Ded.</th>
+                        <th style="background:rgba(27,94,32,0.12); color:white;" class="text-right">Net Pay</th>
+                        <th style="color:white;">Actions</th>
                     </tr>
                 </thead>
-                <tbody>
-                    @foreach ($entries as $i => $entry)
-                        @php
-                            $netWarn  = $entry->net_amount < 5000;
-                            $tardy    = ($entry->tardiness ?? 0) + ($entry->undertime ?? 0);
-                            $lwop     = $entry->lwop_deduction ?? 0;
-                            $dedCount = $entry->deductions->count();
-                        @endphp
+            </table>
 
-                        <tr class="{{ $netWarn ? 'net-warn' : '' }}" id="row-{{ $entry->id }}">
-                            <td class="text-muted" style="font-size:0.75rem;">{{ $i + 1 }}</td>
-                            <td>
-                                <div class="fw-bold" style="font-size:0.86rem; white-space:nowrap;">
-                                    {{ $entry->employee->full_name }}
-                                </div>
-                                <div class="text-muted" style="font-size:0.73rem;">
-                                    {{ $entry->employee->position_title }}
-                                </div>
-                            </td>
-                            <td style="font-size:0.82rem; white-space:nowrap;">
-                                SG {{ $entry->employee->salary_grade }}–{{ $entry->employee->step }}
-                            </td>
-                            <td class="text-right" style="white-space:nowrap;">
-                                ₱{{ number_format($entry->basic_salary, 2) }}
-                            </td>
-                            <td class="text-right" style="white-space:nowrap;">
-                                ₱{{ number_format($entry->pera, 2) }}
-                            </td>
-                            <td class="text-right" style="white-space:nowrap; color:var(--text-light);">
-                                {{ $entry->rata > 0 ? '₱' . number_format($entry->rata, 2) : '—' }}
-                            </td>
-                            <td class="text-right fw-bold" style="white-space:nowrap; background:rgba(249,168,37,0.06);">
-                                ₱{{ number_format($entry->gross_income, 2) }}
-                            </td>
-                            <td class="text-right {{ $tardy > 0 ? 'text-red' : '' }}" style="white-space:nowrap;">
-                                {{ $tardy > 0 ? '₱' . number_format($tardy, 2) : '—' }}
-                            </td>
-                            <td class="text-right {{ $lwop > 0 ? 'text-red' : '' }}" style="white-space:nowrap;">
-                                {{ $lwop > 0 ? '₱' . number_format($lwop, 2) : '—' }}
-                            </td>
-                            <td class="text-right" style="white-space:nowrap;">
-                                @if ($dedCount > 0)
-<button class="ded-toggle"
-        onclick="toggleDed({{ $entry->id }})"
-        id="toggle-{{ $entry->id }}"
-        data-count="{{ $dedCount }}">
-    {{ $dedCount }} lines ▾
-</button>
-                                @else
-                                    <span class="text-muted" style="font-size:0.78rem;">—</span>
-                                @endif
-                            </td>
-                            <td class="text-right" style="white-space:nowrap; background:rgba(183,28,28,0.04);">
-                                ₱{{ number_format($entry->total_deductions, 2) }}
-                            </td>
-                            <td class="text-right fw-bold {{ $netWarn ? 'text-red' : '' }}"
-                                style="white-space:nowrap; background:rgba(27,94,32,0.04);">
-                                ₱{{ number_format($entry->net_amount, 2) }}
-                                @if ($netWarn)
-                                    <span class="net-warn-badge">Below ₱5K</span>
-                                @endif
-                            </td>
-{{-- NEW --}}
-<td>
-    @if (in_array($payroll->status, ['released', 'locked']))
-        <a href="{{ route('payroll.payslips.generate', $payroll) }}?mode=per_batch&entry_id={{ $entry->id }}"
-           class="btn btn-outline btn-sm" target="_blank">
-            Payslip
-        </a>
-    @else
-        <span class="text-muted" style="font-size:0.75rem;">—</span>
-    @endif
-</td>
-                        </tr>
+            {{-- Virtual Scroll Container for tbody --}}
+            <div class="virtual-scroll-container" id="virtualScrollContainer">
+                <table class="virtual-scroll-table">
+                    <colgroup>
+                        <col style="width:40px;">
+                        <col style="width:180px;">
+                        <col style="width:80px;">
+                        <col style="width:100px;">
+                        <col style="width:85px;">
+                        <col style="width:85px;">
+                        <col style="width:110px;">
+                        <col style="width:100px;">
+                        <col style="width:80px;">
+                        <col style="width:90px;">
+                        <col style="width:110px;">
+                        <col style="width:110px;">
+                        <col style="width:90px;">
+                    </colgroup>
+                    <tbody id="virtualScrollTbody">
+                        {{-- Rows rendered by JavaScript --}}
+                    </tbody>
+                </table>
+            </div>
 
-                        @if ($dedCount > 0)
-<tr class="{{ $netWarn ? 'net-warn' : '' }}"
-    id="ded-row-{{ $entry->id }}" hidden>
-    <td colspan="13" style="padding:0;">
-        <div class="ded-panel" id="ded-panel-{{ $entry->id }}" hidden>
-                                        <div class="ded-grid">
-                                            @foreach ($entry->deductions->sortBy(fn ($d) => optional($d->deductionType)->display_order ?? 99) as $ded)
-                                                <div class="ded-row">
-                                                    <span>{{ $ded->name }}</span>
-                                                    <span>₱{{ number_format($ded->amount, 2) }}</span>
-                                                </div>
-                                            @endforeach
-                                        </div>
-                                        <div style="text-align:right; margin-top:6px; font-size:0.78rem; color:var(--text-mid);">
-                                            Sub-total:
-                                            <strong>₱{{ number_format($entry->deductions->sum('amount'), 2) }}</strong>
-                                            @if (($entry->tardiness + $entry->undertime + $entry->lwop_deduction) > 0)
-                                                · Attendance deduction:
-                                                <strong class="text-red">
-                                                    ₱{{ number_format($entry->tardiness + $entry->undertime + ($entry->lwop_deduction ?? 0), 2) }}
-                                                </strong>
-                                            @endif
-                                        </div>
-                                    </div>
-                                </td>
-                            </tr>
-                        @endif
-
-                    @endforeach
-                </tbody>
-
-                <tfoot>
+            <table id="payrollRegisterTableFooter" class="virtual-scroll-table" style="margin-top: -1px;">
+                <colgroup>
+                    <col style="width:40px;">
+                    <col style="width:180px;">
+                    <col style="width:80px;">
+                    <col style="width:100px;">
+                    <col style="width:85px;">
+                    <col style="width:85px;">
+                    <col style="width:110px;">
+                    <col style="width:100px;">
+                    <col style="width:80px;">
+                    <col style="width:90px;">
+                    <col style="width:110px;">
+                    <col style="width:110px;">
+                    <col style="width:90px;">
+                </colgroup>
+                <tfoot class="virtual-scroll-tfoot">
                     <tr class="tfoot-totals" style="background:var(--navy); color:white;">
-                        <td colspan="3" style="padding:12px 14px; color:rgba(255,255,255,0.7); font-size:0.82rem;">
-                            TOTALS — {{ $employeeCount }} employee{{ $employeeCount !== 1 ? 's' : '' }}
+                        <td style="padding:12px 14px; color:rgba(255,255,255,0.7); font-size:0.82rem;">
+                            #
+                        </td>
+                        <td colspan="2" style="padding:12px 14px; color:rgba(255,255,255,0.7); font-size:0.82rem;">
+                            TOTALS - {{ $employeeCount }} employee{{ $employeeCount !== 1 ? 's' : '' }}
                         </td>
                         <td class="text-right" style="color:white;">
                             ₱{{ number_format($payroll->entries->sum('basic_salary'), 2) }}
@@ -641,28 +644,75 @@
                         </td>
                         <td class="text-right" style="color:rgba(255,255,255,0.5);">
                             {{ $payroll->entries->sum('rata') > 0
-                               ? '₱' . number_format($payroll->entries->sum('rata'), 2) : '—' }}
+                               ? '₱' . number_format($payroll->entries->sum('rata'), 2) : '' }}
                         </td>
                         <td class="text-right" style="color:var(--gold); background:rgba(249,168,37,0.15);">
                             ₱{{ number_format($totalGross, 2) }}
                         </td>
-                        <td class="text-right" style="color:rgba(255,255,255,0.7);">
+                        <td class="text-right" style="color:white;">
                             ₱{{ number_format($payroll->entries->sum('tardiness') + $payroll->entries->sum('undertime'), 2) }}
                         </td>
-                        <td class="text-right" style="color:rgba(255,255,255,0.7);">
+                        <td class="text-right" style="color:white;">
                             ₱{{ number_format($payroll->entries->sum('lwop_deduction'), 2) }}
                         </td>
                         <td></td>
-                        <td class="text-right" style="color:var(--gold);">
+                        <td class="text-right" style="color:white;">
                             ₱{{ number_format($totalDeds, 2) }}
                         </td>
-                        <td class="text-right" style="color:#69F0AE; font-size:1rem;">
+                        <td class="text-right" style="color:white; font-size:1rem;">
                             ₱{{ number_format($totalNet, 2) }}
                         </td>
                         <td></td>
                     </tr>
                 </tfoot>
             </table>
+
+            {{-- Hidden data store for virtual scrolling --}}
+            @php
+                $virtualRows = [];
+                foreach ($entries as $i => $entry) {
+                    $netWarn = $entry->net_amount < 5000;
+                    $tardy = ($entry->tardiness ?? 0) + ($entry->undertime ?? 0);
+                    $lwop = $entry->lwop_deduction ?? 0;
+                    $dedCount = $entry->deductions->count();
+
+                    $deductions = [];
+                    foreach ($entry->deductions->sortBy(fn ($d) => optional($d->deductionType)->display_order ?? 99) as $ded) {
+                        $deductions[] = [
+                            'name' => $ded->name,
+                            'amount' => $ded->amount,
+                        ];
+                    }
+
+                    $virtualRows[] = [
+                        'id' => $entry->id,
+                        'index' => $i + 1,
+                        'netWarn' => $netWarn,
+                        'employee_name' => $entry->employee->full_name,
+                        'position' => $entry->employee->position_title,
+                        'sg' => $entry->employee->salary_grade,
+                        'step' => $entry->employee->step,
+                        'basic_salary' => $entry->basic_salary,
+                        'pera' => $entry->pera,
+                        'rata' => $entry->rata,
+                        'gross_income' => $entry->gross_income,
+                        'tardy' => $tardy,
+                        'lwop' => $lwop,
+                        'dedCount' => $dedCount,
+                        'total_deductions' => $entry->total_deductions,
+                        'net_amount' => $entry->net_amount,
+                        'has_payslip' => in_array($payroll->status, ['released', 'locked']),
+                        'payroll_id' => $payroll->id,
+                        'deductions' => $deductions,
+                        'attendance_deduction' => $entry->tardiness + $entry->undertime + ($entry->lwop_deduction ?? 0),
+                    ];
+                }
+            @endphp
+            <script>
+                window.virtualRowData = @json($virtualRows);
+                window.payrollStatus = @json($payroll->status);
+                window.payrollId = @json($payroll->id);
+            </script>
         </div>
     </div>
 
@@ -898,5 +948,185 @@ function submitPayslip() {
 document.getElementById('payslipModal').addEventListener('click', function(e) {
     if (e.target === this) closePayslipModal();
 });
+
+// ═══════════════════════════════════════════════════════════════
+// VIRTUAL SCROLLING FOR PAYROLL REGISTER TABLE
+// ═══════════════════════════════════════════════════════════════
+(function() {
+    const ROW_HEIGHT = 44; // Height of each main row in pixels
+    const OVERSCAN = 3;    // Extra rows to render above/below viewport
+    const VIEWPORT_HEIGHT = 480;
+
+    const container = document.getElementById('virtualScrollContainer');
+    const tbody = document.getElementById('virtualScrollTbody');
+    const rows = window.virtualRowData || [];
+    const totalRows = rows.length;
+
+    if (totalRows === 0) return;
+
+    function formatCurrency(amount) {
+        return '₱' + Number(amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    function renderRow(row, index) {
+        const netWarnClass = row.netWarn ? 'net-warn' : '';
+        const tardyClass = row.tardy > 0 ? 'text-red' : '';
+        const lwopClass = row.lwop > 0 ? 'text-red' : '';
+        const netClass = row.netWarn ? 'text-red' : '';
+        const netWarnBadge = row.netWarn ? '<span class="net-warn-badge">Below ₱5K</span>' : '';
+
+        const tardyDisplay = row.tardy > 0 ? formatCurrency(row.tardy) : '—';
+        const lwopDisplay = row.lwop > 0 ? formatCurrency(row.lwop) : '—';
+        const rataDisplay = row.rata > 0 ? formatCurrency(row.rata) : '—';
+
+        const dedToggle = row.dedCount > 0
+            ? `<button class="ded-toggle" data-entry-id="${row.id}" data-count="${row.dedCount}">${row.dedCount} lines ▾</button>`
+            : '<span class="text-muted" style="font-size:0.78rem;">—</span>';
+
+        const payslipBtn = row.has_payslip
+            ? `<a href="/payroll/${row.payroll_id}/payslips?mode=per_batch&entry_id=${row.id}" class="btn btn-outline btn-sm" target="_blank">Payslip</a>`
+            : '<span class="text-muted" style="font-size:0.75rem;">—</span>';
+
+        // Main row HTML
+        const mainRow = document.createElement('tr');
+        mainRow.className = netWarnClass;
+        mainRow.id = `row-${row.id}`;
+        mainRow.style.height = ROW_HEIGHT + 'px';
+        mainRow.innerHTML = `
+            <td class="text-muted" style="font-size:0.75rem;">${row.index}</td>
+            <td>
+                <div class="fw-bold" style="font-size:0.86rem; white-space:nowrap;">${row.employee_name}</div>
+                <div class="text-muted" style="font-size:0.73rem;">${row.position}</div>
+            </td>
+            <td style="font-size:0.82rem; white-space:nowrap;">SG ${row.sg}–${row.step}</td>
+            <td class="text-right" style="white-space:nowrap;">${formatCurrency(row.basic_salary)}</td>
+            <td class="text-right" style="white-space:nowrap;">${formatCurrency(row.pera)}</td>
+            <td class="text-right" style="white-space:nowrap; color:var(--text-light);">${rataDisplay}</td>
+            <td class="text-right fw-bold" style="white-space:nowrap; background:rgba(249,168,37,0.06);">${formatCurrency(row.gross_income)}</td>
+            <td class="text-right ${tardyClass}" style="white-space:nowrap;">${tardyDisplay}</td>
+            <td class="text-right ${lwopClass}" style="white-space:nowrap;">${lwopDisplay}</td>
+            <td class="text-right" style="white-space:nowrap;">${dedToggle}</td>
+            <td class="text-right" style="white-space:nowrap; background:rgba(183,28,28,0.04);">${formatCurrency(row.total_deductions)}</td>
+            <td class="text-right fw-bold ${netClass}" style="white-space:nowrap; background:rgba(27,94,32,0.04);">
+                ${formatCurrency(row.net_amount)}${netWarnBadge}
+            </td>
+            <td>${payslipBtn}</td>
+        `;
+
+        return mainRow;
+    }
+
+    function renderDeductionRow(row) {
+        if (row.dedCount === 0) return null;
+
+        const netWarnClass = row.netWarn ? 'net-warn' : '';
+
+        const dedGrid = row.deductions.map(ded => `
+            <div class="ded-row">
+                <span>${ded.name}</span>
+                <span>${formatCurrency(ded.amount)}</span>
+            </div>
+        `).join('');
+
+        const attendanceNote = row.attendance_deduction > 0
+            ? `· Attendance deduction: <strong class="text-red">${formatCurrency(row.attendance_deduction)}</strong>`
+            : '';
+
+        const dedRow = document.createElement('tr');
+        dedRow.className = `${netWarnClass} deduction-detail-row`;
+        dedRow.id = `ded-row-${row.id}`;
+        dedRow.hidden = true;
+        dedRow.innerHTML = `
+            <td colspan="13" style="padding:0;">
+                <div class="ded-panel" id="ded-panel-${row.id}" hidden>
+                    <div class="ded-grid">${dedGrid}</div>
+                    <div style="text-align:right; margin-top:6px; font-size:0.78rem; color:var(--text-mid);">
+                        Sub-total: <strong>${formatCurrency(row.total_deductions - row.attendance_deduction)}</strong>
+                        ${attendanceNote}
+                    </div>
+                </div>
+            </td>
+        `;
+
+        return dedRow;
+    }
+
+    function updateVisibleRows() {
+        const scrollTop = container.scrollTop;
+        const startIndex = Math.max(0, Math.floor(scrollTop / ROW_HEIGHT) - OVERSCAN);
+        const endIndex = Math.min(totalRows, Math.ceil((scrollTop + VIEWPORT_HEIGHT) / ROW_HEIGHT) + OVERSCAN);
+
+        // Clear current content
+        tbody.innerHTML = '';
+
+        // Top spacer
+        const topSpacer = document.createElement('tr');
+        topSpacer.className = 'virtual-spacer';
+        topSpacer.style.height = (startIndex * ROW_HEIGHT) + 'px';
+        tbody.appendChild(topSpacer);
+
+        // Visible rows
+        for (let i = startIndex; i < endIndex; i++) {
+            const row = rows[i];
+            if (!row) continue;
+
+            tbody.appendChild(renderRow(row, i));
+
+            const dedRow = renderDeductionRow(row);
+            if (dedRow) {
+                tbody.appendChild(dedRow);
+            }
+        }
+
+        // Bottom spacer
+        const bottomSpacer = document.createElement('tr');
+        bottomSpacer.className = 'virtual-spacer';
+        bottomSpacer.style.height = ((totalRows - endIndex) * ROW_HEIGHT) + 'px';
+        tbody.appendChild(bottomSpacer);
+
+        // Re-attach event listeners for deduction toggles
+        attachDeductionListeners();
+    }
+
+    function attachDeductionListeners() {
+        tbody.querySelectorAll('.ded-toggle').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const entryId = this.dataset.entryId;
+                toggleDed(entryId);
+            });
+        });
+    }
+
+    // Override toggleDed to work with virtual scrolling
+    window.toggleDed = function(entryId) {
+        const row = document.getElementById('ded-row-' + entryId);
+        const panel = document.getElementById('ded-panel-' + entryId);
+        const toggle = document.querySelector(`[data-entry-id="${entryId}"].ded-toggle`);
+
+        if (!row || !panel || !toggle) return;
+
+        const isOpen = !row.hidden;
+        row.hidden = isOpen;
+        panel.hidden = isOpen;
+
+        const count = toggle.dataset.count || '?';
+        toggle.textContent = count + ' lines ' + (isOpen ? '▾' : '▴');
+    };
+
+    // Throttled scroll handler
+    let ticking = false;
+    container.addEventListener('scroll', function() {
+        if (!ticking) {
+            window.requestAnimationFrame(function() {
+                updateVisibleRows();
+                ticking = false;
+            });
+            ticking = true;
+        }
+    });
+
+    // Initial render
+    updateVisibleRows();
+})();
 </script>
 @endsection
