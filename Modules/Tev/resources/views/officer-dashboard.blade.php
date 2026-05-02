@@ -13,7 +13,7 @@
 /* ── Greeting ─────────────────────────────────────────────────── */
 .tod-greeting {
     margin-bottom: 20px;
-    padding: 18px 20px;
+    padding: 20px;
     background: linear-gradient(135deg, var(--navy) 0%, #1a2d6d 100%);
     border-radius: var(--radius);
     color: #fff;
@@ -28,16 +28,25 @@
     background: rgba(249,168,37,0.12);
     border-radius: 50%;
 }
+
+.tod-greeting-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 12px;
+    gap: 12px;
+}
+
 .tod-greeting h1 {
     font-size: clamp(1.1rem, 3vw, 1.4rem);
-    margin: 0 0 3px;
+    margin: 0;
     font-weight: 700;
     color: #fff;
+    line-height: 1.2;
 }
-.tod-greeting p { margin: 0; font-size: 0.82rem; color: rgba(255,255,255,0.65); }
+
 .tod-greeting .tod-role-pill {
     display: inline-block;
-    margin-top: 8px;
     background: rgba(249,168,37,0.22);
     border: 1px solid rgba(249,168,37,0.45);
     color: var(--gold);
@@ -47,6 +56,37 @@
     text-transform: uppercase;
     padding: 3px 10px;
     border-radius: 20px;
+    flex-shrink: 0;
+}
+
+.tod-greeting-body {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.tod-greeting-date {
+    font-size: 0.9rem;
+    color: rgba(255,255,255,0.8);
+    font-weight: 500;
+}
+
+.tod-greeting-location {
+    font-size: 0.82rem;
+    color: rgba(255,255,255,0.65);
+}
+
+/* Mobile responsiveness */
+@media (max-width: 480px) {
+    .tod-greeting-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+    
+    .tod-greeting .tod-role-pill {
+        align-self: flex-start;
+    }
 }
 
 /* ── Stat Grid ────────────────────────────────────────────────── */
@@ -458,9 +498,14 @@
 
 {{-- ── Greeting ──────────────────────────────────────────────── --}}
 <div class="tod-greeting">
-    <h1>TEV Officer Dashboard</h1>
-    <p>Travel & Expense Voucher Management &mdash; {{ now()->format('l, F j, Y') }}</p>
-    <span class="tod-role-pill">{{ str_replace('_', ' ', strtoupper(auth()->user()->getRoleNames()->first() ?? 'user')) }}</span>
+    <div class="tod-greeting-header">
+        <h1>TEV Officer Dashboard</h1>
+        <span class="tod-role-pill">{{ str_replace('_', ' ', strtoupper(auth()->user()->getRoleNames()->first() ?? 'user')) }}</span>
+    </div>
+    <div class="tod-greeting-body">
+        <div class="tod-greeting-date">{{ now()->format('l, F j, Y') }}</div>
+        <div class="tod-greeting-location">Travel & Expense Voucher Management</div>
+    </div>
 </div>
 
 {{-- ── Stat Cards — role-aware TEV metrics ─────────────────────────── --}}

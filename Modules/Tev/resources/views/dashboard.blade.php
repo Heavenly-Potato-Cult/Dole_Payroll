@@ -13,7 +13,7 @@
 /* ── Greeting ─────────────────────────────────────────────────── */
 .td-greeting {
     margin-bottom: 20px;
-    padding: 18px 20px;
+    padding: 20px;
     background: linear-gradient(135deg, var(--navy) 0%, #1a2d6d 100%);
     border-radius: var(--radius);
     color: #fff;
@@ -28,16 +28,25 @@
     background: rgba(249,168,37,0.12);
     border-radius: 50%;
 }
+
+.td-greeting-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 12px;
+    gap: 12px;
+}
+
 .td-greeting h1 {
     font-size: clamp(1.1rem, 3vw, 1.4rem);
-    margin: 0 0 3px;
+    margin: 0;
     font-weight: 700;
     color: #fff;
+    line-height: 1.2;
 }
-.td-greeting p { margin: 0; font-size: 0.82rem; color: rgba(255,255,255,0.65); }
+
 .td-greeting .td-role-pill {
     display: inline-block;
-    margin-top: 8px;
     background: rgba(249,168,37,0.22);
     border: 1px solid rgba(249,168,37,0.45);
     color: var(--gold);
@@ -47,6 +56,37 @@
     text-transform: uppercase;
     padding: 3px 10px;
     border-radius: 20px;
+    flex-shrink: 0;
+}
+
+.td-greeting-body {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.td-greeting-date {
+    font-size: 0.9rem;
+    color: rgba(255,255,255,0.8);
+    font-weight: 500;
+}
+
+.td-greeting-location {
+    font-size: 0.82rem;
+    color: rgba(255,255,255,0.65);
+}
+
+/* Mobile responsiveness */
+@media (max-width: 480px) {
+    .td-greeting-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+    
+    .td-greeting .td-role-pill {
+        align-self: flex-start;
+    }
 }
 
 /* ── Stat Grid ────────────────────────────────────────────────── */
@@ -245,9 +285,14 @@
 
 {{-- ── Greeting ──────────────────────────────────────────────── --}}
 <div class="td-greeting">
-    <h1>Travel & Expense Voucher</h1>
-    <p>DOLE Regional Office IX, Zamboanga City &mdash; {{ now()->format('l, F j, Y') }}</p>
-    <span class="td-role-pill">{{ str_replace('_', ' ', strtoupper(auth()->user()->getRoleNames()->first() ?? 'user')) }}</span>
+    <div class="td-greeting-header">
+        <h1>Travel & Expense Voucher</h1>
+        <span class="td-role-pill">{{ str_replace('_', ' ', strtoupper(auth()->user()->getRoleNames()->first() ?? 'user')) }}</span>
+    </div>
+    <div class="td-greeting-body">
+        <div class="td-greeting-date">{{ now()->format('l, F j, Y') }}</div>
+        <div class="td-greeting-location">DOLE Regional Office IX, Zamboanga City</div>
+    </div>
 </div>
 
 {{-- ── Stat Cards ─────────────────────────────────────────────── --}}

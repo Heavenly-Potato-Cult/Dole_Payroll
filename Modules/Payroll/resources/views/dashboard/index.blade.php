@@ -13,7 +13,7 @@
 /* ── Greeting ─────────────────────────────────────────────────── */
 .db-greeting {
     margin-bottom: 20px;
-    padding: 18px 20px;
+    padding: 20px;
     background: linear-gradient(135deg, var(--navy) 0%, #1a2d6d 100%);
     border-radius: var(--radius);
     color: #fff;
@@ -28,16 +28,25 @@
     background: rgba(249,168,37,0.12);
     border-radius: 50%;
 }
+
+.db-greeting-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 12px;
+    gap: 12px;
+}
+
 .db-greeting h1 {
     font-size: clamp(1.1rem, 3vw, 1.4rem);
-    margin: 0 0 3px;
+    margin: 0;
     font-weight: 700;
     color: #fff;
+    line-height: 1.2;
 }
-.db-greeting p { margin: 0; font-size: 0.82rem; color: rgba(255,255,255,0.65); }
+
 .db-greeting .db-role-pill {
     display: inline-block;
-    margin-top: 8px;
     background: rgba(249,168,37,0.22);
     border: 1px solid rgba(249,168,37,0.45);
     color: var(--gold);
@@ -47,6 +56,37 @@
     text-transform: uppercase;
     padding: 3px 10px;
     border-radius: 20px;
+    flex-shrink: 0;
+}
+
+.db-greeting-body {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.db-greeting-date {
+    font-size: 0.9rem;
+    color: rgba(255,255,255,0.8);
+    font-weight: 500;
+}
+
+.db-greeting-location {
+    font-size: 0.82rem;
+    color: rgba(255,255,255,0.65);
+}
+
+/* Mobile responsiveness */
+@media (max-width: 480px) {
+    .db-greeting-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+    
+    .db-greeting .db-role-pill {
+        align-self: flex-start;
+    }
 }
 
 /* ── Stat Grid ────────────────────────────────────────────────── */
@@ -678,10 +718,15 @@
 
 {{-- ── Greeting ──────────────────────────────────────────────── --}}
 <div class="db-greeting">
-    <h1>Good {{ now()->format('H') < 12 ? 'morning' : (now()->format('H') < 17 ? 'afternoon' : 'evening') }},
-        {{ explode(' ', auth()->user()->name)[0] }} 👋</h1>
-    <p>{{ now()->format('l, F j, Y') }} &mdash; DOLE Regional Office IX, Zamboanga City</p>
-    <span class="db-role-pill">{{ str_replace('_', ' ', strtoupper(auth()->user()->getRoleNames()->first() ?? 'user')) }}</span>
+    <div class="db-greeting-header">
+        <h1>Good {{ now()->format('H') < 12 ? 'morning' : (now()->format('H') < 17 ? 'afternoon' : 'evening') }},
+            {{ explode(' ', auth()->user()->name)[0] }} 👋</h1>
+        <span class="db-role-pill">{{ str_replace('_', ' ', strtoupper(auth()->user()->getRoleNames()->first() ?? 'user')) }}</span>
+    </div>
+    <div class="db-greeting-body">
+        <div class="db-greeting-date">{{ now()->format('l, F j, Y') }}</div>
+        <div class="db-greeting-location">DOLE Regional Office IX, Zamboanga City</div>
+    </div>
 </div>
 
 {{-- ── Stat Cards — role-aware ─────────────────────────────────── --}}
@@ -954,7 +999,7 @@
         {{-- Recent Payroll Batches --}}
         <div class="db-queue-section">
             <div class="db-queue-header">
-                <span class="db-queue-label">💰 Recent Payroll Batches</span>
+                <span class="db-queue-label">Recent Payroll Batches</span>
                 <a href="{{ route('payroll.index') }}" class="db-queue-viewall">View all →</a>
             </div>
             @if($recentPayroll->isEmpty())
@@ -984,37 +1029,37 @@
         {{-- Quick Access --}}
         <div class="db-queue-section" style="grid-column: span 2;">
             <div class="db-queue-header">
-                <span class="db-queue-label">⚡ Quick Access</span>
+                <span class="db-queue-label"> Quick Access</span>
             </div>
             <div class="db-actions db-actions-2col">
                 <div class="db-actions-col">
                     <div class="db-action-sep">Payroll Operations</div>
                     <a href="{{ route('payroll.index') }}" class="db-action-btn">
-                        <span class="db-action-left">💰 Regular Payroll</span><span>→</span>
+                        <span class="db-action-left">Regular Payroll</span><span>→</span>
                     </a>
                     <a href="{{ route('special-payroll.newly-hired.index') }}" class="db-action-btn">
-                        <span class="db-action-left">🆕 Newly Hired Payroll</span><span>→</span>
+                        <span class="db-action-left">Newly Hired Payroll</span><span>→</span>
                     </a>
                     <a href="{{ route('special-payroll.differential.index') }}" class="db-action-btn">
-                        <span class="db-action-left">📈 Salary Differential</span><span>→</span>
+                        <span class="db-action-left">Salary Differential</span><span>→</span>
                     </a>
                     <a href="{{ route('special-payroll.nosi-nosa.index') }}" class="db-action-btn">
-                        <span class="db-action-left">🏥 NOSI/NOSA Payroll</span><span>→</span>
+                        <span class="db-action-left">NOSI/NOSA Payroll</span><span>→</span>
                     </a>
                 </div>
                 <div class="db-actions-col">
                     <div class="db-action-sep">Reports & Admin</div>
                     <a href="{{ route('reports.index') }}" class="db-action-btn">
-                        <span class="db-action-left">📊 Payroll Reports</span><span>→</span>
+                        <span class="db-action-left">Payroll Reports</span><span>→</span>
                     </a>
                     <a href="{{ route('employees.index') }}" class="db-action-btn">
-                        <span class="db-action-left">👤 Employees</span><span>→</span>
+                        <span class="db-action-left">Employees</span><span>→</span>
                     </a>
                     <a href="{{ route('users.index') }}" class="db-action-btn">
-                        <span class="db-action-left">⚙ User Management</span><span>→</span>
+                        <span class="db-action-left">User Management</span><span>→</span>
                     </a>
                     <a href="{{ route('tev.dashboard') }}" class="db-action-btn">
-                        <span class="db-action-left">✈ TEV Dashboard</span><span>→</span>
+                        <span class="db-action-left">TEV Dashboard</span><span>→</span>
                     </a>
                 </div>
             </div>
