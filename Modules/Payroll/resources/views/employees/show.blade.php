@@ -37,7 +37,7 @@
 
 <div class="profile-layout">
 
-    {{-- ── Left column ──────────────────────────────────────── --}}
+{{-- ── Left column ──────────────────────────────────────── --}}
     <div class="profile-col">
 
         <div class="card">
@@ -52,24 +52,24 @@
                 @endif
             </div>
             <div class="card-body">
-                @include('employees._detail_row', ['label' => 'Full Name',   'value' => $employee->full_name])
-                @include('employees._detail_row', ['label' => 'Last Name',   'value' => $employee->last_name])
-                @include('employees._detail_row', ['label' => 'First Name',  'value' => $employee->first_name])
-                @include('employees._detail_row', ['label' => 'Middle Name', 'value' => $employee->middle_name ?: '—'])
-                @include('employees._detail_row', ['label' => 'Suffix',      'value' => $employee->suffix ?: '—'])
+                @include('payroll::employees._detail_row', ['label' => 'Full Name',   'value' => $employee->full_name])
+                @include('payroll::employees._detail_row', ['label' => 'Last Name',   'value' => $employee->last_name])
+                @include('payroll::employees._detail_row', ['label' => 'First Name',  'value' => $employee->first_name])
+                @include('payroll::employees._detail_row', ['label' => 'Middle Name', 'value' => $employee->middle_name ?: '—'])
+                @include('payroll::employees._detail_row', ['label' => 'Suffix',      'value' => $employee->suffix ?: '—'])
             </div>
         </div>
 
         <div class="card">
             <div class="card-header"><h3>Position & Assignment</h3></div>
             <div class="card-body">
-                @include('employees._detail_row', ['label' => 'Plantilla Item No.', 'value' => $employee->plantilla_item_no, 'mono' => true])
-                @include('employees._detail_row', ['label' => 'Position Title',     'value' => $employee->position_title])
-                @include('employees._detail_row', ['label' => 'Division',
+                @include('payroll::employees._detail_row', ['label' => 'Plantilla Item No.', 'value' => $employee->plantilla_item_no, 'mono' => true])
+                @include('payroll::employees._detail_row', ['label' => 'Position Title',     'value' => $employee->position_title])
+                @include('payroll::employees._detail_row', ['label' => 'Division',
                     'value' => $employee->division
                         ? $employee->division->code . ' — ' . $employee->division->name
                         : '—'])
-                @include('employees._detail_row', ['label' => 'Hire Date',
+                @include('payroll::employees._detail_row', ['label' => 'Hire Date',
                     'value' => $employee->hire_date
                         ? $employee->hire_date->format('F d, Y')
                         : '—'])
@@ -98,10 +98,10 @@
                     <tbody>
                         @foreach ($employee->promotionHistory as $hist)
                         <tr>
-                            <td style="white-space:nowrap;">{{ \Carbon\Carbon::parse($hist->effective_date)->format('M d, Y') }}</td>
-                            <td>{{ $hist->salary_grade }}</td>
-                            <td>{{ $hist->step }}</td>
-                            <td style="text-align:right;font-family:monospace;">₱{{ number_format($hist->basic_salary, 2) }}</td>
+<td style="white-space:nowrap;">{{ \Carbon\Carbon::parse($hist->effectivity_date)->format('M d, Y') }}</td>
+<td>{{ $hist->new_salary_grade }}</td>
+<td>{{ $hist->new_step }}</td>
+<td style="text-align:right;font-family:monospace;">₱{{ number_format($hist->new_basic_salary, 2) }}</td>
                             <td style="font-size:0.82rem;color:var(--text-mid);">{{ $hist->remarks ?? '—' }}</td>
                         </tr>
                         @endforeach
@@ -112,34 +112,33 @@
         @endif
 
     </div>
-
-    {{-- ── Right column ─────────────────────────────────────── --}}
+{{-- ── Right column ─────────────────────────────────────── --}}
     <div class="profile-col">
 
         <div class="card">
             <div class="card-header"><h3>Salary Information</h3></div>
             <div class="card-body">
-                @include('employees._detail_row', ['label' => 'Salary Grade',     'value' => 'SG ' . $employee->salary_grade])
-                @include('employees._detail_row', ['label' => 'Step',             'value' => 'Step ' . $employee->step])
-                @include('employees._detail_row', ['label' => 'SIT Year',         'value' => 'CY ' . $employee->sit_year])
-                @include('employees._detail_row', ['label' => 'Basic Salary',     'value' => '₱' . number_format($employee->basic_salary, 2), 'bold' => true])
-                @include('employees._detail_row', ['label' => 'PERA',             'value' => '₱' . number_format($employee->pera, 2)])
+                @include('payroll::employees._detail_row', ['label' => 'Salary Grade',     'value' => 'SG ' . $employee->salary_grade])
+                @include('payroll::employees._detail_row', ['label' => 'Step',             'value' => 'Step ' . $employee->step])
+                @include('payroll::employees._detail_row', ['label' => 'SIT Year',         'value' => 'CY ' . $employee->sit_year])
+                @include('payroll::employees._detail_row', ['label' => 'Basic Salary',     'value' => '₱' . number_format($employee->basic_salary, 2), 'bold' => true])
+                @include('payroll::employees._detail_row', ['label' => 'PERA',             'value' => '₱' . number_format($employee->pera, 2)])
                 <hr style="border:none;border-top:1px solid var(--border);margin:14px 0;">
-                @include('employees._detail_row', ['label' => 'Daily Rate (÷22)',     'value' => '₱' . number_format($employee->daily_rate, 4),    'mono' => true])
-                @include('employees._detail_row', ['label' => 'Hourly Rate (÷22÷8)', 'value' => '₱' . number_format($employee->hourly_rate, 4),   'mono' => true])
-                @include('employees._detail_row', ['label' => 'Minute Rate',          'value' => '₱' . number_format($employee->minute_rate, 6),   'mono' => true])
-                @include('employees._detail_row', ['label' => 'Semi-monthly Gross',   'value' => '₱' . number_format($employee->semi_monthly_gross, 2), 'bold' => true])
+                @include('payroll::employees._detail_row', ['label' => 'Daily Rate (÷22)',     'value' => '₱' . number_format($employee->daily_rate, 4),    'mono' => true])
+                @include('payroll::employees._detail_row', ['label' => 'Hourly Rate (÷22÷8)', 'value' => '₱' . number_format($employee->hourly_rate, 4),   'mono' => true])
+                @include('payroll::employees._detail_row', ['label' => 'Minute Rate',          'value' => '₱' . number_format($employee->minute_rate, 6),   'mono' => true])
+                @include('payroll::employees._detail_row', ['label' => 'Semi-monthly Gross',   'value' => '₱' . number_format($employee->semi_monthly_gross, 2), 'bold' => true])
             </div>
         </div>
 
         <div class="card">
             <div class="card-header"><h3>Government IDs</h3></div>
             <div class="card-body">
-                @include('employees._detail_row', ['label' => 'TIN',        'value' => $employee->tin          ?: '—', 'mono' => true])
-                @include('employees._detail_row', ['label' => 'GSIS No.',   'value' => $employee->gsis_bp_no   ?: '—', 'mono' => true])
-                @include('employees._detail_row', ['label' => 'Pag-IBIG',  'value' => $employee->pagibig_no   ?: '—', 'mono' => true])
-                @include('employees._detail_row', ['label' => 'PhilHealth', 'value' => $employee->philhealth_no ?: '—', 'mono' => true])
-                @include('employees._detail_row', ['label' => 'SSS No.',    'value' => $employee->sss_no       ?: '—', 'mono' => true])
+                @include('payroll::employees._detail_row', ['label' => 'TIN',        'value' => $employee->tin          ?: '—', 'mono' => true])
+                @include('payroll::employees._detail_row', ['label' => 'GSIS No.',   'value' => $employee->gsis_bp_no   ?: '—', 'mono' => true])
+                @include('payroll::employees._detail_row', ['label' => 'Pag-IBIG',   'value' => $employee->pagibig_no   ?: '—', 'mono' => true])
+                @include('payroll::employees._detail_row', ['label' => 'PhilHealth', 'value' => $employee->philhealth_no ?: '—', 'mono' => true])
+                @include('payroll::employees._detail_row', ['label' => 'SSS No.',    'value' => $employee->sss_no       ?: '—', 'mono' => true])
             </div>
         </div>
 

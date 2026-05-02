@@ -587,7 +587,7 @@
 {{-- NEW --}}
 <td>
     @if (in_array($payroll->status, ['released', 'locked']))
-        <a href="{{ route('payroll.payslip', [$payroll, $entry]) }}"
+        <a href="{{ route('payroll.payslips.generate', $payroll) }}?mode=per_batch&entry_id={{ $entry->id }}"
            class="btn btn-outline btn-sm" target="_blank">
             Payslip
         </a>

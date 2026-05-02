@@ -28,7 +28,7 @@ class Employee extends Model
         'pera',
         'hire_date',
         'status',
-        'employment_type',   // regular | vacant
+        'employment_type',
         'tin',
         'gsis_bp_no',
         'gsis_crn',
@@ -65,18 +65,18 @@ class Employee extends Model
         return $this->belongsTo(\App\SharedKernel\Models\Division::class);
     }
 
-  public function promotionHistory(): HasMany
-{
-    return $this->hasMany(EmployeePromotionHistory::class)
-                ->orderByDesc('effectivity_date'); // was: effective_date
-}
+    public function promotionHistory(): HasMany
+    {
+        return $this->hasMany(\Modules\Payroll\Models\EmployeePromotionHistory::class)
+                    ->orderByDesc('effectivity_date');
+    }
 
     /**
      * Primary relationship name used in views/forms.
      */
     public function deductions(): HasMany
     {
-        return $this->hasMany(EmployeeDeductionEnrollment::class);
+        return $this->hasMany(\Modules\Payroll\Models\EmployeeDeductionEnrollment::class);
     }
 
     /**
@@ -84,12 +84,12 @@ class Employee extends Model
      */
     public function deductionEnrollments(): HasMany
     {
-        return $this->hasMany(EmployeeDeductionEnrollment::class);
+        return $this->hasMany(\Modules\Payroll\Models\EmployeeDeductionEnrollment::class);
     }
 
     public function payrollEntries(): HasMany
     {
-        return $this->hasMany(PayrollEntry::class);
+        return $this->hasMany(\Modules\Payroll\Models\PayrollEntry::class);
     }
 
     // ── Computed helpers ─────────────────────────────────────────
@@ -146,12 +146,9 @@ class Employee extends Model
     }
 
     // ── Attribute aliases for PayrollComputationService ──────────
-    // The service was written expecting these names. These aliases
-    // map them to the actual column names in the database.
 
     /**
      * Alias: basic_monthly_salary → basic_salary column
-     * Used by: PayrollComputationService, AttendanceService
      */
     public function getBasicMonthlySalaryAttribute(): float
     {
@@ -160,7 +157,6 @@ class Employee extends Model
 
     /**
      * Alias: pera_amount → pera column
-     * Used by: PayrollComputationService
      */
     public function getPeraAmountAttribute(): float
     {
@@ -169,8 +165,6 @@ class Employee extends Model
 
     /**
      * RATA allowance — not all employees have this.
-     * Returns 0.00 if not set on the model.
-     * Used by: PayrollComputationService
      */
     public function getRataAttribute(): float
     {
