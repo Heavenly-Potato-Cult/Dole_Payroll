@@ -709,7 +709,7 @@
                 </thead>
                 <tbody>
                     @foreach ($reportRows as $i => $ded)
-                        @php $emp = $ded->payrollEntry->employee; $dr = round(($emp->semi_monthly_gross * 2) / 22, 2); @endphp
+                        @php $emp = $ded->entry->employee; $dr = round(($emp->semi_monthly_gross * 2) / 22, 2); @endphp
                         <tr style="border-bottom: 1px solid #f1f5f9;">
                             <td style="padding: 0.75rem 1rem;">{{ $i + 1 }}</td>
                             <td style="padding: 0.75rem 1rem;">{{ strtoupper($emp->last_name . ', ' . $emp->first_name) }}</td>

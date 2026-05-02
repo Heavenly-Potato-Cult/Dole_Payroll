@@ -147,21 +147,26 @@ class PayrollReportController extends Controller
                 ];
 
                 if ($tab === 'btr') {
-                    $deductionTypes = \App\Models\DeductionType::whereIn('code', ['WHT', 'REFUND_VARIOUS'])->pluck('id');
+                    $deductionTypes = \Modules\Payroll\Models\DeductionType::whereIn('code', ['WHT', 'REFUND_VARIOUS'])->pluck('id');
 
-                    $rows = \App\Models\PayrollDeduction::with(['entry.employee', 'deductionType'])
+                    $rows = \Modules\Payroll\Models\PayrollDeduction::with(['entry.employee', 'deductionType'])
                         ->whereIn('payroll_entry_id', fn($q) => $q->select('id')->from('payroll_entries')->whereIn('payroll_batch_id', $batches))
                         ->whereIn('deduction_type_id', $deductionTypes)
                         ->where('amount', '>', 0)
                         ->get();
                 } else {
-                    $deductionTypeId = \App\Models\DeductionType::where('code', $codeMap[$tab])->value('id');
+                    $deductionTypeId = \Modules\Payroll\Models\DeductionType::where('code', $codeMap[$tab])->value('id');
 
-                    $rows = \App\Models\PayrollDeduction::with('entry.employee')
-                        ->whereIn('payroll_entry_id', fn($q) => $q->select('id')->from('payroll_entries')->whereIn('payroll_batch_id', $batches))
-                        ->where('deduction_type_id', $deductionTypeId)
-                        ->where('amount', '>', 0)
-                        ->get();
+                    if (!$deductionTypeId) {
+                        // Deduction type not found, return empty results
+                        $rows = collect();
+                    } else {
+                        $rows = \Modules\Payroll\Models\PayrollDeduction::with('entry.employee')
+                            ->whereIn('payroll_entry_id', fn($q) => $q->select('id')->from('payroll_entries')->whereIn('payroll_batch_id', $batches))
+                            ->where('deduction_type_id', $deductionTypeId)
+                            ->where('amount', '>', 0)
+                            ->get();
+                    }
                 }
 
                 $data = array_merge($data, [
@@ -380,9 +385,9 @@ class PayrollReportController extends Controller
             ->when($cutoff === '2nd', fn($q) => $q->whereDay('period_start', '>', 15))
             ->pluck('id');
 
-        $deductionTypeId = \App\Models\DeductionType::where('code', 'PHIC')->value('id');
+        $deductionTypeId = \Modules\Payroll\Models\DeductionType::where('code', 'PHIC')->value('id');
 
-        $rows = \App\Models\PayrollDeduction::with('payrollEntry.employee')
+        $rows = \Modules\Payroll\Models\PayrollDeduction::with('entry.employee')
             ->whereIn('payroll_entry_id', function ($q) use ($batches) {
                 $q->select('id')->from('payroll_entries')->whereIn('payroll_batch_id', $batches);
             })
@@ -390,7 +395,7 @@ class PayrollReportController extends Controller
             ->where('amount', '>', 0)
             ->get()
             ->map(function ($ded) {
-                $emp = $ded->payrollEntry->employee;
+                $emp = $ded->entry->employee;
                 return [
                     strtoupper($emp->last_name . ', ' . $emp->first_name),
                     $emp->philhealth_no ?? '',
@@ -442,9 +447,9 @@ class PayrollReportController extends Controller
             ->when($cutoff === '2nd', fn($q) => $q->whereDay('period_start', '>', 15))
             ->pluck('id');
 
-        $deductionTypeId = \App\Models\DeductionType::where('code', 'SSS')->value('id');
+        $deductionTypeId = \Modules\Payroll\Models\DeductionType::where('code', 'SSS')->value('id');
 
-        $rows = \App\Models\PayrollDeduction::with('payrollEntry.employee')
+        $rows = \Modules\Payroll\Models\PayrollDeduction::with('entry.employee')
             ->whereIn('payroll_entry_id', function ($q) use ($batches) {
                 $q->select('id')->from('payroll_entries')->whereIn('payroll_batch_id', $batches);
             })
@@ -452,7 +457,7 @@ class PayrollReportController extends Controller
             ->where('amount', '>', 0)
             ->get()
             ->map(function ($ded) {
-                $emp = $ded->payrollEntry->employee;
+                $emp = $ded->entry->employee;
                 return [
                     strtoupper($emp->last_name . ', ' . $emp->first_name),
                     $emp->sss_no ?? '',
@@ -511,13 +516,18 @@ class PayrollReportController extends Controller
             ->when($cutoff === '2nd', fn($q) => $q->whereDay('period_start', '>', 15))
             ->pluck('id');
 
-        $deductionTypeId = \App\Models\DeductionType::where('code', 'LBP_LOAN')->value('id');
+        $deductionTypeId = \Modules\Payroll\Models\DeductionType::where('code', 'LBP_LOAN')->value('id');
 
-        $rows = \App\Models\PayrollDeduction::with('payrollEntry.employee')
-            ->whereIn('payroll_entry_id', fn($q) => $q->select('id')->from('payroll_entries')->whereIn('payroll_batch_id', $batches))
-            ->where('deduction_type_id', $deductionTypeId)
-            ->where('amount', '>', 0)
-            ->get();
+        if (!$deductionTypeId) {
+            // LBP_LOAN deduction type not found, return empty results
+            $rows = collect();
+        } else {
+            $rows = \Modules\Payroll\Models\PayrollDeduction::with('entry.employee')
+                ->whereIn('payroll_entry_id', fn($q) => $q->select('id')->from('payroll_entries')->whereIn('payroll_batch_id', $batches))
+                ->where('deduction_type_id', $deductionTypeId)
+                ->where('amount', '>', 0)
+                ->get();
+        }
 
         return view('payroll::reports.remittances', [
             'year'          => $year,
@@ -556,13 +566,17 @@ class PayrollReportController extends Controller
             ->when($cutoff === '2nd', fn($q) => $q->whereDay('period_start', '>', 15))
             ->pluck('id');
 
-        $deductionTypeId = \App\Models\DeductionType::where('code', 'CARESS_UNION')->value('id');
+        $deductionTypeId = \Modules\Payroll\Models\DeductionType::where('code', 'CARESS_UNION')->value('id');
 
-        $rows = \App\Models\PayrollDeduction::with('payrollEntry.employee')
-            ->whereIn('payroll_entry_id', fn($q) => $q->select('id')->from('payroll_entries')->whereIn('payroll_batch_id', $batches))
-            ->where('deduction_type_id', $deductionTypeId)
-            ->where('amount', '>', 0)
-            ->get();
+        if (!$deductionTypeId) {
+            $rows = collect();
+        } else {
+            $rows = \Modules\Payroll\Models\PayrollDeduction::with('entry.employee')
+                ->whereIn('payroll_entry_id', fn($q) => $q->select('id')->from('payroll_entries')->whereIn('payroll_batch_id', $batches))
+                ->where('deduction_type_id', $deductionTypeId)
+                ->where('amount', '>', 0)
+                ->get();
+        }
 
         return view('payroll::reports.remittances', [
             'year'          => $year,
@@ -601,13 +615,17 @@ class PayrollReportController extends Controller
             ->when($cutoff === '2nd', fn($q) => $q->whereDay('period_start', '>', 15))
             ->pluck('id');
 
-        $deductionTypeId = \App\Models\DeductionType::where('code', 'CARESS_MORTUARY')->value('id');
+        $deductionTypeId = \Modules\Payroll\Models\DeductionType::where('code', 'CARESS_MORTUARY')->value('id');
 
-        $rows = \App\Models\PayrollDeduction::with('payrollEntry.employee')
-            ->whereIn('payroll_entry_id', fn($q) => $q->select('id')->from('payroll_entries')->whereIn('payroll_batch_id', $batches))
-            ->where('deduction_type_id', $deductionTypeId)
-            ->where('amount', '>', 0)
-            ->get();
+        if (!$deductionTypeId) {
+            $rows = collect();
+        } else {
+            $rows = \Modules\Payroll\Models\PayrollDeduction::with('entry.employee')
+                ->whereIn('payroll_entry_id', fn($q) => $q->select('id')->from('payroll_entries')->whereIn('payroll_batch_id', $batches))
+                ->where('deduction_type_id', $deductionTypeId)
+                ->where('amount', '>', 0)
+                ->get();
+        }
 
         return view('payroll::reports.remittances', [
             'year'          => $year,
@@ -646,13 +664,17 @@ class PayrollReportController extends Controller
             ->when($cutoff === '2nd', fn($q) => $q->whereDay('period_start', '>', 15))
             ->pluck('id');
 
-        $deductionTypeId = \App\Models\DeductionType::where('code', 'MASS')->value('id');
+        $deductionTypeId = \Modules\Payroll\Models\DeductionType::where('code', 'MASS')->value('id');
 
-        $rows = \App\Models\PayrollDeduction::with('payrollEntry.employee')
-            ->whereIn('payroll_entry_id', fn($q) => $q->select('id')->from('payroll_entries')->whereIn('payroll_batch_id', $batches))
-            ->where('deduction_type_id', $deductionTypeId)
-            ->where('amount', '>', 0)
-            ->get();
+        if (!$deductionTypeId) {
+            $rows = collect();
+        } else {
+            $rows = \Modules\Payroll\Models\PayrollDeduction::with('entry.employee')
+                ->whereIn('payroll_entry_id', fn($q) => $q->select('id')->from('payroll_entries')->whereIn('payroll_batch_id', $batches))
+                ->where('deduction_type_id', $deductionTypeId)
+                ->where('amount', '>', 0)
+                ->get();
+        }
 
         return view('payroll::reports.remittances', [
             'year'          => $year,
@@ -691,13 +713,17 @@ class PayrollReportController extends Controller
             ->when($cutoff === '2nd', fn($q) => $q->whereDay('period_start', '>', 15))
             ->pluck('id');
 
-        $deductionTypeId = \App\Models\DeductionType::where('code', 'PROVIDENT_FUND')->value('id');
+        $deductionTypeId = \Modules\Payroll\Models\DeductionType::where('code', 'PROVIDENT_FUND')->value('id');
 
-        $rows = \App\Models\PayrollDeduction::with('payrollEntry.employee')
-            ->whereIn('payroll_entry_id', fn($q) => $q->select('id')->from('payroll_entries')->whereIn('payroll_batch_id', $batches))
-            ->where('deduction_type_id', $deductionTypeId)
-            ->where('amount', '>', 0)
-            ->get();
+        if (!$deductionTypeId) {
+            $rows = collect();
+        } else {
+            $rows = \Modules\Payroll\Models\PayrollDeduction::with('entry.employee')
+                ->whereIn('payroll_entry_id', fn($q) => $q->select('id')->from('payroll_entries')->whereIn('payroll_batch_id', $batches))
+                ->where('deduction_type_id', $deductionTypeId)
+                ->where('amount', '>', 0)
+                ->get();
+        }
 
         return view('payroll::reports.remittances', [
             'year'          => $year,
@@ -736,9 +762,9 @@ class PayrollReportController extends Controller
             ->when($cutoff === '2nd', fn($q) => $q->whereDay('period_start', '>', 15))
             ->pluck('id');
 
-        $deductionTypes = \App\Models\DeductionType::whereIn('code', ['WHT', 'REFUND_VARIOUS'])->pluck('id');
+        $deductionTypes = \Modules\Payroll\Models\DeductionType::whereIn('code', ['WHT', 'REFUND_VARIOUS'])->pluck('id');
 
-        $rows = \App\Models\PayrollDeduction::with(['payrollEntry.employee', 'deductionType'])
+        $rows = \Modules\Payroll\Models\PayrollDeduction::with(['entry.employee', 'deductionType'])
             ->whereIn('payroll_entry_id', function ($q) use ($batches) {
                 $q->select('id')->from('payroll_entries')->whereIn('payroll_batch_id', $batches);
             })
