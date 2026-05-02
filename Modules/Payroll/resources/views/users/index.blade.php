@@ -5,102 +5,388 @@
 
 @section('styles')
 <style>
-/* ── User cards ──────────────────────────────────────────── */
-.user-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 28px; }
+/* ── User Management Table ─────────────────────────────────── */
+.page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 24px;
+}
 
-.user-card {
+.page-header-left h1 {
+    margin: 0 0 4px 0;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #2c3e50;
+}
+
+.page-header-left p {
+    margin: 0;
+    font-size: 0.9rem;
+    color: #7f8c8d;
+}
+
+/* ── Search and Filter Section ─────────────────────────────── */
+.search-filter-section {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+    align-items: flex-end;
+    flex-wrap: wrap;
+}
+
+.search-filter-section .ff-group {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.search-filter-section .ff-group label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    color: #6b7280;
+    line-height: 1;
+    margin: 0;
+}
+
+.search-input {
+    height: 38px;
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    background: white;
+    box-sizing: border-box;
+    margin-bottom: 0 !important;
+    flex: 1;
+    min-width: 200px;
+}
+
+.search-input:focus {
+    outline: none;
+    border-color: #1e3a5f;
+    box-shadow: 0 0 0 3px rgba(30, 58, 95, 0.1);
+}
+
+.role-filter {
+    height: 38px;
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    background: white;
+    width: 180px;
+    box-sizing: border-box;
+    margin-bottom: 0 !important;
+}
+
+.role-filter option {
+    padding: 8px 12px;
+    font-size: 0.85rem;
+}
+
+/* ── Users Table ───────────────────────────────────────────── */
+.users-table {
+    width: 100%;
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.users-table thead {
+    background: #f9fafb;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.users-table th {
+    padding: 12px 16px;
+    text-align: left;
+    font-weight: 600;
+    font-size: 0.85rem;
+    color: white;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.users-table td {
+    padding: 14px 16px;
+    border-bottom: 1px solid #f3f4f6;
+    vertical-align: middle;
+}
+
+.users-table tbody tr:hover {
+    background: #f9fafb;
+}
+
+.users-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+/* ── User Cell Styles ───────────────────────────────────────── */
+.users-table .user-cell {
     display: flex;
     align-items: center;
-    gap: 14px;
-    padding: 12px 16px;
-    background: white;
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    box-shadow: var(--shadow);
-    transition: box-shadow 0.15s;
+    gap: 12px;
 }
-.user-card:hover { box-shadow: var(--shadow-md); }
 
-.user-avatar {
-    width: 40px; height: 40px;
+.users-table .user-avatar {
+    width: 40px;
+    height: 40px;
     border-radius: 50%;
-    background: var(--navy-light);
-    color: var(--navy);
-    display: flex; align-items: center; justify-content: center;
-    font-weight: 700; font-size: 0.92rem;
+    background: #1e3a5f;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 0.9rem;
     flex-shrink: 0;
 }
 
-.user-info { flex: 1; min-width: 0; }
-.user-name {
-    font-size: 0.90rem; font-weight: 600; color: var(--navy);
-    display: flex; align-items: center; gap: 6px;
-    flex-wrap: wrap;
-}
-.user-email {
-    font-size: 0.78rem; color: var(--text-light);
-    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-    margin-top: 1px;
+.users-table .user-details {
+    flex: 1;
+    min-width: 0;
 }
 
-.you-pill {
-    font-size: 0.65rem; font-weight: 600;
-    padding: 1px 8px; border-radius: 20px;
-    background: var(--gold-light); color: var(--gold-dark);
-    border: 1px solid rgba(200,120,0,0.2);
+.users-table .user-name {
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: #1f2937;
+    margin: 0 0 2px 0;
+    display: flex;
+    align-items: center;
+    gap: 6px;
 }
 
-.user-role { flex-shrink: 0; }
-.user-actions { display: flex; gap: 6px; flex-shrink: 0; }
+.users-table .user-email {
+    font-size: 0.8rem;
+    color: #6b7280;
+    margin: 0;
+}
 
-/* ── Role guide ──────────────────────────────────────────── */
-.section-eyebrow {
-    font-size: 0.70rem; font-weight: 700;
-    text-transform: uppercase; letter-spacing: 0.08em;
-    color: var(--text-light);
-    margin-bottom: 12px;
+.you-badge {
+    font-size: 0.65rem;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 12px;
+    background: #fff3cd;
+    color: #856404;
+    border: 1px solid #ffeaa7;
+}
+
+/* ── Role Badges ───────────────────────────────────────────── */
+.role-badge {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 16px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+.role-super-admin { background: #e3f2fd; color: #1565c0; }
+.role-payroll-officer { background: #e8f5e8; color: #2e7d32; }
+.role-hrmo { background: #fff3e0; color: #ef6c00; }
+.role-cashier { background: #fce4ec; color: #c2185b; }
+.role-accountant { background: #f3e5f5; color: #7b1fa2; }
+.role-ard { background: #e0f2f1; color: #00695c; }
+.role-budget-officer { background: #e1f5fe; color: #0277bd; }
+.role-chief-admin-officer { background: #f1f8e9; color: #558b2f; }
+.role-employee { background: #f5f5f5; color: #616161; }
+.role-none { background: #ffebee; color: #c62828; }
+
+/* ── Status Badge ─────────────────────────────────────────── */
+.status-badge {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 16px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.status-active {
+    background: #e8f5e8;
+    color: #2e7d32;
+}
+
+/* ── Action Buttons ─────────────────────────────────────────── */
+.action-buttons {
+    display: flex;
+    gap: 8px;
+}
+
+.action-btn {
+    width: 32px;
+    height: 32px;
+    border: 1px solid #ddd;
+    background: white;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-decoration: none;
+}
+
+.action-btn:hover {
+    background: #f9fafb;
+    border-color: #1e3a5f;
+}
+
+.action-btn.edit:hover {
+    color: #1e3a5f;
+}
+
+.action-btn.delete {
+    color: #dc2626;
+    border-color: #dc2626;
+}
+
+.action-btn.delete:hover {
+    background: #dc2626;
+    color: white;
+}
+
+/* ── Collapsible Role Guide ─────────────────────────────────── */
+.role-guide-section {
+    margin-top: 32px;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    background: white;
+    overflow: hidden;
+}
+
+.role-guide-header {
+    padding: 16px 20px;
+    background: #f9fafb;
+    border-bottom: 1px solid #e5e7eb;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: background 0.2s;
+}
+
+.role-guide-header:hover {
+    background: #f3f4f6;
+}
+
+.role-guide-title {
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: #1f2937;
+    margin: 0;
+}
+
+.collapse-icon {
+    transition: transform 0.3s;
+    color: #7f8c8d;
+}
+
+.role-guide-header.collapsed .collapse-icon {
+    transform: rotate(-90deg);
+}
+
+.role-guide-content {
+    padding: 20px;
+    max-height: 1000px;
+    overflow: hidden;
+    transition: max-height 0.3s ease-out, padding 0.3s ease-out;
+}
+
+.role-guide-content.collapsed {
+    max-height: 0;
+    padding: 0 20px;
 }
 
 .role-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: 10px;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
 }
 
 .role-card {
-    padding: 14px 16px;
+    padding: 16px;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    border-top: 3px solid #1e3a5f;
     background: white;
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    border-top: 3px solid var(--navy);
 }
 
 .role-card-name {
-    font-size: 0.86rem; font-weight: 700; color: var(--navy);
-    margin-bottom: 4px;
+    font-weight: 700;
+    font-size: 0.9rem;
+    color: #1f2937;
+    margin-bottom: 8px;
 }
 
 .role-card-desc {
-    font-size: 0.78rem; color: var(--text-mid);
-    line-height: 1.5; margin-bottom: 10px;
+    font-size: 0.8rem;
+    color: #6b7280;
+    line-height: 1.5;
+    margin-bottom: 12px;
 }
 
-.access-tags { display: flex; flex-wrap: wrap; gap: 4px; }
+.access-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
 .access-tag {
-    font-size: 0.65rem; font-weight: 600;
-    padding: 2px 8px; border-radius: 20px;
-    background: var(--bg); color: var(--text-mid);
-    border: 1px solid var(--border);
+    font-size: 0.7rem;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 12px;
+    background: #f9fafb;
+    color: #374151;
+    border: 1px solid #e5e7eb;
 }
 
-/* ── Responsive ──────────────────────────────────────────── */
-@media (max-width: 600px) {
-    .user-card { flex-wrap: wrap; }
-    .user-actions { width: 100%; justify-content: flex-end; }
-    .role-grid { grid-template-columns: 1fr 1fr; }
+/* ── Responsive Design ─────────────────────────────────────── */
+@media (max-width: 768px) {
+    .page-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 16px;
+    }
+    
+    .search-filter-section {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .users-table {
+        font-size: 0.85rem;
+    }
+    
+    .users-table th,
+    .users-table td {
+        padding: 10px 12px;
+    }
+    
+    .role-grid {
+        grid-template-columns: 1fr;
+    }
 }
-@media (max-width: 400px) {
-    .role-grid { grid-template-columns: 1fr; }
+
+@media (max-width: 480px) {
+    .user-cell {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+    
+    .action-buttons {
+        flex-direction: column;
+        gap: 4px;
+    }
 }
 </style>
 @endsection
@@ -109,168 +395,262 @@
 
 <div class="page-header">
     <div class="page-header-left">
-        <h1>System Users</h1>
+        <h1>User Management</h1>
         <p>{{ $users->count() }} {{ Str::plural('account', $users->count()) }} registered</p>
     </div>
     <a href="{{ route('users.create') }}" class="btn btn-primary">+ Add User</a>
 </div>
 
-{{-- ── User list ──────────────────────────────────────────── --}}
-<div class="user-list">
-    @forelse ($users as $user)
-    <div class="user-card">
+{{-- ── Search and Filter Section ─────────────────────────────── --}}
+<div class="search-filter-section">
+    <div class="ff-group">
+        <label for="userSearch">SEARCH</label>
+        <input type="text" class="search-input" placeholder="Search by name or email..." id="userSearch">
+    </div>
+    <div class="ff-group">
+        <label for="roleFilter">ROLE</label>
+        <select class="role-filter" id="roleFilter">
+            <option value="">All Roles</option>
+            <option value="super_admin">Super Admin</option>
+            <option value="payroll_officer">Payroll Officer</option>
+            <option value="hrmo">HRMO</option>
+            <option value="cashier">Cashier</option>
+            <option value="accountant">Accountant</option>
+            <option value="ard">ARD</option>
+            <option value="budget_officer">Budget Officer</option>
+            <option value="chief_admin_officer">Chief Admin Officer</option>
+            <option value="employee">Employee</option>
+            <option value="none">No Role</option>
+        </select>
+    </div>
+</div>
 
-        <div class="user-avatar">
-            @php
-                if ($user->employee) {
-                    $fullName = $user->employee->first_name . ' ' . ($user->employee->middle_name ? $user->employee->middle_name . '. ' : '') . $user->employee->last_name;
-                } else {
-                    $fullName = $user->name;
-                }
-                $parts = explode(' ', trim($fullName));
-                echo strtoupper(substr($parts[0], 0, 1)) . strtoupper(substr($parts[1] ?? '', 0, 1));
-            @endphp
-        </div>
+{{-- ── Users Table ───────────────────────────────────────────── --}}
+<table class="users-table" id="usersTable">
+    <thead>
+        <tr>
+            <th style="width: 35%;">User</th>
+            <th style="width: 25%;">Email</th>
+            <th style="width: 20%;">Role</th>
+            <th style="width: 10%;">Status</th>
+            <th style="width: 10%;">Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        @forelse ($users as $user)
+        <tr data-name="@if ($user->employee) {{ $user->employee->first_name }} {{ $user->employee->last_name }} @else {{ $user->name }} @endif" data-email="{{ $user->email }}" data-role="@if ($user->roles->isNotEmpty()) {{ $user->roles->first()->name }} @else none @endif">
+            <td>
+                <div class="user-cell">
+                    <div class="user-avatar">
+                        @php
+                            if ($user->employee) {
+                                $fullName = $user->employee->first_name . ' ' . ($user->employee->middle_name ? $user->employee->middle_name . '. ' : '') . $user->employee->last_name;
+                            } else {
+                                $fullName = $user->name;
+                            }
+                            $parts = explode(' ', trim($fullName));
+                            echo strtoupper(substr($parts[0], 0, 1)) . strtoupper(substr($parts[1] ?? '', 0, 1));
+                        @endphp
+                    </div>
+                    <div class="user-details">
+                        <div class="user-name">
+                            @if ($user->employee)
+                                {{ $user->employee->first_name }} {{ $user->employee->middle_name ? $user->employee->middle_name . '. ' : '' }}{{ $user->employee->last_name }}
+                            @else
+                                {{ $user->name }}
+                            @endif
+                            @if ($user->id === auth()->id())
+                                <span class="you-badge">You</span>
+                            @endif
+                        </div>
+                        <div class="user-email">{{ $user->email }}</div>
+                    </div>
+                </div>
+            </td>
+            <td>{{ $user->email }}</td>
+            <td>
+                @foreach ($user->roles as $role)
+                    <span class="role-badge role-{{ str_replace('_', '-', $role->name) }}">
+                        {{ ucwords(str_replace('_', ' ', $role->name)) }}
+                    </span>
+                @endforeach
+                @if ($user->roles->isEmpty())
+                    <span class="role-badge role-none">No Role</span>
+                @endif
+            </td>
+            <td>
+                <span class="status-badge status-active">Active</span>
+            </td>
+            <td>
+                <div class="action-buttons">
+                    <a href="{{ route('users.edit', $user) }}" class="action-btn edit" title="Edit">
+                        ✎
+                    </a>
+                    @if ($user->id !== auth()->id())
+                    <form method="POST" action="{{ route('users.destroy', $user) }}" style="display: inline;">
+                        @csrf
+                        @method('DELETE')
+                        <button type="submit" class="action-btn delete" title="Delete" 
+                                onclick="return confirm('Remove {{ addslashes($user->name) }}?\nThis cannot be undone.')">
+                            ✕
+                        </button>
+                    </form>
+                    @endif
+                </div>
+            </td>
+        </tr>
+        @empty
+        <tr>
+            <td colspan="5" style="text-align: center; padding: 40px; color: #7f8c8d;">
+                No users yet. <a href="{{ route('users.create') }}">Add the first user →</a>
+            </td>
+        </tr>
+        @endforelse
+    </tbody>
+</table>
 
-        <div class="user-info">
-            <div class="user-name">
-                @if ($user->employee)
-                    {{ $user->employee->first_name }} {{ $user->employee->middle_name ? $user->employee->middle_name . '. ' : '' }}{{ $user->employee->last_name }}
-                @else
-                    {{ $user->name }}
-                @endif
-                @if ($user->id === auth()->id())
-                    <span class="you-pill">You</span>
-                @endif
+{{-- ── Collapsible Role Permissions Guide ─────────────────────── --}}
+<div class="role-guide-section">
+    <div class="role-guide-header" id="roleGuideHeader" onclick="toggleRoleGuide()">
+        <h3 class="role-guide-title">Role Permissions Guide</h3>
+        <span class="collapse-icon">▼</span>
+    </div>
+    <div class="role-guide-content" id="roleGuideContent">
+        <div class="role-grid">
+
+            <div class="role-card">
+                <div class="role-card-name">Super Admin</div>
+                <div class="role-card-desc">Manages system users and accounts. Can view all modules across the system. No payroll or TEV action rights.</div>
+                <div class="access-tags">
+                    <span class="access-tag">User Management</span>
+                    <span class="access-tag">View All Modules</span>
+                </div>
             </div>
-            <div class="user-email">{{ $user->email }}</div>
-        </div>
 
-        <div class="user-role">
-            @foreach ($user->roles as $role)
-                <span class="badge badge-approved">
-                    {{ ucwords(str_replace('_', ' ', $role->name)) }}
-                </span>
-            @endforeach
-            @if ($user->roles->isEmpty())
-                <span class="badge badge-draft">No Role</span>
-            @endif
-        </div>
+            <div class="role-card">
+                <div class="role-card-name">Payroll Officer</div>
+                <div class="role-card-desc">Manages payroll processing and employee records. No access to TEV.</div>
+                <div class="access-tags">
+                    <span class="access-tag">Employees</span>
+                    <span class="access-tag">Payroll</span>
+                    <span class="access-tag">Special Payroll</span>
+                    <span class="access-tag">Payroll Reports</span>
+                </div>
+            </div>
 
-        <div class="user-actions">
-            <a href="{{ route('users.edit', $user) }}" class="btn btn-outline btn-sm">✎ Edit</a>
-            @if ($user->id !== auth()->id())
-            <form method="POST" action="{{ route('users.destroy', $user) }}"
-                  onsubmit="return confirm('Remove {{ addslashes($user->name) }}?\nThis cannot be undone.')">
-                @csrf
-                @method('DELETE')
-                <button type="submit" class="btn btn-danger btn-sm">✕</button>
-            </form>
-            @endif
-        </div>
+            <div class="role-card">
+                <div class="role-card-name">HRMO</div>
+                <div class="role-card-desc">Manages employee records, views payroll, creates Office Orders, and files TEV requests on behalf of traveling employees.</div>
+                <div class="access-tags">
+                    <span class="access-tag">Employees</span>
+                    <span class="access-tag">View Payroll</span>
+                    <span class="access-tag">Office Orders</span>
+                    <span class="access-tag">TEV (create & submit)</span>
+                </div>
+            </div>
 
+            <div class="role-card">
+                <div class="role-card-name">Accountant</div>
+                <div class="role-card-desc">First approver in the TEV workflow after submission. Certifies fund availability, generates remittance reports, and views payroll entries.</div>
+                <div class="access-tags">
+                    <span class="access-tag">View Payroll</span>
+                    <span class="access-tag">Payroll Reports</span>
+                    <span class="access-tag">TEV (1st approval)</span>
+                    <span class="access-tag">TEV Reports</span>
+                </div>
+            </div>
+
+            <div class="role-card">
+                <div class="role-card-name">Budget Officer</div>
+                <div class="role-card-desc">Views TEV spending and Office Orders for budget monitoring purposes. No approval actions in any workflow.</div>
+                <div class="access-tags">
+                    <span class="access-tag">View Office Orders</span>
+                    <span class="access-tag">View TEV</span>
+                    <span class="access-tag">TEV Reports</span>
+                </div>
+            </div>
+
+            <div class="role-card">
+                <div class="role-card-name">Chief Admin Officer</div>
+                <div class="role-card-desc">Division-level approver for both payroll and TEV.</div>
+                <div class="access-tags">
+                    <span class="access-tag">View Payroll</span>
+                    <span class="access-tag">Approve Payroll</span>
+                    <span class="access-tag">TEV (division approval)</span>
+                </div>
+            </div>
+
+            <div class="role-card">
+                <div class="role-card-name">ARD</div>
+                <div class="role-card-desc">Final approver for both payroll and TEV. Can generate payroll release.</div>
+                <div class="access-tags">
+                    <span class="access-tag">Final Payroll Approval</span>
+                    <span class="access-tag">Payroll Reports</span>
+                    <span class="access-tag">Final TEV Approval</span>
+                    <span class="access-tag">TEV Reports</span>
+                </div>
+            </div>
+
+            <div class="role-card">
+                <div class="role-card-name">Cashier</div>
+                <div class="role-card-desc">Marks payroll and TEV as released or paid. Final step in both workflows.</div>
+                <div class="access-tags">
+                    <span class="access-tag">Release Payroll</span>
+                    <span class="access-tag">TEV (release/reimburse)</span>
+                </div>
+            </div>
+
+            <div class="role-card" style="border-top-color: #6c757d;">
+                <div class="role-card-name">Employee</div>
+                <div class="role-card-desc">Role reserved for rank-and-file employees. Specific page access is pending confirmation — no module access assigned yet.</div>
+                <div class="access-tags">
+                    <span class="access-tag" style="background:#fff3cd;color:#856404;border-color:#ffeaa7;">Pending configuration</span>
+                </div>
+            </div>
+
+        </div>
     </div>
-    @empty
-    <div style="padding:40px;text-align:center;color:var(--text-light);background:white;border:1px solid var(--border);border-radius:var(--radius);">
-        No users yet. <a href="{{ route('users.create') }}">Add the first user →</a>
-    </div>
-    @endforelse
 </div>
 
-{{-- ── Role permissions guide ────────────────────────────── --}}
-<div class="section-eyebrow">Role permissions guide</div>
-<div class="role-grid">
+<script>
+// Toggle role guide collapse/expand
+function toggleRoleGuide() {
+    const header = document.getElementById('roleGuideHeader');
+    const content = document.getElementById('roleGuideContent');
+    
+    header.classList.toggle('collapsed');
+    content.classList.toggle('collapsed');
+}
 
-    <div class="role-card">
-        <div class="role-card-name">Super Admin</div>
-        <div class="role-card-desc">Manages system users and accounts. Can view all modules across the system. No payroll or TEV action rights.</div>
-        <div class="access-tags">
-            <span class="access-tag">User Management</span>
-            <span class="access-tag">View All Modules</span>
-        </div>
-    </div>
-
-    <div class="role-card">
-        <div class="role-card-name">Payroll Officer</div>
-        <div class="role-card-desc">Manages payroll processing and employee records. No access to TEV.</div>
-        <div class="access-tags">
-            <span class="access-tag">Employees</span>
-            <span class="access-tag">Payroll</span>
-            <span class="access-tag">Special Payroll</span>
-            <span class="access-tag">Payroll Reports</span>
-        </div>
-    </div>
-
-    <div class="role-card">
-        <div class="role-card-name">HRMO</div>
-        <div class="role-card-desc">Manages employee records, views payroll, creates Office Orders, and files TEV requests on behalf of traveling employees.</div>
-        <div class="access-tags">
-            <span class="access-tag">Employees</span>
-            <span class="access-tag">View Payroll</span>
-            <span class="access-tag">Office Orders</span>
-            <span class="access-tag">TEV (create & submit)</span>
-        </div>
-    </div>
-
-    <div class="role-card">
-        <div class="role-card-name">Accountant</div>
-        <div class="role-card-desc">First approver in the TEV workflow after submission. Certifies fund availability, generates remittance reports, and views payroll entries.</div>
-        <div class="access-tags">
-            <span class="access-tag">View Payroll</span>
-            <span class="access-tag">Payroll Reports</span>
-            <span class="access-tag">TEV (1st approval)</span>
-            <span class="access-tag">TEV Reports</span>
-        </div>
-    </div>
-
-    <div class="role-card">
-        <div class="role-card-name">Budget Officer</div>
-        <div class="role-card-desc">Views TEV spending and Office Orders for budget monitoring purposes. No approval actions in any workflow.</div>
-        <div class="access-tags">
-            <span class="access-tag">View Office Orders</span>
-            <span class="access-tag">View TEV</span>
-            <span class="access-tag">TEV Reports</span>
-        </div>
-    </div>
-
-    <div class="role-card">
-        <div class="role-card-name">Chief Admin Officer</div>
-        <div class="role-card-desc">Division-level approver for both payroll and TEV.</div>
-        <div class="access-tags">
-            <span class="access-tag">View Payroll</span>
-            <span class="access-tag">Approve Payroll</span>
-            <span class="access-tag">TEV (division approval)</span>
-        </div>
-    </div>
-
-    <div class="role-card">
-        <div class="role-card-name">ARD</div>
-        <div class="role-card-desc">Final approver for both payroll and TEV. Can generate payroll release.</div>
-        <div class="access-tags">
-            <span class="access-tag">Final Payroll Approval</span>
-            <span class="access-tag">Payroll Reports</span>
-            <span class="access-tag">Final TEV Approval</span>
-            <span class="access-tag">TEV Reports</span>
-        </div>
-    </div>
-
-    <div class="role-card">
-        <div class="role-card-name">Cashier</div>
-        <div class="role-card-desc">Marks payroll and TEV as released or paid. Final step in both workflows.</div>
-        <div class="access-tags">
-            <span class="access-tag">Release Payroll</span>
-            <span class="access-tag">TEV (release/reimburse)</span>
-        </div>
-    </div>
-
-    <div class="role-card" style="border-top-color: var(--text-light);">
-        <div class="role-card-name">Employee</div>
-        <div class="role-card-desc">Role reserved for rank-and-file employees. Specific page access is pending confirmation — no module access assigned yet.</div>
-        <div class="access-tags">
-            <span class="access-tag" style="background:var(--gold-light);color:var(--gold-dark);border-color:rgba(200,120,0,0.2);">Pending configuration</span>
-        </div>
-    </div>
-
-</div>
+// Search and filter functionality
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('userSearch');
+    const roleFilter = document.getElementById('roleFilter');
+    const tableRows = document.querySelectorAll('#usersTable tbody tr');
+    
+    function filterTable() {
+        const searchTerm = searchInput.value.toLowerCase();
+        const selectedRole = roleFilter.value;
+        
+        tableRows.forEach(row => {
+            const name = row.dataset.name ? row.dataset.name.toLowerCase() : '';
+            const email = row.dataset.email ? row.dataset.email.toLowerCase() : '';
+            const role = row.dataset.role || '';
+            
+            const matchesSearch = name.includes(searchTerm) || email.includes(searchTerm);
+            const matchesRole = selectedRole === '' || role === selectedRole;
+            
+            if (matchesSearch && matchesRole) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+    }
+    
+    searchInput.addEventListener('input', filterTable);
+    roleFilter.addEventListener('change', filterTable);
+});
+</script>
 
 @endsection
