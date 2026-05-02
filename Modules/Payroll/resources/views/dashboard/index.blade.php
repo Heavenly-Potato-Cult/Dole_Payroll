@@ -774,7 +774,7 @@
         </div>
         <div class="db-stat-divider"></div>
         <div class="db-stat-right">
-            <div class="db-stat-value">{{ Modules\Payroll\Models\PayrollBatch::whereMonth('created_at', now()->month)->whereYear('created_at', now()->year)->count() }}</div>
+            <div class="db-stat-value">{{ Modules\Payroll\Models\PayrollBatch::where('period_year', now()->year)->where('period_month', now()->month)->count() }}</div>
         </div>
     </div>
     @endrole
@@ -828,7 +828,7 @@
         </div>
         <div class="db-stat-divider"></div>
         <div class="db-stat-right">
-            <div class="db-stat-value">{{ Modules\Payroll\Models\PayrollBatch::whereMonth('created_at', now()->month)->whereYear('created_at', now()->year)->count() }}</div>
+            <div class="db-stat-value">{{ Modules\Payroll\Models\PayrollBatch::where('period_year', now()->year)->where('period_month', now()->month)->count() }}</div>
         </div>
     </div>
     @endrole
@@ -888,7 +888,7 @@
         </div>
         <div class="db-stat-divider"></div>
         <div class="db-stat-right">
-            <div class="db-stat-value">{{ Modules\Payroll\Models\PayrollBatch::whereMonth('created_at', now()->month)->whereYear('created_at', now()->year)->count() }}</div>
+            <div class="db-stat-value">{{ Modules\Payroll\Models\PayrollBatch::where('period_year', now()->year)->where('period_month', now()->month)->count() }}</div>
         </div>
     </div>
     @endrole
