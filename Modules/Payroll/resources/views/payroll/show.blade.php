@@ -15,52 +15,159 @@
 @section('styles')
 <style>
 /* ══════════════════════════════════════════════════
-   APPROVAL STAGE BAR
+   APPROVAL STAGE STEPPER
 ══════════════════════════════════════════════════ */
-.approval-bar {
-    display: flex;
-    align-items: stretch;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    overflow: hidden;
-    box-shadow: var(--shadow);
-    margin-bottom: 24px;
-}
-.approval-step {
-    flex: 1;
+.approval-stepper {
     display: flex;
     align-items: center;
-    gap: 10px;
-    padding: 14px 18px;
+    position: relative;
+    padding: 20px 10%;
+    margin-bottom: 0;
+    height: 80px;
+}
+
+/* Progress track line - runs through center of dots */
+.approval-stepper::before {
+    content: '';
+    position: absolute;
+    top: 16px; /* Half of 32px dot height */
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: #E5E7EB;
+    z-index: 1;
+}
+
+.approval-stepper .progress-fill {
+    position: absolute;
+    top: 16px; /* Half of 32px dot height */
+    left: 0;
+    height: 2px;
+    background: #10B981;
+    z-index: 2;
+    transition: width 0.3s ease;
+}
+
+/* Step nodes - flex column with dot on top, text below */
+.approval-step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    position: relative;
+    z-index: 3;
+    flex: 1;
+    text-align: center;
+    padding-top: 0;
+}
+
+.approval-step-label {
     font-size: 0.80rem;
     font-weight: 600;
-    color: var(--text-light);
-    background: var(--surface);
-    border-right: 1px solid var(--border);
-    transition: background 0.2s;
+    color: #374151;
+    line-height: 1.2;
+    margin-bottom: 2px;
+    text-align: center;
 }
-.approval-step:last-child { border-right: none; }
-.approval-step.done   { background: #F1FAF5; color: #1B6B3A; }
-.approval-step.active { background: #EEF1FA; color: var(--navy); }
-.approval-step.locked { background: var(--navy); color: #ffffff; }
+
 .approval-step-dot {
-    width: 30px; height: 30px;
+    width: 32px;
+    height: 32px;
     border-radius: 50%;
-    border: 2px solid currentColor;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 0.9rem; font-weight: 700;
-    flex-shrink: 0;
-    background: #ffffff; color: inherit;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.85rem;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    border: 2px solid #E5E7EB;
+    background: #ffffff;
+    color: #9CA3AF;
+    position: relative;
+    z-index: 4;
+    margin-bottom: 8px;
 }
-.approval-step.done   .approval-step-dot { background: #2E7D52; border-color: #2E7D52; color: #ffffff; }
-.approval-step.active .approval-step-dot { background: var(--navy); border-color: var(--navy); color: #ffffff; }
-.approval-step.locked .approval-step-dot { background: rgba(255,255,255,0.15); border-color: rgba(255,255,255,0.6); color: #ffffff; }
-.approval-step-label { line-height: 1.3; min-width: 0; }
-.approval-step-label small {
-    display: block; font-weight: 400; font-size: 0.70rem;
-    opacity: 0.72; margin-top: 2px;
-    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+
+.approval-step.done .approval-step-dot {
+    background: #10B981;
+    border-color: #10B981;
+    color: #ffffff;
+}
+
+.approval-step.active .approval-step-dot {
+    background: #1F2937;
+    border-color: #1F2937;
+    color: #ffffff;
+    box-shadow: 0 0 0 4px rgba(31, 41, 55, 0.1);
+}
+
+.approval-step.future .approval-step-dot {
+    background: #ffffff;
+    border-color: #E5E7EB;
+    color: #9CA3AF;
+}
+
+.approval-step.locked .approval-step-dot {
+    background: #1F2937;
+    border-color: #1F2937;
+    color: #ffffff;
+}
+
+.approval-step-label {
+    font-size: 0.80rem;
+    font-weight: 600;
+    color: #374151;
+    line-height: 1.2;
+    margin-bottom: 2px;
+}
+
+.approval-step.done .approval-step-label {
+    color: #10B981;
+}
+
+.approval-step.active .approval-step-label {
+    color: #1F2937;
+    font-weight: 700;
+}
+
+.approval-step.future .approval-step-label {
+    color: #9CA3AF;
+    font-weight: 500;
+}
+
+.approval-step.locked .approval-step-label {
+    color: #1F2937;
+}
+
+.approval-step-sub {
+    display: block;
+    font-size: 0.70rem;
+    font-weight: 400;
+    line-height: 1.2;
+}
+
+.approval-step.done .approval-step-sub {
+    color: #6B7280;
+}
+
+.approval-step.active .approval-step-sub {
+    color: #6B7280;
+    font-weight: 500;
+}
+
+.approval-step.future .approval-step-sub {
+    color: #9CA3AF;
+    opacity: 0.8;
+}
+
+.approval-step.locked .approval-step-sub {
+    color: #6B7280;
+}
+
+/* Header card styling */
+.header-card {
+    border-bottom: none;
+    box-shadow: 0 2px 8px rgba(15,27,76,0.09);
 }
 
 /* ── Deduction expansion panel ── */
@@ -172,14 +279,30 @@
         min-width: calc(50% - 4px);
     }
 
-    /* Approval bar: scroll horizontally on mobile */
-    .approval-bar {
+    /* Approval stepper: scroll horizontally on mobile */
+    .approval-stepper {
         overflow-x: auto;
         -webkit-overflow-scrolling: touch;
+        padding: 20px 10px;
+        height: 90px;
     }
     .approval-step {
-        min-width: 130px;
+        min-width: 70px;
         flex: 0 0 auto;
+        padding: 0 5px;
+    }
+    .approval-step-dot {
+        width: 28px;
+        height: 28px;
+        font-size: 0.75rem;
+        margin-bottom: 6px;
+    }
+    .approval-step-label {
+        font-size: 0.70rem;
+        text-align: center;
+    }
+    .approval-step-sub {
+        font-size: 0.60rem;
     }
 
     /* Stat grid: 2 columns on mobile */
@@ -307,86 +430,94 @@
 @endphp
 
 {{-- ═══════════════════════════════════════════════════════════════
-     PAGE HEADER
+     HEADER CARD WITH APPROVAL STEPPER
 ═══════════════════════════════════════════════════════════════ --}}
-<div class="page-header">
-    <div class="page-header-left">
-        <h1>{{ $periodLabel }}</h1>
-        <p>
-            {{ $payroll->cutoff }} cut-off ·
-            <span class="badge {{ $statusClass }}">{{ $statusLabel }}</span>
-            · Created by {{ $payroll->creator->name ?? '—' }}
-            on {{ $payroll->created_at->format('M d, Y') }}
-        </p>
-    </div>
-    <div class="d-flex gap-2 flex-wrap payroll-show-actions">
-        <a href="{{ route('payroll.index') }}" class="btn btn-outline btn-sm">← All Batches</a>
+<div class="card header-card">
+    <div class="card-body" style="padding: 20px 20px 0 20px; border-bottom-left-radius: 8px; border-bottom-right-radius: 8px;">
+        <!-- Page Header Section -->
+        <div class="page-header" style="margin-bottom: 24px;">
+            <div class="page-header-left">
+                <h1>{{ $periodLabel }}</h1>
+                <p>
+                    {{ $payroll->cutoff }} cut-off ·
+                    <span class="badge {{ $statusClass }}">{{ $statusLabel }}</span>
+                    · Created by {{ $payroll->creator->name ?? '—' }}
+                    on {{ $payroll->created_at->format('M d, Y') }}
+                </p>
+            </div>
+            <div class="d-flex gap-2 flex-wrap payroll-show-actions">
+                <a href="{{ route('payroll.index') }}" class="btn btn-outline btn-sm">← All Batches</a>
 
-@if ($canPullAttendance)
-    <form method="POST" action="{{ route('payroll.pullAttendance', $payroll) }}"
-          onsubmit="return confirm('{{ $snapshotCount > 0 ? 'Re-pulling will reset any manual HR corrections. Continue?' : 'Pull attendance from HRIS for all active employees?' }}')">
-        @csrf
-        <button class="btn btn-outline btn-sm">
-            {{ $snapshotCount > 0 ? '🔄 Re-pull Attendance' : '📥 Pull Attendance' }}
-            @if ($snapshotCount > 0)
-                <span style="font-size:0.72rem; opacity:0.8;">({{ $snapshotCount }}/{{ $activeCount }})</span>
-            @endif
-        </button>
-    </form>
-@endif
-
-@if ($canCompute)
-    <form method="POST" action="{{ route('payroll.compute', $payroll) }}"
-          onsubmit="return confirm('Run payroll computation for all active employees?\n\nExisting entries will be overwritten.')">
-        @csrf
-        @if ($snapshotCount === 0)
-            <button class="btn btn-gold btn-sm" disabled title="Pull attendance first">
-                ⚙ {{ $payroll->status === 'draft' ? 'Compute Payroll' : 'Re-compute' }}
+    @if ($canPullAttendance)
+        <form method="POST" action="{{ route('payroll.pullAttendance', $payroll) }}"
+              onsubmit="return confirm('{{ $snapshotCount > 0 ? 'Re-pulling will reset any manual HR corrections. Continue?' : 'Pull attendance from HRIS for all active employees?' }}')">
+            @csrf
+            <button class="btn btn-outline btn-sm">
+                {{ $snapshotCount > 0 ? '🔄 Re-pull Attendance' : '📥 Pull Attendance' }}
+                @if ($snapshotCount > 0)
+                    <span style="font-size:0.72rem; opacity:0.8;">({{ $snapshotCount }}/{{ $activeCount }})</span>
+                @endif
             </button>
-        @else
-            <button class="btn btn-gold btn-sm">
-                ⚙ {{ $payroll->status === 'draft' ? 'Compute Payroll' : 'Re-compute' }}
-            </button>
-        @endif
-    </form>
-@endif
+        </form>
+    @endif
 
-        @if ($nextAction)
-            <form method="POST" action="{{ $nextAction['route'] }}"
-                  onsubmit="return confirm('{{ $nextAction['confirm'] }}')">
-                @csrf
-                <button class="btn {{ $nextAction['class'] }} btn-sm">
-                    ✔ {{ $nextAction['label'] }}
+    @if ($canCompute)
+        <form method="POST" action="{{ route('payroll.compute', $payroll) }}"
+              onsubmit="return confirm('Run payroll computation for all active employees?\n\nExisting entries will be overwritten.')">
+            @csrf
+            @if ($snapshotCount === 0)
+                <button class="btn btn-gold btn-sm" disabled title="Pull attendance first">
+                    ⚙ {{ $payroll->status === 'draft' ? 'Compute Payroll' : 'Re-compute' }}
                 </button>
-            </form>
-        @endif
+            @else
+                <button class="btn btn-gold btn-sm">
+                    ⚙ {{ $payroll->status === 'draft' ? 'Compute Payroll' : 'Re-compute' }}
+                </button>
+            @endif
+        </form>
+    @endif
 
-      {{-- NEW: --}}
-@if ($isComputed)
-    <a href="{{ route('reports.payroll-register', ['batch_id' => $payroll->id]) }}"
-       class="btn btn-outline btn-sm" target="_blank">
-        📄 Payroll Register PDF
-    </a>
-@endif
+            @if ($nextAction)
+                <form method="POST" action="{{ $nextAction['route'] }}"
+                      onsubmit="return confirm('{{ $nextAction['confirm'] }}')">
+                    @csrf
+                    <button class="btn {{ $nextAction['class'] }} btn-sm">
+                        ✔ {{ $nextAction['label'] }}
+                    </button>
+                </form>
+            @endif
 
-{{-- Payslip generation — only after release --}}
-@if (in_array($payroll->status, ['released', 'locked']))
-    <button class="btn btn-outline btn-sm" onclick="openPayslipModal()">
-        🧾 Generate Payslips
-    </button>
-@elseif ($isComputed)
-    <button class="btn btn-outline btn-sm" disabled
-            title="Payslips available after the batch is released"
-            style="opacity:0.45; cursor:not-allowed;">
-        🧾 Payslips (Pending Release)
-    </button>
-@endif
+          {{-- NEW: --}}
+    @if ($isComputed)
+        <a href="{{ route('reports.payroll-register', ['batch_id' => $payroll->id]) }}"
+           class="btn btn-outline btn-sm" target="_blank">
+            📄 Payroll Register PDF
+        </a>
+    @endif
 
-        @if ($payroll->status === 'released' || auth()->user()->hasRole('cashier'))
-            <a href="{{ route('payroll.verify', $payroll) }}" class="btn btn-outline btn-sm">
-                📋 Verify Net Pay
-            </a>
-        @endif
+    {{-- Payslip generation — only after release --}}
+    @if (in_array($payroll->status, ['released', 'locked']))
+        <button class="btn btn-outline btn-sm" onclick="openPayslipModal()">
+            🧾 Generate Payslips
+        </button>
+    @elseif ($isComputed)
+        <button class="btn btn-outline btn-sm" disabled
+                title="Payslips available after the batch is released"
+                style="opacity:0.45; cursor:not-allowed;">
+            🧾 Payslips (Pending Release)
+        </button>
+    @endif
+
+            @if ($payroll->status === 'released' || auth()->user()->hasRole('cashier'))
+                <a href="{{ route('payroll.verify', $payroll) }}" class="btn btn-outline btn-sm">
+                    📋 Verify Net Pay
+                </a>
+            @endif
+        </div>
+    </div>
+
+    <!-- Approval Stepper Section -->
+    @include('payroll::payroll._approval_bar')
     </div>
 </div>
 
@@ -401,34 +532,32 @@
     <div class="alert alert-warning">{{ session('warning') }}</div>
 @endif
 
-{{-- ═══════════════════════════════════════════════════════════════
-     APPROVAL STAGE BAR
-═══════════════════════════════════════════════════════════════ --}}
-@include('payroll::payroll._approval_bar')
 
 {{-- ═══════════════════════════════════════════════════════════════
      SUMMARY STAT CARDS
 ═══════════════════════════════════════════════════════════════ --}}
-<div class="stat-grid">
-    <div class="stat-card">
-        <div class="stat-label">Employees</div>
-        <div class="stat-value">{{ $employeeCount }}</div>
-        <div class="stat-sub">Active regular employees</div>
-    </div>
-    <div class="stat-card gold">
-        <div class="stat-label">Total Gross</div>
-        <div class="stat-value">₱{{ number_format($totalGross, 0) }}</div>
-        <div class="stat-sub">Basic + PERA + RATA</div>
-    </div>
-    <div class="stat-card red">
-        <div class="stat-label">Total Deductions</div>
-        <div class="stat-value">₱{{ number_format($totalDeds, 0) }}</div>
-        <div class="stat-sub">All deduction lines</div>
-    </div>
-    <div class="stat-card green">
-        <div class="stat-label">Total Net Pay</div>
-        <div class="stat-value">₱{{ number_format($totalNet, 0) }}</div>
-        <div class="stat-sub">Gross − Total Deductions</div>
+<div style="padding: 20px 24px; margin-top: 20px;">
+    <div class="stat-grid">
+        <div class="stat-card">
+            <div class="stat-label">Employees</div>
+            <div class="stat-value">{{ $employeeCount }}</div>
+            <div class="stat-sub">Active regular employees</div>
+        </div>
+        <div class="stat-card gold">
+            <div class="stat-label">Total Gross</div>
+            <div class="stat-value">₱{{ number_format($totalGross, 0) }}</div>
+            <div class="stat-sub">Basic + PERA + RATA</div>
+        </div>
+        <div class="stat-card red">
+            <div class="stat-label">Total Deductions</div>
+            <div class="stat-value">₱{{ number_format($totalDeds, 0) }}</div>
+            <div class="stat-sub">All deduction lines</div>
+        </div>
+        <div class="stat-card green">
+            <div class="stat-label">Total Net Pay</div>
+            <div class="stat-value">₱{{ number_format($totalNet, 0) }}</div>
+            <div class="stat-sub">Gross − Total Deductions</div>
+        </div>
     </div>
 </div>
 
