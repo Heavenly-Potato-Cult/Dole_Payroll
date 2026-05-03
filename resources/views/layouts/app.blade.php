@@ -90,6 +90,37 @@
         display: flex;
         align-items: center;
     }
+
+    /* ── Switch Button (for super admin switching between modules) ─────────────────────────────────────── */
+    .btn-switch {
+        display: block;
+        background: #0F1B4C;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        padding: 8px 12px;
+        font-size: 12px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s;
+        text-decoration: none;
+        white-space: nowrap;
+        text-align: center;
+        width: 100%;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .btn-switch:hover {
+        background: #1a2d6d;
+        color: white !important;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+    }
+
+    .btn-switch:active {
+        transform: translateY(0);
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
     </style>
     @yield('styles')
 </head>
@@ -256,7 +287,15 @@
 
         </nav>
 
-        
+        {{-- ═══ SIDEBAR FOOTER ═══ --}}
+        @role('super_admin')
+        <div class="sidebar-footer">
+            <a href="{{ route('tev.dashboard') }}" class="btn-switch" title="Go to TEV">
+                Go to TEV
+            </a>
+        </div>
+        @endrole
+
     </aside>
 
     {{-- ═══ MAIN AREA ═══ --}}

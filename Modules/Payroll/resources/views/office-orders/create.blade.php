@@ -31,7 +31,7 @@
     </div>
 @endif
 
-<div class="card" style="max-width:760px;">
+<div class="card">
     <div class="card-header">
         <h3>📝 Office Order Details</h3>
     </div>
