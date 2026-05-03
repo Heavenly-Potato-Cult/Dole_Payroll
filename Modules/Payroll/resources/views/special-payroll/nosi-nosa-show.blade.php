@@ -13,37 +13,153 @@
 
 @section('styles')
 <style>
-/* ── Approval bar ── */
-.approval-bar {
-    display: flex; align-items: stretch;
-    background: var(--surface); border: 1px solid var(--border);
-    border-radius: var(--radius); overflow: hidden;
-    box-shadow: var(--shadow); margin-bottom: 24px;
+/* ══════════════════════════════════════════════════
+   APPROVAL STAGE STEPPER
+══════════════════════════════════════════════════ */
+.approval-stepper {
+    display: flex;
+    align-items: center;
+    position: relative;
+    padding: 20px 10%;
+    margin-bottom: 0;
+    height: 80px;
 }
+
+/* Progress track line - runs through center of dots */
+.approval-stepper::before {
+    content: '';
+    position: absolute;
+    top: 16px; /* Half of 32px dot height */
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: #E5E7EB;
+    z-index: 1;
+}
+
+.approval-stepper .progress-fill {
+    position: absolute;
+    top: 16px; /* Half of 32px dot height */
+    left: 0;
+    height: 2px;
+    background: #10B981;
+    z-index: 2;
+    transition: width 0.3s ease;
+}
+
+/* Step nodes - flex column with dot on top, text below */
 .approval-step {
-    flex: 1; display: flex; align-items: center; gap: 10px;
-    padding: 14px 18px; font-size: 0.80rem; font-weight: 600;
-    color: var(--text-light); background: var(--surface);
-    border-right: 1px solid var(--border); transition: background 0.2s;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    position: relative;
+    z-index: 3;
+    flex: 1;
+    text-align: center;
+    padding-top: 0;
 }
-.approval-step:last-child { border-right: none; }
-.approval-step.done          { background: #F1FAF5; color: #1B6B3A; }
-.approval-step.active        { background: #EEF1FA; color: var(--navy); }
-.approval-step.released-step { background: var(--navy); color: #ffffff; }
+
+.approval-step-label {
+    font-size: 0.80rem;
+    font-weight: 600;
+    color: #374151;
+    line-height: 1.2;
+    margin-bottom: 2px;
+    text-align: center;
+}
+
 .approval-step-dot {
-    width: 30px; height: 30px; border-radius: 50%; border: 2px solid currentColor;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 0.9rem; font-weight: 700; flex-shrink: 0;
-    background: #ffffff; color: inherit;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.85rem;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    border: 2px solid #E5E7EB;
+    background: #ffffff;
+    color: #9CA3AF;
+    position: relative;
+    z-index: 4;
+    margin-bottom: 8px;
 }
-.approval-step.done .approval-step-dot        { background: #2E7D52; border-color: #2E7D52; color: #fff; }
-.approval-step.active .approval-step-dot      { background: var(--navy); border-color: var(--navy); color: #fff; }
-.approval-step.released-step .approval-step-dot { background: rgba(255,255,255,.15); border-color: rgba(255,255,255,.6); color: #fff; }
-.approval-step-label { line-height: 1.3; min-width: 0; }
-.approval-step-label small {
-    display: block; font-weight: 400; font-size: 0.70rem;
-    opacity: 0.72; margin-top: 2px;
-    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+
+.approval-step.done .approval-step-dot {
+    background: #10B981;
+    border-color: #10B981;
+    color: #ffffff;
+}
+
+.approval-step.active .approval-step-dot {
+    background: #1F2937;
+    border-color: #1F2937;
+    color: #ffffff;
+    box-shadow: 0 0 0 4px rgba(31, 41, 55, 0.1);
+}
+
+.approval-step.future .approval-step-dot {
+    background: #ffffff;
+    border-color: #E5E7EB;
+    color: #9CA3AF;
+}
+
+.approval-step.locked .approval-step-dot {
+    background: #1F2937;
+    border-color: #1F2937;
+    color: #ffffff;
+}
+
+.approval-step-label {
+    font-size: 0.80rem;
+    font-weight: 600;
+    color: #374151;
+    line-height: 1.2;
+    margin-bottom: 2px;
+}
+
+.approval-step.done .approval-step-label {
+    color: #10B981;
+}
+
+.approval-step.active .approval-step-label {
+    color: #1F2937;
+    font-weight: 700;
+}
+
+.approval-step.future .approval-step-label {
+    color: #9CA3AF;
+    font-weight: 500;
+}
+
+.approval-step.locked .approval-step-label {
+    color: #1F2937;
+    font-weight: 700;
+}
+
+.approval-step-sub {
+    font-size: 0.70rem;
+    color: #6B7280;
+    font-weight: 400;
+    margin-top: 2px;
+}
+
+.approval-step.done .approval-step-sub {
+    color: #10B981;
+}
+
+.approval-step.active .approval-step-sub {
+    color: #6B7280;
+}
+
+.approval-step.future .approval-step-sub {
+    color: #9CA3AF;
+}
+
+.approval-step.locked .approval-step-sub {
+    color: #6B7280;
 }
 
 /* ── Document header ── */
@@ -150,7 +266,7 @@
 /* ── Print ── */
 @media print {
     .no-print { display: none !important; }
-    .approval-bar { display: none !important; }
+    .approval-stepper { display: none !important; }
     .card { box-shadow: none !important; border: 1px solid #ccc !important; }
     .cert-grid { page-break-inside: avoid; }
     .mobile-summary { display: none !important; }
@@ -163,9 +279,43 @@
 
 /* ── Mobile overrides ── */
 @media (max-width: 768px) {
-    .approval-bar { flex-direction: column; }
-    .approval-step { border-right: none; border-bottom: 1px solid var(--border); }
-    .approval-step:last-child { border-bottom: none; }
+    .approval-stepper { 
+        padding: 15px 5%; 
+        height: auto;
+        flex-direction: column;
+        gap: 15px;
+    }
+    
+    .approval-stepper::before {
+        display: none;
+    }
+    
+    .approval-stepper .progress-fill {
+        display: none;
+    }
+    
+    .approval-step {
+        flex-direction: row;
+        justify-content: flex-start;
+        padding: 10px;
+        border: 1px solid #e5e7eb;
+        border-radius: 6px;
+        background: white;
+    }
+    
+    .approval-step-dot {
+        margin-bottom: 0;
+        margin-right: 12px;
+    }
+    
+    .approval-step-label {
+        text-align: left;
+        margin-bottom: 0;
+    }
+    
+    .approval-step-sub {
+        margin-top: 2px;
+    }
 
     .doc-meta { grid-template-columns: 1fr 1fr; }
 
@@ -209,55 +359,116 @@
     $canApprove = auth()->user()->hasRole('accountant') && $batch->status === 'draft';
     $canRelease = auth()->user()->hasAnyRole(['ard', 'chief_admin_officer']) && $batch->status === 'approved';
 
-    $spSteps = [
-        ['label' => 'HR Prepared', 'sub' => 'Payroll Officer', 'icon' => '✏'],
-        ['label' => 'Accountant',  'sub' => 'Certify & Approve',       'icon' => '💼'],
-        ['label' => 'RD / ARD',    'sub' => 'Released',                'icon' => '🏛'],
+    $steps = [
+        [
+            'statuses' => ['draft'],
+            'label'    => 'HR Prepared',
+            'sub'      => 'Payroll Officer',
+            'icon'     => '✏',
+        ],
+        [
+            'statuses' => ['approved'],
+            'label'    => 'Accountant',
+            'sub'      => 'Certify & Approve',
+            'icon'     => '💼',
+        ],
+        [
+            'statuses' => ['released'],
+            'label'    => 'RD / ARD',
+            'sub'      => 'Released',
+            'icon'     => '🏛',
+        ],
     ];
-    $spActiveStep = match ($batch->status) {
+
+    // Map the current status to a step index (0-based)
+    $statusToStep = [
         'draft'    => 0,
         'approved' => 1,
         'released' => 2,
-        default    => 0,
-    };
+    ];
+    $activeStep = $statusToStep[$batch->status] ?? 0;
+
+    // Create dynamic sub-labels based on status and timestamps
+    $dynamicSubs = [];
+    foreach ($steps as $i => $step) {
+        if ($i < $activeStep) {
+            // Completed stage - show when it happened
+            if ($i === 0 && $batch->created_at) {
+                $dynamicSubs[] = 'Done · ' . $batch->created_at->format('M d');
+            } elseif ($i === 1 && $batch->approved_at) {
+                $dynamicSubs[] = 'Certified · ' . \Carbon\Carbon::parse($batch->approved_at)->format('M d');
+            } elseif ($i === 2 && $batch->released_at) {
+                $dynamicSubs[] = 'Released · ' . \Carbon\Carbon::parse($batch->released_at)->format('M d');
+            } else {
+                $dynamicSubs[] = $step['sub'];
+            }
+        } elseif ($i === $activeStep) {
+            // Active stage - show what's waiting
+            if ($batch->status === 'draft') {
+                $dynamicSubs[] = 'Awaiting computation';
+            } elseif ($batch->status === 'approved') {
+                $dynamicSubs[] = 'Awaiting release';
+            } elseif ($batch->status === 'released') {
+                $dynamicSubs[] = 'Released';
+            } else {
+                $dynamicSubs[] = $step['sub'];
+            }
+        } else {
+            // Future stage - just show the role
+            $dynamicSubs[] = $step['sub'];
+        }
+    }
 @endphp
 
-{{-- ═══ PAGE HEADER ═══ --}}
-<div class="page-header no-print">
-    <div class="page-header-left">
-        <h1>{{ $typeUpper }} — {{ optional($employee)->last_name }}, {{ optional($employee)->first_name }}</h1>
-        <p>
-            {{ $period }} ·
-            <span class="badge {{ $statusClass }}">{{ $statusLabel }}</span>
-        </p>
-    </div>
-    <div class="d-flex gap-2 flex-wrap">
-        <a href="{{ route('special-payroll.nosi-nosa.index') }}"
-           class="btn btn-outline btn-sm no-print">← All Records</a>
-        <button onclick="window.print()" class="btn btn-outline btn-sm no-print">🖨 Print</button>
-    </div>
-</div>
-
-{{-- ═══ APPROVAL BAR ═══ --}}
-<div class="approval-bar no-print">
-    @foreach ($spSteps as $idx => $step)
-        @php
-            $cls = '';
-            if ($idx < $spActiveStep)       $cls = 'done';
-            elseif ($idx === $spActiveStep) $cls = ($batch->status === 'released') ? 'released-step' : 'active';
-        @endphp
-        <div class="approval-step {{ $cls }}">
-            <div class="approval-step-dot">
-                @if ($idx < $spActiveStep) ✓
-                @else {{ $step['icon'] }}
-                @endif
+{{-- ═══════════════════════════════════════════════════════════════
+     HEADER CARD WITH APPROVAL STEPPER
+═══════════════════════════════════════════════════════════════ --}}
+<div class="card header-card" style="margin-bottom: 32px;">
+    <div class="card-body" style="padding: 20px 20px 0 20px; border-bottom-left-radius: 8px; border-bottom-right-radius: 8px;">
+        <!-- Page Header Section -->
+        <div class="page-header no-print" style="margin-bottom: 24px;">
+            <div class="page-header-left">
+                <h1>{{ $typeUpper }} — {{ optional($employee)->last_name }}, {{ optional($employee)->first_name }}</h1>
+                <p>
+                    {{ $period }} ·
+                    <span class="badge {{ $statusClass }}">{{ $statusLabel }}</span>
+                </p>
             </div>
-            <div class="approval-step-label">
-                {{ $step['label'] }}
-                <small>{{ $step['sub'] }}</small>
+            <div class="d-flex gap-2 flex-wrap">
+                <a href="{{ route('special-payroll.nosi-nosa.index') }}"
+                   class="btn btn-outline btn-sm no-print">← All Records</a>
+                <button onclick="window.print()" class="btn btn-outline btn-sm no-print">🖨 Print</button>
             </div>
         </div>
-    @endforeach
+
+        <!-- Approval Stepper Section -->
+        <div class="approval-stepper no-print">
+            <!-- Progress fill line -->
+            <div class="progress-fill" style="width: {{ ($activeStep / (count($steps) - 1)) * 100 }}%;"></div>
+            
+            @foreach ($steps as $i => $step)
+                @php
+                    if ($i < $activeStep) {
+                        $stepClass = 'done';
+                    } elseif ($i === $activeStep) {
+                        $stepClass = ($batch->status === 'released') ? 'locked' : 'active';
+                    } else {
+                        $stepClass = 'future';
+                    }
+
+                    $dotContent = $i + 1; // Show step number instead of icon
+                @endphp
+
+                <div class="approval-step {{ $stepClass }}">
+                    <div class="approval-step-dot">{{ $dotContent }}</div>
+                    <div class="approval-step-label">
+                        {{ $step['label'] }}
+                        <span class="approval-step-sub">{{ $dynamicSubs[$i] }}</span>
+                    </div>
+                </div>
+            @endforeach
+        </div>
+    </div>
 </div>
 
 {{-- ═══ APPROVE / RELEASE FORM ═══ --}}
