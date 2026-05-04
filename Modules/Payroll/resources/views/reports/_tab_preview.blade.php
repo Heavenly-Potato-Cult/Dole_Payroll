@@ -42,7 +42,7 @@
                             <td>{{ $ded->deductionType->name ?? '—' }}</td>
                         @endif
                         @if (isset($showDailyRate) && $showDailyRate)
-                            @php $dr = round(($emp->semi_monthly_gross * 2) / 22, 2); @endphp
+                            @php $dr = round($emp->basic_monthly_salary / 22, 2); @endphp
                             <td style="text-align:right;">₱{{ number_format($dr, 2) }}</td>
                         @endif
                         <td style="text-align:right;" class="fw-bold">₱{{ number_format($ded->amount, 2) }}</td>

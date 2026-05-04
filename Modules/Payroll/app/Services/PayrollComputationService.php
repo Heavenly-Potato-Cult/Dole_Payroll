@@ -6,11 +6,9 @@ use App\SharedKernel\Models\Employee;
 use Modules\Payroll\Models\PayrollBatch;
 use Modules\Payroll\Models\PayrollEntry;
 use Modules\Payroll\Models\PayrollDeduction;
-use Modules\Payroll\Models\DeductionType;
 use Modules\Payroll\Traits\TableIVConverter;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Carbon\Carbon;
 
 class PayrollComputationService
 {
@@ -20,6 +18,21 @@ class PayrollComputationService
      * Fixed working-day denominator per DOLE RO9 payroll rules.
      */
     const DENOMINATOR = 22;
+
+    /**
+     * DeductionService is now the single source of truth for:
+     *   - computePagibig1()
+     *   - computePhilHealth()
+     *   - computeGsisLife()
+     *   - computeWithholdingTax() / birGraduatedTax()
+     *   - resolveDeductions()
+     *
+     * This service only handles: gross computation, attendance deductions,
+     * net pay, and persistence.
+     */
+    public function __construct(
+        protected DeductionService $deductionService
+    ) {}
 
     /**
      * Compute a full payroll entry for one employee in a batch.
@@ -82,8 +95,8 @@ class PayrollComputationService
         );
 
         // Undertime — same conversion as tardiness
-        $utHours    = intdiv($undertimeMins, 60);
-        $utRemMins  = $undertimeMins % 60;
+        $utHours      = intdiv($undertimeMins, 60);
+        $utRemMins    = $undertimeMins % 60;
         $undertimeDed = round(
             ($utHours * $hourlyRate)
             + ($this->minuteEquivalent($utRemMins) * $dailyRate),
@@ -92,50 +105,21 @@ class PayrollComputationService
 
         $totalAttendanceDed = round($lwopDeduction + $tardiness + $undertimeDed, 2);
 
-        // ── 4. Build deduction lines ──────────────────────────────────────
-        $payrollDate    = Carbon::create($batch->period_year, $batch->period_month, 1);
-        $deductionTypes = DeductionType::orderBy('display_order')->get()->keyBy('code');
-        $deductionLines = [];   // [ ['type_id'=>, 'code'=>, 'name'=>, 'amount'=>] ]
+        // ── 4. Resolve deduction lines via DeductionService ──────────────
+        //
+        //   DeductionService::resolveDeductions() handles:
+        //     - Loading active DeductionTypes in display_order
+        //     - Loading employee enrollments active on the payroll date
+        //     - Computing PAG_IBIG_1, PHILHEALTH, GSIS_LIFE_RETIREMENT, WITHHOLDING_TAX
+        //     - Returning only lines with amount > 0
+        //
+        //   This service no longer duplicates that logic.
 
-// TO — pass as string to match your model's scope signature
-$enrollments = $employee->deductionEnrollments()
-    ->with('deductionType')
-    ->activeOn($payrollDate->toDateString())
-    ->get()
-    ->keyBy(fn ($e) => $e->deductionType->code);
-
-        // ── 4a. Computed government-mandatory deductions ──────────────────
-        $pagibig1Amount = $this->computePagibig1($basicMonthly);
-        $philhealthAmt  = $this->computePhilHealth($basicMonthly);
-        $gsisLifeAmt    = $this->computeGsisLife($basicMonthly);
-        $whtAmount      = $this->computeWithholdingTax($employee, $basicMonthly, $ytdGross, $batch);
-
-        // ── 4b. Walk ALL deduction types in display_order ─────────────────
-        foreach ($deductionTypes as $code => $type) {
-
-            $amount = 0.00;
-
-            if ($type->is_computed) {
-                $amount = match ($code) {
-                    'PAG_IBIG_1'           => $pagibig1Amount,
-                    'PHILHEALTH'           => $philhealthAmt,
-                    'GSIS_LIFE_RETIREMENT' => $gsisLifeAmt,
-                    'WITHHOLDING_TAX'      => $whtAmount,
-                    default                => 0.00,
-                };
-            } elseif (isset($enrollments[$code])) {
-                $amount = (float) $enrollments[$code]->amount;
-            }
-
-            if ($amount > 0) {
-                $deductionLines[] = [
-                    'deduction_type_id' => $type->id,
-                    'code'              => $type->code,
-                    'name'              => $type->name,
-                    'amount'            => round($amount, 2),
-                ];
-            }
-        }
+        $deductionLines = $this->deductionService->resolveDeductions(
+            $employee,
+            $batch,
+            $ytdGross
+        );
 
         $totalDeductions = round(
             collect($deductionLines)->sum('amount') + $totalAttendanceDed,
@@ -190,99 +174,9 @@ $enrollments = $employee->deductionEnrollments()
     }
 
     // ═══════════════════════════════════════════════════════════════════
-    //  Mandatory / Computed Deduction Helpers
+    //  Attendance helper — kept here because it belongs to attendance
+    //  logic (TableIVConverter trait), not deduction computation.
     // ═══════════════════════════════════════════════════════════════════
-
-    /**
-     * Pag-IBIG I (HDMF): EE share = 2% of monthly basic.
-     * Cap: if basic ≤ ₱1,500 → 1%; above → 2%; max monthly EE = ₱100.
-     * Returns the PER CUT-OFF amount (monthly ÷ 2).
-     */
-    protected function computePagibig1(float $basicMonthly): float
-    {
-        $rate      = $basicMonthly <= 1500 ? 0.01 : 0.02;
-        $monthlyEE = min(round($basicMonthly * $rate, 2), 100.00);
-        return round($monthlyEE / 2, 2);
-    }
-
-    /**
-     * PhilHealth: 5% of basic monthly salary (2024 rate), EE share = 50%.
-     * Monthly premium floor = ₱500, ceiling = ₱5,000.
-     * Returns per cut-off (monthly EE share ÷ 2).
-     */
-    protected function computePhilHealth(float $basicMonthly): float
-    {
-        $monthlyPremium = max(500, min(round($basicMonthly * 12 * 0.05 / 12, 2), 5000));
-        $eeShare        = round($monthlyPremium / 2, 2);   // 50% EE share
-        return round($eeShare / 2, 2);                     // per cut-off
-    }
-
-    /**
-     * GSIS Life & Retirement Personal Share (PS) = 9% of basic monthly.
-     * Returns per cut-off (monthly ÷ 2).
-     */
-    protected function computeGsisLife(float $basicMonthly): float
-    {
-        return round(round($basicMonthly * 0.09, 2) / 2, 2);
-    }
-
-    /**
-     * Withholding Tax — ANNUALIZED method (January–December).
-     *
-     * Steps:
-     *   1. Project annual taxable income from accumulated YTD gross.
-     *   2. Subtract non-taxable: GSIS PS + PhilHealth EE + Pag-IBIG EE (annual).
-     *   3. Apply BIR TRAIN Law graduated table.
-     *   4. Distribute equally: annualTax ÷ 24 cut-offs.
-     */
-    protected function computeWithholdingTax(
-        Employee     $employee,
-        float        $basicMonthly,
-        float        $ytdGross,
-        PayrollBatch $batch
-    ): float {
-        // Which cut-off number are we on? (1 = Jan 1st, 24 = Dec 2nd)
-        $cutoffNumber = ($batch->period_month - 1) * 2 + ($batch->cutoff === '1st' ? 1 : 2);
-        if ($cutoffNumber < 1) $cutoffNumber = 1;
-
-        $peraMonthly = (float) $employee->pera_amount;
-        $thisGross   = round(($basicMonthly + $peraMonthly) / 2, 2);
-
-        $accumulatedGross = $ytdGross + $thisGross;
-        $projectedAnnual  = round($accumulatedGross / $cutoffNumber * 24, 2);
-
-        // Annual non-taxable deductions (GSIS + PhilHealth + Pag-IBIG)
-        $annualGSIS = round($basicMonthly * 0.09 * 12, 2);
-        $annualPHIC = max(6000, min(round($basicMonthly * 12 * 0.05, 2), 60000));
-        $annualHDMF = min(round($basicMonthly * 0.02 * 12, 2), 1200.00);
-
-        $taxableIncome = max(0, $projectedAnnual - $annualGSIS - $annualPHIC - $annualHDMF);
-        $annualTax     = $this->birGraduatedTax($taxableIncome);
-
-        return max(0, round($annualTax / 24, 2));
-    }
-
-    /**
-     * BIR Graduated Income Tax — TRAIN Law (effective 2023+).
-     *
-     *   ≤ 250,000             →  0%
-     *   250,001 – 400,000     →  15% of excess over 250,000
-     *   400,001 – 800,000     →  22,500 + 20% of excess over 400,000
-     *   800,001 – 2,000,000   →  102,500 + 25% of excess over 800,000
-     *   2,000,001 – 8,000,000 →  402,500 + 30% of excess over 2,000,000
-     *   > 8,000,000           →  2,202,500 + 35% of excess over 8,000,000
-     */
-    protected function birGraduatedTax(float $taxableIncome): float
-    {
-        return match (true) {
-            $taxableIncome <= 250_000   => 0.00,
-            $taxableIncome <= 400_000   => round(($taxableIncome - 250_000) * 0.15, 2),
-            $taxableIncome <= 800_000   => round(22_500 + ($taxableIncome - 400_000) * 0.20, 2),
-            $taxableIncome <= 2_000_000 => round(102_500 + ($taxableIncome - 800_000) * 0.25, 2),
-            $taxableIncome <= 8_000_000 => round(402_500 + ($taxableIncome - 2_000_000) * 0.30, 2),
-            default                     => round(2_202_500 + ($taxableIncome - 8_000_000) * 0.35, 2),
-        };
-    }
 
     /**
      * Wraps minutesToDays() from the TableIVConverter trait.

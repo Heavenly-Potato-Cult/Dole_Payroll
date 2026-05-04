@@ -73,7 +73,7 @@ class PayrollController extends Controller
     {
         $user = Auth::user();
         $employeeId = session('hris_employee_id');
-        
+
         // Get employee's payroll entries from released/locked batches only
         $query = \Modules\Payroll\Models\PayrollEntry::with(['batch', 'employee'])
             ->whereHas('batch', function ($q) {

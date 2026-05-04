@@ -1112,9 +1112,9 @@ document.getElementById('payslipModal').addEventListener('click', function(e) {
             ? `<button class="ded-toggle" data-entry-id="${row.id}" data-count="${row.dedCount}">${row.dedCount} lines ▾</button>`
             : '<span class="text-muted" style="font-size:0.78rem;">—</span>';
 
-        const payslipBtn = row.has_payslip
-            ? `<a href="/payroll/${row.payroll_id}/payslips?mode=per_batch&entry_id=${row.id}" class="btn btn-outline btn-sm" target="_blank">Payslip</a>`
-            : '<span class="text-muted" style="font-size:0.75rem;">—</span>';
+const payslipBtn = row.has_payslip
+    ? `<a href="/payroll/${row.payroll_id}/payslips/generate?mode=per_batch&entry_id=${row.id}" class="btn btn-outline btn-sm" target="_blank">Payslip</a>`
+    : '<span class="text-muted" style="font-size:0.75rem;">—</span>';
 
         // Main row HTML
         const mainRow = document.createElement('tr');
