@@ -175,7 +175,7 @@ Route::middleware(['auth'])->group(function () {
 
 
     // ── Reports ──────────────────────────────────────────────────
-    Route::middleware(['role:payroll_officer|hrmo|accountant|ard|cashier|chief_admin_officer|budget_officer|super_admin'])
+    Route::middleware(['role:payroll_officer|super_admin'])
         ->group(function () {
             Route::get('/reports',                    [PayrollReportController::class, 'index'])->name('reports.index');
             Route::get('/reports/payroll-register',   [PayrollReportController::class, 'payrollRegister'])->name('reports.payroll-register');

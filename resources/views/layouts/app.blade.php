@@ -237,10 +237,10 @@
             @endrole
 
             {{-- ── Reports ─────────────────────────────────────────────── --}}
-            @role('payroll_officer|hrmo|accountant|ard|cashier|chief_admin_officer|budget_officer|super_admin')
+            @role('payroll_officer|super_admin')
             <div class="nav-section-label">Reports</div>
 
-            @role('payroll_officer|hrmo|accountant|super_admin')
+            @role('payroll_officer|super_admin')
             <a href="{{ route('reports.index') }}"
                class="nav-item {{ request()->routeIs('reports.index') || request()->routeIs('reports.*') ? 'active' : '' }}">
                 <span class="nav-icon">

@@ -40,7 +40,7 @@ app.get("/", (req, res) => {
           background: white;
           border-radius: 12px;
           padding: 40px;
-          width: 380px;
+          width: 500px;
           box-shadow: 0 20px 60px rgba(0,0,0,0.3);
         }
         .logo { text-align: center; margin-bottom: 28px; }
@@ -94,7 +94,7 @@ app.get("/", (req, res) => {
     <body>
       <div class="card">
         <div class="logo">
-          <h1>🏢 DOLE HRIS Portal</h1>
+          <h1>DOLE HRIS Portal</h1>
           <p>Department of Labor and Employment - HRIS</p>
         </div>
 
@@ -111,10 +111,12 @@ app.get("/", (req, res) => {
         </form>
 
         <div class="hint">
-          <b>🧪 Demo Accounts (password: pass123)</b>
-          <span>EMP001 — Juan Santos (Regular Employee)</span>
-          <span>EMP002 — Maria Reyes (Payroll Officer)</span>
-          <span>EMP004 — Ana Cruz (Approver)</span>
+          <b>Demo Accounts (password: pass123)</b>
+          <span>EMP032 — Divina Torres. Corpuz (Payroll Officer)</span>
+          <span>EMP076 — Jose Torres. Torres (HRMO)</span>
+          <span>EMP052 — Ricardo Manalo. Macapagal (Accountant)</span>
+          <span>EMP077 — Teresita Aguilar. Tolentino (ARD)</span>
+          <span>EMP003 — Maricel Garcia. Ocampo (Cashier)</span>
           <span>Use any EMP001-EMP082 for testing</span>
         </div>
       </div>
