@@ -185,20 +185,23 @@
 .table-wrap {
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
+    width: 100%;
 }
 
 #payrollRegisterTable,
 #virtualScrollContainer table,
 #payrollRegisterTableFooter {
     table-layout: fixed;
-    width: 1260px; /* sum of all col widths above */
+    width: 100%;
+    min-width: 1260px;
 }
 
 .virtual-scroll-container {
     height: 480px;
-    overflow-x: hidden; /* horizontal scroll is handled by .table-wrap parent */
+    overflow-x: hidden;
     overflow-y: auto;
-    width: 1260px; /* match table width exactly so no internal reflow */
+    width: 100%;
+    min-width: 1260px;
     position: relative;
 }
 .virtual-scroll-table {
