@@ -805,7 +805,7 @@
     <div class="db-stat neutral">
         <div class="db-stat-left">
             <div>
-                @php $spPending = \App\Models\SpecialPayrollBatch::whereIn('status',['draft','computed'])->count(); @endphp
+                @php $spPending = \Modules\Payroll\Models\SpecialPayrollBatch::whereIn('status',['draft','computed'])->count(); @endphp
                 <div class="db-stat-title">Special Payroll</div>
                 <div class="db-stat-subtitle">Draft / computed batches</div>
             </div>
@@ -1205,12 +1205,12 @@
             </div>
             <div class="db-card-body">
                 @php
-                    $nhPending   = \App\Models\SpecialPayrollBatch::where('type','newly_hired')->whereIn('status',['draft','computed'])->count();
-                    $diffPending = \App\Models\SpecialPayrollBatch::where('type','salary_differential')->whereIn('status',['draft','computed'])->count();
-                    $nosiPending = \App\Models\SpecialPayrollBatch::whereIn('type',['nosi','nosa'])->whereIn('status',['draft','computed'])->count();
-                    $nhTotal     = \App\Models\SpecialPayrollBatch::where('type','newly_hired')->count();
-                    $diffTotal   = \App\Models\SpecialPayrollBatch::where('type','salary_differential')->count();
-                    $nosiTotal   = \App\Models\SpecialPayrollBatch::whereIn('type',['nosi','nosa'])->count();
+                    $nhPending   = \Modules\Payroll\Models\SpecialPayrollBatch::where('type','newly_hired')->whereIn('status',['draft','computed'])->count();
+                    $diffPending = \Modules\Payroll\Models\SpecialPayrollBatch::where('type','salary_differential')->whereIn('status',['draft','computed'])->count();
+                    $nosiPending = \Modules\Payroll\Models\SpecialPayrollBatch::whereIn('type',['nosi','nosa'])->whereIn('status',['draft','computed'])->count();
+                    $nhTotal     = \Modules\Payroll\Models\SpecialPayrollBatch::where('type','newly_hired')->count();
+                    $diffTotal   = \Modules\Payroll\Models\SpecialPayrollBatch::where('type','salary_differential')->count();
+                    $nosiTotal   = \Modules\Payroll\Models\SpecialPayrollBatch::whereIn('type',['nosi','nosa'])->count();
                 @endphp
                 <table class="db-mini-table">
                     <tr>
@@ -1439,7 +1439,7 @@
                 <a href="{{ route('payroll.index') }}?status=pending_rd" class="btn btn-outline btn-sm" style="flex-shrink:0;">View All</a>
             </div>
             <div class="db-card-body">
-                @php $rdBatches = \App\Models\PayrollBatch::with('creator')->where('status','pending_rd')->orderByDesc('id')->limit(5)->get(); @endphp
+                @php $rdBatches = \Modules\Payroll\Models\PayrollBatch::with('creator')->where('status','pending_rd')->orderByDesc('id')->limit(5)->get(); @endphp
                 @if($rdBatches->isEmpty())
                     <div class="db-empty"><div class="db-empty-icon">✅</div>No payroll pending your approval.</div>
                 @else

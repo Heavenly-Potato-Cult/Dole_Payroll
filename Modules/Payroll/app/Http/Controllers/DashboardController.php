@@ -121,6 +121,8 @@ class DashboardController extends Controller
             'currentMonth',
             'pendingApprovals',
             'pendingPayroll',
+            'pendingTev',
+            'pendingLiquidation',
             'recentPayroll',
             'payrollStatusData',
         ));
