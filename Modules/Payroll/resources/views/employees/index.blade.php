@@ -218,9 +218,9 @@
         <p>DOLE RO9 Regular Plantilla — {{ $employees->total() }} {{ Str::plural('record', $employees->total()) }}</p>
     </div>
     @role('payroll_officer|hrmo|super_admin')
-    <form method="POST" action="{{ route('employees.pullFromApi') }}" style="display:inline;">
+    <form id="syncHrisForm" method="POST" action="{{ route('employees.pullFromApi') }}" style="display:inline;">
         @csrf
-        <button type="submit" class="btn btn-primary" style="padding-left: 12px;" onclick="return confirm('Sync employees from HRIS API?\nThis will update existing employees and add new ones.')">
+        <button type="button" class="btn btn-primary" style="padding-left: 12px;" onclick="confirmSyncHris()">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="white" style="display: inline-block; margin-right: 4px; vertical-align: -2px;">
                 <path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46C19.54 15.03 20 13.57 20 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74C4.46 8.97 4 10.43 4 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z"/>
             </svg>
@@ -456,6 +456,177 @@ function toggleEmpRow(mainRow) {
     if (!isOpen) {
         mainRow.classList.add('open');
         detail.classList.add('open');
+    }
+}
+
+function confirmSyncHris() {
+    Swal.fire({
+        title: 'Sync from HRIS?',
+        text: 'This will update existing employees and add new ones.',
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: 'Sync Now',
+        cancelButtonText: 'Cancel',
+        confirmButtonColor: '#0F1B4C',
+        cancelButtonColor: '#6B7280',
+        reverseButtons: true,
+        focusCancel: true
+    }).then((result) => {
+        if (result.isConfirmed) {
+            executeHrisSync();
+        }
+    });
+}
+
+async function executeHrisSync() {
+    // Show loading modal with progress bar
+    let progress = 0;
+    const progressInterval = setInterval(() => {
+        if (progress < 90) {
+            progress += Math.random() * 15;
+            if (progress > 90) progress = 90;
+            Swal.update({
+                html: `<div style="margin-top:10px;">
+                    <div style="background:#e5e7eb;border-radius:4px;height:8px;overflow:hidden;">
+                        <div style="background:#0F1B4C;height:100%;width:${progress}%;transition:width 0.3s;"></div>
+                    </div>
+                    <p style="margin-top:8px;font-size:0.9rem;color:#6b7280;">${Math.round(progress)}%</p>
+                </div>`
+            });
+        }
+    }, 800);
+
+    Swal.fire({
+        title: '<span style="color:#0F1B4C;">Syncing from HRIS...</span>',
+        html: `<div style="margin-top:10px;">
+            <div style="background:#e5e7eb;border-radius:4px;height:8px;overflow:hidden;">
+                <div style="background:#0F1B4C;height:100%;width:0%;transition:width 0.3s;"></div>
+            </div>
+            <p style="margin-top:8px;font-size:0.9rem;color:#6b7280;">0%</p>
+        </div>`,
+        allowOutsideClick: false,
+        allowEscapeKey: false,
+        showConfirmButton: false,
+        showCancelButton: false,
+        didOpen: () => {
+            Swal.showLoading();
+        }
+    });
+
+    try {
+        const form = document.getElementById('syncHrisForm');
+        const formData = new FormData(form);
+        const csrfToken = formData.get('_token');
+
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 second timeout
+
+        const response = await fetch(form.action, {
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': csrfToken,
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: formData,
+            signal: controller.signal
+        });
+
+        clearTimeout(timeoutId);
+        clearInterval(progressInterval);
+
+        // Complete progress to 100%
+        Swal.update({
+            html: `<div style="margin-top:10px;">
+                <div style="background:#e5e7eb;border-radius:4px;height:8px;overflow:hidden;">
+                    <div style="background:#10B981;height:100%;width:100%;transition:width 0.3s;"></div>
+                </div>
+                <p style="margin-top:8px;font-size:0.9rem;color:#10B981;">100% Complete!</p>
+            </div>`
+        });
+
+        await new Promise(resolve => setTimeout(resolve, 500));
+
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+
+        // Check if we got JSON or a redirect (HTML)
+        const contentType = response.headers.get('content-type');
+        if (contentType && contentType.includes('application/json')) {
+            const data = await response.json();
+            if (data.success) {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Sync Complete!',
+                    html: `<div style="text-align:left;">
+                        <p><strong>${data.synced || 'Employees'}</strong> synced successfully</p>
+                        ${data.updated ? `<p style="color:#6b7280;font-size:0.9rem;">${data.updated} updated</p>` : ''}
+                    </div>`,
+                    confirmButtonColor: '#0F1B4C'
+                }).then(() => {
+                    window.location.reload();
+                });
+            } else {
+                throw new Error(data.message || 'Sync failed');
+            }
+        } else {
+            // HTML response (traditional redirect) - success
+            Swal.fire({
+                icon: 'success',
+                title: 'Sync Complete!',
+                text: 'Employees have been synchronized successfully.',
+                confirmButtonColor: '#0F1B4C'
+            }).then(() => {
+                window.location.reload();
+            });
+        }
+
+    } catch (error) {
+        clearInterval(progressInterval);
+
+        let errorTitle = 'Sync Failed';
+        let errorMessage = 'An unexpected error occurred.';
+        let errorIcon = 'error';
+
+        if (error.name === 'AbortError' || error.message.includes('abort')) {
+            errorTitle = 'Connection Timeout';
+            errorMessage = 'The HRIS API is taking too long to respond. Please try again later.';
+        } else if (error.message.includes('NetworkError') || error.message.includes('fetch')) {
+            errorTitle = 'Connection Error';
+            errorMessage = 'Unable to connect to the HRIS API. Please check your internet connection or the API endpoint may be down.';
+        } else if (error.message.includes('500')) {
+            errorTitle = 'Server Error';
+            errorMessage = 'The HRIS API server encountered an error. Please contact the system administrator.';
+        } else if (error.message.includes('404')) {
+            errorTitle = 'API Not Found';
+            errorMessage = 'The HRIS API endpoint could not be found. Please verify the API configuration.';
+        } else if (error.message) {
+            errorMessage = error.message;
+        }
+
+        Swal.fire({
+            icon: errorIcon,
+            title: errorTitle,
+            html: `<div style="text-align:left;">
+                <p>${errorMessage}</p>
+                <p style="margin-top:12px;font-size:0.85rem;color:#6b7280;">
+                    <strong>Troubleshooting:</strong><br>
+                    • Check your internet connection<br>
+                    • Verify the HRIS API is running<br>
+                    • Contact IT if the problem persists
+                </p>
+            </div>`,
+            confirmButtonText: 'Try Again',
+            confirmButtonColor: '#0F1B4C',
+            showCancelButton: true,
+            cancelButtonText: 'Cancel',
+            cancelButtonColor: '#6B7280'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                executeHrisSync();
+            }
+        });
     }
 }
 </script>
