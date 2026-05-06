@@ -487,14 +487,6 @@
     </div>
 </div>
 
-{{-- Alerts --}}
-@if (session('success'))
-    <div class="alert alert-success no-print">{{ session('success') }}</div>
-@endif
-@if (session('error'))
-    <div class="alert alert-error no-print">{{ session('error') }}</div>
-@endif
-
 {{-- ═══ PRINTABLE DOCUMENT ═══ --}}
 <div class="card">
     <div class="card-body">

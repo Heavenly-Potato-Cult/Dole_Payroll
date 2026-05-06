@@ -481,13 +481,6 @@
 </div>
 @endif
 
-@if (session('success'))
-    <div class="alert alert-success no-print">{{ session('success') }}</div>
-@endif
-@if (session('error'))
-    <div class="alert alert-error no-print">{{ session('error') }}</div>
-@endif
-
 {{-- ═══ PAYROLL DOCUMENT ═══ --}}
 <div class="card">
     <div class="card-body">

@@ -235,13 +235,6 @@
 @endif
 </div>
 
-@if (session('success'))
-    <div class="alert alert-success">{{ session('success') }}</div>
-@endif
-@if (session('error'))
-    <div class="alert alert-error">{{ session('error') }}</div>
-@endif
-
 {{-- ── Filter bar ── --}}
 <div class="card mb-3">
     <div class="card-body" style="padding:14px 20px;">
@@ -402,14 +395,13 @@
                                        onclick="event.stopPropagation();">View</a>
 
                                     @if ($batch->status === 'draft' && auth()->user()->hasRole('payroll_officer|super_admin'))
-                                        <form method="POST"
-                                              action="{{ route('special-payroll.nosi-nosa.destroy', $batch->id) }}"
-                                              onsubmit="event.stopPropagation(); return confirm('Delete this draft record? This cannot be undone.')">
+                                        <form id="deleteForm-{{ $batch->id }}" method="POST"
+                                              action="{{ route('special-payroll.nosi-nosa.destroy', $batch->id) }}">
                                             @csrf
                                             @method('DELETE')
-                                            <button type="submit" class="btn btn-sm"
+                                            <button type="button" class="btn btn-sm"
                                                     style="background:#B71C1C; color:#fff; border:none; cursor:pointer;"
-                                                    onclick="event.stopPropagation();">
+                                                    onclick="event.stopPropagation(); confirmDeleteNosiNosa({{ $batch->id }}, '{{ addslashes(optional($emp)->last_name ?? '') }}')">
                                                 ✕
                                             </button>
                                         </form>
@@ -483,14 +475,14 @@
                                     <a href="{{ route('special-payroll.nosi-nosa.show', $batch->id) }}"
                                        class="btn btn-outline btn-sm">View</a>
                                     @if ($batch->status === 'draft' && auth()->user()->hasRole('payroll_officer|super_admin'))
-                                        <form method="POST"
+                                        <form id="deleteFormMobile-{{ $batch->id }}" method="POST"
                                               action="{{ route('special-payroll.nosi-nosa.destroy', $batch->id) }}"
-                                              style="flex:1;"
-                                              onsubmit="return confirm('Delete this draft record? This cannot be undone.')">
+                                              style="flex:1;">
                                             @csrf
                                             @method('DELETE')
-                                            <button type="submit" class="btn btn-sm"
-                                                    style="background:#B71C1C; color:#fff; border:none; cursor:pointer; width:100%;">
+                                            <button type="button" class="btn btn-sm"
+                                                    style="background:#B71C1C; color:#fff; border:none; cursor:pointer; width:100%;"
+                                                    onclick="confirmDeleteNosiNosa({{ $batch->id }}, '{{ addslashes(optional($emp)->last_name ?? '') }}', true)">
                                                 ✕ Delete
                                             </button>
                                         </form>
@@ -537,6 +529,37 @@ function toggleNnRow(mainRow) {
         mainRow.classList.add('open');
         detail.classList.add('open');
     }
+}
+
+function confirmDeleteNosiNosa(batchId, employeeName, isMobile = false) {
+    const formId = isMobile ? 'deleteFormMobile-' + batchId : 'deleteForm-' + batchId;
+    Swal.fire({
+        title: 'Delete NOSI/NOSA Record?',
+        html: `<div style="text-align:center;">
+            <div style="font-size:1.2rem;font-weight:600;color:#dc3545;margin-bottom:8px;">${employeeName || 'Unknown'}</div>
+            <p style="color:#6b7280;font-size:0.95rem;">This will permanently delete this draft NOSI/NOSA record and cannot be undone.</p>
+        </div>`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Delete Record',
+        cancelButtonText: 'Cancel',
+        confirmButtonColor: '#dc3545',
+        cancelButtonColor: '#6B7280',
+        reverseButtons: true,
+        focusCancel: true
+    }).then((result) => {
+        if (result.isConfirmed) {
+            const form = document.getElementById(formId);
+            if (form) {
+                const buttons = form.querySelectorAll('button');
+                buttons.forEach(btn => {
+                    btn.disabled = true;
+                    btn.textContent = 'Deleting...';
+                });
+                form.submit();
+            }
+        }
+    });
 }
 </script>
 @endsection

@@ -232,13 +232,6 @@
 @endif
 </div>
 
-{{-- ── Alerts ── --}}
-@if (session('success'))
-    <div class="alert alert-success">{{ session('success') }}</div>
-@endif
-@if (session('error'))
-    <div class="alert alert-error">{{ session('error') }}</div>
-@endif
 @if (session('warning'))
     <div class="alert alert-warning">{{ session('warning') }}</div>
 @endif
@@ -370,14 +363,13 @@
                                        onclick="event.stopPropagation();">View</a>
 @if (auth()->user()->hasRole('payroll_officer|super_admin'))
     @if ($batch->status === 'draft')
-                                            <form method="POST"
-                                                  action="{{ route('special-payroll.newly-hired.destroy', $batch->id) }}"
-                                                  onsubmit="event.stopPropagation(); return confirm('Delete this payroll record for {{ addslashes($batch->employee->last_name ?? '') }}? This cannot be undone.')">
+                                            <form id="deleteForm-{{ $batch->id }}" method="POST"
+                                                  action="{{ route('special-payroll.newly-hired.destroy', $batch->id) }}">
                                                 @csrf
                                                 @method('DELETE')
-                                                <button type="submit" class="btn btn-danger btn-sm"
+                                                <button type="button" class="btn btn-danger btn-sm"
                                                         title="Delete"
-                                                        onclick="event.stopPropagation();">✕</button>
+                                                        onclick="event.stopPropagation(); confirmDeleteNewlyHired({{ $batch->id }}, '{{ addslashes(optional($batch->employee)->last_name ?? '') }}')">✕</button>
                                             </form>
                                         @endif
                                     @endif
@@ -431,13 +423,13 @@
                                        class="btn btn-outline btn-sm">View</a>
 @if (auth()->user()->hasRole('payroll_officer|super_admin'))
     @if ($batch->status === 'draft')
-                                            <form method="POST"
+                                            <form id="deleteFormMobile-{{ $batch->id }}" method="POST"
                                                   action="{{ route('special-payroll.newly-hired.destroy', $batch->id) }}"
-                                                  style="flex:1;"
-                                                  onsubmit="return confirm('Delete this payroll record for {{ addslashes($batch->employee->last_name ?? '') }}? This cannot be undone.')">
+                                                  style="flex:1;">
                                                 @csrf
                                                 @method('DELETE')
-                                                <button type="submit" class="btn btn-danger btn-sm" style="width:100%;">✕ Delete</button>
+                                                <button type="button" class="btn btn-danger btn-sm" style="width:100%;"
+                                                        onclick="confirmDeleteNewlyHired({{ $batch->id }}, '{{ addslashes(optional($batch->employee)->last_name ?? '') }}', true)">✕ Delete</button>
                                             </form>
                                         @endif
                                     @endif
@@ -483,6 +475,37 @@ function toggleNhRow(mainRow) {
         mainRow.classList.add('open');
         detail.classList.add('open');
     }
+}
+
+function confirmDeleteNewlyHired(batchId, employeeName, isMobile = false) {
+    const formId = isMobile ? 'deleteFormMobile-' + batchId : 'deleteForm-' + batchId;
+    Swal.fire({
+        title: 'Delete Payroll Record?',
+        html: `<div style="text-align:center;">
+            <div style="font-size:1.2rem;font-weight:600;color:#dc3545;margin-bottom:8px;">${employeeName || 'Unknown'}</div>
+            <p style="color:#6b7280;font-size:0.95rem;">This will permanently delete this draft payroll record and cannot be undone.</p>
+        </div>`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Delete Record',
+        cancelButtonText: 'Cancel',
+        confirmButtonColor: '#dc3545',
+        cancelButtonColor: '#6B7280',
+        reverseButtons: true,
+        focusCancel: true
+    }).then((result) => {
+        if (result.isConfirmed) {
+            const form = document.getElementById(formId);
+            if (form) {
+                const buttons = form.querySelectorAll('button');
+                buttons.forEach(btn => {
+                    btn.disabled = true;
+                    btn.textContent = 'Deleting...';
+                });
+                form.submit();
+            }
+        }
+    });
 }
 </script>
 @endsection

@@ -116,14 +116,6 @@
     When a designate changes, simply activate the new officer here — no code changes needed.
 </div>
 
-{{-- Alerts --}}
-@if (session('success'))
-    <div class="alert alert-success">{{ session('success') }}</div>
-@endif
-@if (session('error'))
-    <div class="alert alert-error">{{ session('error') }}</div>
-@endif
-
 {{-- ── Group signatories by role_type ── --}}
 @php
     $roleLabels = [
@@ -188,15 +180,13 @@
                 <div class="sig-actions">
 
                     {{-- Toggle active/inactive --}}
-                    <form method="POST" action="{{ route('signatories.toggle', $sig) }}"
-                          onsubmit="return confirm('{{ $sig->is_active
-                              ? 'Deactivate ' . addslashes($sig->full_name) . '? Payslips will show no active signatory for this role until another is activated.'
-                              : 'Set ' . addslashes($sig->full_name) . ' as the active signatory for this role? The current active person will be deactivated.' }}')">
+                    <form id="toggleForm-{{ $sig->id }}" method="POST" action="{{ route('signatories.toggle', $sig) }}">
                         @csrf
                         @method('PATCH')
-                        <button type="submit"
+                        <button type="button"
                                 class="btn btn-sm {{ $sig->is_active ? 'btn-outline' : 'btn-primary' }}"
-                                title="{{ $sig->is_active ? 'Deactivate' : 'Set as Active' }}">
+                                title="{{ $sig->is_active ? 'Deactivate' : 'Set as Active' }}"
+                                onclick="confirmToggleSignatory({{ $sig->id }}, '{{ addslashes($sig->full_name) }}', {{ $sig->is_active ? 'true' : 'false' }})">
                             {{ $sig->is_active ? '⏸ Deactivate' : '▶ Set Active' }}
                         </button>
                     </form>
@@ -204,11 +194,11 @@
                     <a href="{{ route('signatories.edit', $sig) }}"
                        class="btn btn-outline btn-sm">✎ Edit</a>
 
-                    <form method="POST" action="{{ route('signatories.destroy', $sig) }}"
-                          onsubmit="return confirm('Remove {{ addslashes($sig->full_name) }}?\nThis cannot be undone.')">
+                    <form id="deleteForm-{{ $sig->id }}" method="POST" action="{{ route('signatories.destroy', $sig) }}">
                         @csrf
                         @method('DELETE')
-                        <button type="submit" class="btn btn-danger btn-sm">✕</button>
+                        <button type="button" class="btn btn-danger btn-sm"
+                                onclick="confirmDeleteSignatory({{ $sig->id }}, '{{ addslashes($sig->full_name) }}')">✕</button>
                     </form>
 
                 </div>
@@ -219,4 +209,75 @@
     </div>
 @endif
 
+@endsection
+
+@section('scripts')
+<script>
+function confirmToggleSignatory(sigId, fullName, isActive) {
+    const formId = 'toggleForm-' + sigId;
+    const action = isActive ? 'Deactivate' : 'Set Active';
+    const title = isActive ? 'Deactivate Signatory?' : 'Set as Active Signatory?';
+    const message = isActive
+        ? `Payslips will show no active signatory for this role until another is activated.`
+        : `The current active person will be deactivated.`;
+    Swal.fire({
+        title: title,
+        html: `<div style="text-align:center;">
+            <div style="font-size:1.2rem;font-weight:600;color:${isActive ? '#dc3545' : '#10B981'};margin-bottom:8px;">${fullName}</div>
+            <p style="color:#6b7280;font-size:0.95rem;">${message}</p>
+        </div>`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: action,
+        cancelButtonText: 'Cancel',
+        confirmButtonColor: isActive ? '#dc3545' : '#10B981',
+        cancelButtonColor: '#6B7280',
+        reverseButtons: true,
+        focusCancel: true
+    }).then((result) => {
+        if (result.isConfirmed) {
+            const form = document.getElementById(formId);
+            if (form) {
+                const buttons = form.querySelectorAll('button');
+                buttons.forEach(btn => {
+                    btn.disabled = true;
+                    btn.textContent = 'Processing...';
+                });
+                form.submit();
+            }
+        }
+    });
+}
+
+function confirmDeleteSignatory(sigId, fullName) {
+    const formId = 'deleteForm-' + sigId;
+    Swal.fire({
+        title: 'Remove Signatory?',
+        html: `<div style="text-align:center;">
+            <div style="font-size:1.2rem;font-weight:600;color:#dc3545;margin-bottom:8px;">${fullName}</div>
+            <p style="color:#6b7280;font-size:0.95rem;">This cannot be undone.</p>
+        </div>`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Remove',
+        cancelButtonText: 'Cancel',
+        confirmButtonColor: '#dc3545',
+        cancelButtonColor: '#6B7280',
+        reverseButtons: true,
+        focusCancel: true
+    }).then((result) => {
+        if (result.isConfirmed) {
+            const form = document.getElementById(formId);
+            if (form) {
+                const buttons = form.querySelectorAll('button');
+                buttons.forEach(btn => {
+                    btn.disabled = true;
+                    btn.textContent = 'Removing...';
+                });
+                form.submit();
+            }
+        }
+    });
+}
+</script>
 @endsection

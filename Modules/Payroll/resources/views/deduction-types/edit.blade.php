@@ -146,15 +146,15 @@
                             — hidden from enrollment forms and skipped during payroll.
                         @endif
                     </div>
-                    <form method="POST"
+                    <form id="toggleForm" method="POST"
                           action="{{ route('deduction-types.toggle', $deductionType) }}"
-                          style="display:inline;"
-                          onsubmit="return confirm('{{ $deductionType->is_active ? 'Deactivate' : 'Activate' }} this deduction type?')">
+                          style="display:inline;">
                         @csrf
                         @method('PATCH')
-                        <button type="submit"
+                        <button type="button"
                                 class="btn {{ $deductionType->is_active ? 'btn-outline' : 'btn-primary' }}"
-                                style="font-size:0.8rem;padding:6px 14px;">
+                                style="font-size:0.8rem;padding:6px 14px;"
+                                onclick="confirmToggleDeductionType('{{ $deductionType->name }}', {{ $deductionType->is_active ? 'true' : 'false' }})">
                             {{ $deductionType->is_active ? '⊘ Deactivate' : '✓ Activate' }}
                         </button>
                     </form>
@@ -182,4 +182,40 @@
 
 </div>
 
+@endsection
+
+@section('scripts')
+<script>
+function confirmToggleDeductionType(typeName, isActive) {
+    const action = isActive ? 'Deactivate' : 'Activate';
+    const actionLower = isActive ? 'deactivate' : 'activate';
+    Swal.fire({
+        title: action + ' Deduction Type?',
+        html: `<div style="text-align:center;">
+            <div style="font-size:1.2rem;font-weight:600;color:#dc3545;margin-bottom:8px;">${typeName}</div>
+            <p style="color:#6b7280;font-size:0.95rem;">Are you sure you want to ${actionLower} this deduction type?</p>
+        </div>`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: action,
+        cancelButtonText: 'Cancel',
+        confirmButtonColor: isActive ? '#dc3545' : '#10B981',
+        cancelButtonColor: '#6B7280',
+        reverseButtons: true,
+        focusCancel: true
+    }).then((result) => {
+        if (result.isConfirmed) {
+            const form = document.getElementById('toggleForm');
+            if (form) {
+                const buttons = form.querySelectorAll('button');
+                buttons.forEach(btn => {
+                    btn.disabled = true;
+                    btn.textContent = 'Processing...';
+                });
+                form.submit();
+            }
+        }
+    });
+}
+</script>
 @endsection
