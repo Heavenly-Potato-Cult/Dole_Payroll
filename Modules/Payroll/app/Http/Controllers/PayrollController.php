@@ -340,7 +340,7 @@ class PayrollController extends Controller
             $payroll->entries()->delete();
             $payroll->auditLogs()->delete();
             AttendanceSnapshot::where('payroll_batch_id', $payroll->id)->delete();
-            $payroll->delete();
+            $payroll->forceDelete();
         });
 
         return redirect()->route('payroll.index')

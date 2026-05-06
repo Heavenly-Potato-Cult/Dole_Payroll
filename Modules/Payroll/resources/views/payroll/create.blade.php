@@ -127,8 +127,8 @@
                 </div>
 
                 <div class="d-flex gap-2" style="margin-top:24px;">
-                    <button type="submit" class="btn btn-primary btn-lg" id="submitBtn">
-                        💰 Create &amp; Compute Payroll
+                    <button type="button" class="btn btn-primary btn-lg" id="submitBtn" onclick="confirmCreatePayroll()">
+                         Create &amp; Compute Payroll
                     </button>
                     <a href="{{ route('payroll.index') }}" class="btn btn-outline btn-lg">Cancel</a>
                 </div>
@@ -274,18 +274,136 @@ function updatePreview() {
     });
 }
 
-// Confirm before submit
-document.getElementById('createForm').addEventListener('submit', function(e) {
+// SweetAlert2 confirmation for Create & Compute Payroll
+function confirmCreatePayroll() {
     const year   = document.getElementById('period_year').value;
     const month  = parseInt(document.getElementById('period_month').value);
     const cutoff = document.querySelector('input[name="cutoff"]:checked')?.value || '1st';
     const days   = cutoff === '1st' ? '1–15' : '16–30/31';
     const label  = `${MONTHS[month]} ${days}, ${year}`;
 
-    if (!confirm(`Create and compute payroll for:\n\n${label}\n\nThis will generate entries for all active employees. Continue?`)) {
-        e.preventDefault();
+    Swal.fire({
+        title: 'Create & Compute Payroll?',
+        html: `<div style="text-align:center;">
+            <div style="font-size:1.25rem;font-weight:600;color:#0F1B4C;margin-bottom:8px;">${label}</div>
+            <p style="color:#6b7280;font-size:0.95rem;">This will generate payroll entries for all active employees.</p>
+        </div>`,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: 'Create & Compute',
+        cancelButtonText: 'Cancel',
+        confirmButtonColor: '#0F1B4C',
+        cancelButtonColor: '#6B7280',
+        reverseButtons: true,
+        focusCancel: true
+    }).then((result) => {
+        if (result.isConfirmed) {
+            executeCreatePayroll(label);
+        }
+    });
+}
+
+async function executeCreatePayroll(periodLabel) {
+    // Show simple loading modal
+    Swal.fire({
+        title: '<span style="color:#0F1B4C;">Creating Payroll...</span>',
+        html: `<div style="margin-top:10px;text-align:center;">
+            <div style="font-size:1.1rem;color:#0F1B4C;margin-bottom:8px;">${periodLabel}</div>
+            <p style="font-size:0.9rem;color:#6b7280;">Please wait while payroll is computed...</p>
+        </div>`,
+        allowOutsideClick: false,
+        allowEscapeKey: false,
+        showConfirmButton: false,
+        showCancelButton: false,
+        didOpen: () => {
+            Swal.showLoading();
+        }
+    });
+
+    try {
+        const form = document.getElementById('createForm');
+        const formData = new FormData(form);
+        const csrfToken = formData.get('_token');
+
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 120000); // 120 second timeout for payroll computation
+
+        const response = await fetch(form.action, {
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': csrfToken,
+                'Accept': 'application/json, text/html',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: formData,
+            signal: controller.signal
+        });
+
+        clearTimeout(timeoutId);
+
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+
+        // Payroll creation typically redirects to show page
+        Swal.fire({
+            icon: 'success',
+            title: 'Payroll Created!',
+            html: `<div style="text-align:center;">
+                <div style="font-size:1.1rem;color:#0F1B4C;margin-bottom:8px;">${periodLabel}</div>
+                <p style="color:#6b7280;font-size:0.9rem;">Payroll has been computed for all active employees.</p>
+            </div>`,
+            confirmButtonColor: '#0F1B4C'
+        }).then(() => {
+            // Follow the redirect or reload
+            if (response.redirected) {
+                window.location.href = response.url;
+            } else {
+                window.location.reload();
+            }
+        });
+
+    } catch (error) {
+        let errorTitle = 'Creation Failed';
+        let errorMessage = 'An unexpected error occurred while creating payroll.';
+
+        if (error.message.includes('NetworkError') || error.message.includes('fetch')) {
+            errorTitle = 'Connection Error';
+            errorMessage = 'Unable to complete the request. Please check your internet connection.';
+        } else if (error.message.includes('500')) {
+            errorTitle = 'Server Error';
+            errorMessage = 'The server encountered an error during payroll computation. Please contact the system administrator.';
+        } else if (error.message.includes('422')) {
+            errorTitle = 'Validation Error';
+            errorMessage = 'Please check that all required fields are filled correctly (Year, Month, Cutoff).';
+        } else if (error.message) {
+            errorMessage = error.message;
+        }
+
+        Swal.fire({
+            icon: 'error',
+            title: errorTitle,
+            html: `<div style="text-align:left;">
+                <p>${errorMessage}</p>
+                <p style="margin-top:12px;font-size:0.85rem;color:#6b7280;">
+                    <strong>Troubleshooting:</strong><br>
+                    • Verify all fields are filled (Year, Month, Cutoff)<br>
+                    • Check that employees have valid salary grades<br>
+                    • Contact IT if the problem persists
+                </p>
+            </div>`,
+            confirmButtonText: 'Try Again',
+            confirmButtonColor: '#0F1B4C',
+            showCancelButton: true,
+            cancelButtonText: 'Cancel',
+            cancelButtonColor: '#6B7280'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                confirmCreatePayroll();
+            }
+        });
     }
-});
+}
 
 // Init on page load
 updatePreview();
