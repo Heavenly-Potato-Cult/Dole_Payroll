@@ -283,17 +283,6 @@ div#tab-active.active {
 @endcanCreatePayroll
 </div>
 
-{{-- ── Alerts ──────────────────────────────────────────────── --}}
-@if (session('success'))
-    <div class="alert alert-success">{{ session('success') }}</div>
-@endif
-@if (session('error'))
-    <div class="alert alert-error">{{ session('error') }}</div>
-@endif
-@if (session('warning'))
-    <div class="alert alert-warning">{{ session('warning') }}</div>
-@endif
-
 {{-- ── Filter bar ──────────────────────────────────────────── --}}
 <div class="card mb-3">
     <div class="card-body" style="padding:14px 20px;">
@@ -450,13 +439,12 @@ div#tab-active.active {
                                        onclick="event.stopPropagation();">View</a>
                                     @role('payroll_officer|super_admin')
                                         @if ($batch->status === 'draft')
-                                            <form method="POST"
-                                                  action="{{ route('payroll.destroy', $batch) }}"
-                                                  onsubmit="return confirm('Delete this payroll batch? This cannot be undone.')">
+                                            <form id="deleteForm-{{ $batch->id }}" method="POST"
+                                                  action="{{ route('payroll.destroy', $batch) }}">
                                                 @csrf
                                                 @method('DELETE')
-                                                <button class="btn btn-danger btn-sm"
-                                                        onclick="event.stopPropagation();">Delete</button>
+                                                <button type="button" class="btn btn-danger btn-sm"
+                                                        onclick="event.stopPropagation(); confirmDeletePayroll({{ $batch->id }}, '{{ $batch->period_year }}-{{ str_pad($batch->period_month, 2, '0', STR_PAD_LEFT) }}-{{ $batch->cutoff }}')">Delete</button>
                                             </form>
                                         @endif
                                     @endrole
@@ -505,14 +493,7 @@ div#tab-active.active {
                                        class="btn btn-outline btn-sm">View</a>
                                     @canCreatePayroll
                                         @if ($batch->status === 'draft')
-                                            <form method="POST"
-                                                  action="{{ route('payroll.destroy', $batch) }}"
-                                                  style="flex:1;"
-                                                  onsubmit="return confirm('Delete this draft batch? This cannot be undone.')">
-                                                @csrf
-                                                @method('DELETE')
-                                                <button class="btn btn-danger btn-sm" style="width:100%;">Delete</button>
-                                            </form>
+                                            <button type="button" class="btn btn-danger btn-sm" style="width:100%;" onclick="confirmDeletePayroll({{ $batch->id }}, '{{ $batch->period_year }}-{{ str_pad($batch->period_month, 2, '0', STR_PAD_LEFT) }}-{{ $batch->cutoff }}')">Delete</button>
                                         @endif
                                     @endcanCreatePayroll
                                 </div>
@@ -736,6 +717,38 @@ function togglePrRow(mainRow) {
         mainRow.classList.add('open');
         detail.classList.add('open');
     }
+}
+
+function confirmDeletePayroll(batchId, periodLabel) {
+    Swal.fire({
+        title: 'Delete Payroll Batch?',
+        html: `<div style="text-align:center;">
+            <div style="font-size:1.2rem;font-weight:600;color:#dc3545;margin-bottom:8px;">${periodLabel}</div>
+            <p style="color:#6b7280;font-size:0.95rem;">This will permanently delete this draft payroll batch and cannot be undone.</p>
+        </div>`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Delete Batch',
+        cancelButtonText: 'Cancel',
+        confirmButtonColor: '#dc3545',
+        cancelButtonColor: '#6B7280',
+        reverseButtons: true,
+        focusCancel: true
+    }).then((result) => {
+        if (result.isConfirmed) {
+            // Submit form and disable buttons to prevent double submission
+            const form = document.getElementById('deleteForm-' + batchId);
+            if (form) {
+                // Disable all delete buttons for this batch
+                const buttons = form.querySelectorAll('button');
+                buttons.forEach(btn => {
+                    btn.disabled = true;
+                    btn.textContent = 'Deleting...';
+                });
+                form.submit();
+            }
+        }
+    });
 }
 </script>
 @endsection
