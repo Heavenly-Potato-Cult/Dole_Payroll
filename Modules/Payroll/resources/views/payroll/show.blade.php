@@ -491,12 +491,14 @@
             @endif
 
           {{-- NEW: --}}
+    <!-- {{-- GAP-01: Payroll Register PDF view missing — commented out until implemented
     @if ($isComputed)
         <a href="{{ route('reports.payroll-register', ['batch_id' => $payroll->id]) }}"
            class="btn btn-outline btn-sm" target="_blank">
             📄 Payroll Register PDF
         </a>
     @endif
+    --}} -->
 
     {{-- Payslip generation — only after release --}}
     @if (in_array($payroll->status, ['released', 'locked']))
@@ -548,17 +550,17 @@
         </div>
         <div class="stat-card gold">
             <div class="stat-label">Total Gross</div>
-            <div class="stat-value">₱{{ number_format($totalGross, 0) }}</div>
+            <div class="stat-value">₱{{ number_format($totalGross, 2) }}</div>
             <div class="stat-sub">Basic + PERA + RATA</div>
         </div>
         <div class="stat-card red">
             <div class="stat-label">Total Deductions</div>
-            <div class="stat-value">₱{{ number_format($totalDeds, 0) }}</div>
+            <div class="stat-value">₱{{ number_format($totalDeds, 2) }}</div>
             <div class="stat-sub">All deduction lines</div>
         </div>
         <div class="stat-card green">
             <div class="stat-label">Total Net Pay</div>
-            <div class="stat-value">₱{{ number_format($totalNet, 0) }}</div>
+            <div class="stat-value">₱{{ number_format($totalNet, 2) }}</div>
             <div class="stat-sub">Gross − Total Deductions</div>
         </div>
     </div>
