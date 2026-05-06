@@ -67,7 +67,7 @@
     <div class="deductions-col">
         @foreach ($leftCategories as $cat)
             @if (isset($grouped[$cat]))
-                @include('employees._deduction_category', [
+                @include('payroll::employees._deduction_category', [
                     'label'       => $categoryLabels[$cat],
                     'types'       => $grouped[$cat],
                     'enrollments' => $enrollments,
@@ -81,7 +81,7 @@
     <div class="deductions-col">
         @foreach ($rightCategories as $cat)
             @if (isset($grouped[$cat]))
-                @include('employees._deduction_category', [
+                @include('payroll::employees._deduction_category', [
                     'label'       => $categoryLabels[$cat],
                     'types'       => $grouped[$cat],
                     'enrollments' => $enrollments,
