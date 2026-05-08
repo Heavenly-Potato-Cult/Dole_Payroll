@@ -21,15 +21,7 @@ Route::middleware(['auth'])
     ->name('tev.')
     ->group(function () {
         // TEV Dashboard - role-based routing
-        Route::get('/', function () {
-            $user = auth()->user();
-            // Officers get the comprehensive dashboard, employees get personal dashboard
-            if ($user->hasAnyRole(['hrmo', 'accountant', 'budget_officer', 'ard', 'chief_admin_officer', 'cashier', 'super_admin'])) {
-                return app(TevController::class)->officerDashboard();
-            } else {
-                return app(TevController::class)->dashboard();
-            }
-        })->name('dashboard');
+        Route::get('/', [TevController::class, 'dashboard'])->name('dashboard');
         
         // Explicit routes for each dashboard type
         Route::get('/employee', [TevController::class, 'dashboard'])->name('dashboard.employee');

@@ -26,10 +26,27 @@ class TevController extends Controller
     // =====================================================================
 
     /**
+     * TEV Dashboard - role-based routing.
+     * Officers get comprehensive dashboard, employees get redirected to requests.
+     */
+    public function dashboard()
+    {
+        $user = Auth::user();
+        
+        // Officers get the comprehensive dashboard
+        if ($user->hasAnyRole(['hrmo', 'accountant', 'budget_officer', 'ard', 'chief_admin_officer', 'cashier', 'payroll_officer', 'super_admin'])) {
+            return $this->officerDashboard();
+        } else {
+            // Employees go directly to their requests page (like my-payslip)
+            return redirect()->route('tev.requests.index');
+        }
+    }
+
+    /**
      * TEV Employee Dashboard - personalized view for regular employees.
      * Shows their own TEV requests and basic system status.
      */
-    public function dashboard()
+    public function employeeDashboard()
     {
         $user = Auth::user();
         $userId = $user->id;
@@ -166,7 +183,7 @@ class TevController extends Controller
         $query = TevRequest::with(['employee', 'officeOrder'])->orderByDesc('id');
 
         // Employees can only see their own requests
-        if (!$user->hasAnyRole(['hrmo', 'accountant', 'budget_officer', 'ard', 'chief_admin_officer', 'cashier', 'super_admin'])) {
+        if (!$user->hasAnyRole(['hrmo', 'accountant', 'budget_officer', 'ard', 'chief_admin_officer', 'cashier', 'payroll_officer', 'super_admin'])) {
             $query->where('employee_id', session('hris_employee_id'));
         }
 
@@ -177,7 +194,13 @@ class TevController extends Controller
         $tevRequests = $query->paginate(20)->withQueryString();
         $currentYear = now()->year;
 
-        return view('tev::index', compact('tevRequests', 'currentYear'));
+        // Use employee-specific view for employees, regular view for officers
+        $viewName = 'tev::index';
+        if (!$user->hasAnyRole(['hrmo', 'accountant', 'budget_officer', 'ard', 'chief_admin_officer', 'cashier', 'payroll_officer', 'super_admin'])) {
+            $viewName = 'tev::my-requests';
+        }
+
+        return view($viewName, compact('tevRequests', 'currentYear'));
     }
 
     // =====================================================================
