@@ -350,6 +350,63 @@ class PayrollController extends Controller
     }
 
     // ═══════════════════════════════════════════════════════════════════
+    //  Pull Attendance & Compute (Combined)
+    // ═══════════════════════════════════════════════════════════════════
+
+    public function pullAndCompute(Request $request, PayrollBatch $payroll)
+    {
+        $this->authorize('compute', $payroll);
+
+        if (in_array($payroll->status, ['released', 'locked'])) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Cannot process a released or locked batch.'
+            ], 422);
+        }
+
+        try {
+            // Step 1: Pull Attendance
+            $attendanceResult = app(AttendanceService::class)->pullForBatch($payroll);
+            
+            if (! empty($attendanceResult['errors'])) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Attendance pull failed: ' . implode('; ', $attendanceResult['errors'])
+                ], 422);
+            }
+
+            $this->log($payroll, 'attendance_pulled', null, "pulled:{$attendanceResult['pulled']}");
+
+            // Step 2: Compute Payroll
+            $attendanceMap = app(AttendanceService::class)->getAttendanceForBatch($payroll);
+            $computeResult = app(PayrollComputationService::class)->computeBatch($payroll, $attendanceMap);
+
+            if ($payroll->status === 'draft') {
+                $payroll->update(['status' => 'computed']);
+                $this->log($payroll, 'computed', 'draft', 'computed');
+            }
+
+            if (! empty($computeResult['errors'])) {
+                return response()->json([
+                    'success' => true,
+                    'message' => "Process completed with warnings. Computed: {$computeResult['computed']} employees. Warnings: " . implode('; ', $computeResult['errors'])
+                ]);
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => "Process completed successfully! Pulled: {$attendanceResult['pulled']} employees, Computed: {$computeResult['computed']} payroll entries."
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred during processing: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
     //  Approval pipeline
     // ═══════════════════════════════════════════════════════════════════
 

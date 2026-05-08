@@ -451,33 +451,41 @@
             <div class="d-flex gap-2 flex-wrap payroll-show-actions">
                 <a href="{{ route('payroll.index') }}" class="btn btn-outline btn-sm">← All Batches</a>
 
-    @if ($canPullAttendance)
-        <form method="POST" action="{{ route('payroll.pullAttendance', $payroll) }}"
-              onsubmit="return confirm('{{ $snapshotCount > 0 ? 'Re-pulling will reset any manual HR corrections. Continue?' : 'Pull attendance from HRIS for all active employees?' }}')">
-            @csrf
-            <button class="btn btn-outline btn-sm">
-                {{ $snapshotCount > 0 ? '🔄 Re-pull Attendance' : '📥 Pull Attendance' }}
-                @if ($snapshotCount > 0)
-                    <span style="font-size:0.72rem; opacity:0.8;">({{ $snapshotCount }}/{{ $activeCount }})</span>
-                @endif
-            </button>
-        </form>
-    @endif
+    @if ($canPullAttendance && $canCompute)
+        {{-- Combined Pull Attendance & Compute Button --}}
+        <button type="button" class="btn btn-primary btn-sm" onclick="confirmPullAndCompute()">
+             Pull Attendance & Compute Payroll
+        </button>
+    @else
+        {{-- Fallback: Show original buttons if permissions differ --}}
+        @if ($canPullAttendance)
+            <form method="POST" action="{{ route('payroll.pullAttendance', $payroll) }}"
+                  onsubmit="return confirm('{{ $snapshotCount > 0 ? 'Re-pulling will reset any manual HR corrections. Continue?' : 'Pull attendance from HRIS for all active employees?' }}')">
+                @csrf
+                <button class="btn btn-outline btn-sm">
+                    {{ $snapshotCount > 0 ? '🔄 Re-pull Attendance' : '📥 Pull Attendance' }}
+                    @if ($snapshotCount > 0)
+                        <span style="font-size:0.72rem; opacity:0.8;">({{ $snapshotCount }}/{{ $activeCount }})</span>
+                    @endif
+                </button>
+            </form>
+        @endif
 
-    @if ($canCompute)
-        <form method="POST" action="{{ route('payroll.compute', $payroll) }}"
-              onsubmit="return confirm('Run payroll computation for all active employees?\n\nExisting entries will be overwritten.')">
-            @csrf
-            @if ($snapshotCount === 0)
-                <button class="btn btn-gold btn-sm" disabled title="Pull attendance first">
-                    ⚙ {{ $payroll->status === 'draft' ? 'Compute Payroll' : 'Re-compute' }}
-                </button>
-            @else
-                <button class="btn btn-gold btn-sm">
-                    ⚙ {{ $payroll->status === 'draft' ? 'Compute Payroll' : 'Re-compute' }}
-                </button>
-            @endif
-        </form>
+        @if ($canCompute)
+            <form method="POST" action="{{ route('payroll.compute', $payroll) }}"
+                  onsubmit="return confirm('Run payroll computation for all active employees?\n\nExisting entries will be overwritten.')">
+                @csrf
+                @if ($snapshotCount === 0)
+                    <button class="btn btn-gold btn-sm" disabled title="Pull attendance first">
+                        ⚙ {{ $payroll->status === 'draft' ? 'Compute Payroll' : 'Re-compute' }}
+                    </button>
+                @else
+                    <button class="btn btn-gold btn-sm">
+                        ⚙ {{ $payroll->status === 'draft' ? 'Compute Payroll' : 'Re-compute' }}
+                    </button>
+                @endif
+            </form>
+        @endif
     @endif
 
             @if ($nextAction)
@@ -1064,6 +1072,124 @@ function closePayslipModal() {
     m.style.display = 'none';
     document.body.style.overflow = '';
 }
+// ── Combined Pull Attendance & Compute ───────────────────────
+function confirmPullAndCompute() {
+    const periodLabel = '{{ $payroll->period_month_name }} {{ $payroll->cutoff }}, {{ $payroll->period_year }}';
+    
+    Swal.fire({
+        title: 'Pull Attendance & Compute Payroll?',
+        html: `<div style="text-align:center;">
+            <div style="font-size:1.25rem;font-weight:600;color:#0F1B4C;margin-bottom:8px;">${periodLabel}</div>
+            <p style="color:#6b7280;font-size:0.95rem;">This will pull attendance from HRIS and compute payroll for all active employees.</p>
+            <p style="color:#ef4444;font-size:0.85rem;margin-top:8px;"><strong>Existing entries will be overwritten.</strong></p>
+        </div>`,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: 'Pull & Compute',
+        cancelButtonText: 'Cancel',
+        confirmButtonColor: '#0F1B4C',
+        cancelButtonColor: '#6B7280',
+        reverseButtons: true,
+        focusCancel: true
+    }).then((result) => {
+        if (result.isConfirmed) {
+            executePullAndCompute(periodLabel);
+        }
+    });
+}
+
+async function executePullAndCompute(periodLabel) {
+    // Show loading modal
+    Swal.fire({
+        title: '<span style="color:#0F1B4C;">Processing Payroll...</span>',
+        html: `<div style="margin-top:10px;text-align:center;">
+            <div style="font-size:1.1rem;color:#0F1B4C;margin-bottom:8px;">${periodLabel}</div>
+            <p style="font-size:0.9rem;color:#6b7280;">Step 1: Pulling attendance from HRIS...</p>
+            <p style="font-size:0.9rem;color:#6b7280;">Step 2: Computing payroll entries...</p>
+        </div>`,
+        allowOutsideClick: false,
+        allowEscapeKey: false,
+        showConfirmButton: false,
+        showCancelButton: false,
+        didOpen: () => {
+            Swal.showLoading();
+        }
+    });
+
+    try {
+        const formData = new FormData();
+        formData.append('_token', '{{ csrf_token() }}');
+        
+        const response = await fetch('{{ route("payroll.pullAndCompute", $payroll) }}', {
+            method: 'POST',
+            headers: {
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: formData
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            Swal.fire({
+                icon: 'success',
+                title: 'Process Completed!',
+                html: `<div style="text-align:center;">
+                    <div style="font-size:1.1rem;color:#0F1B4C;margin-bottom:8px;">${periodLabel}</div>
+                    <p style="color:#6b7280;font-size:0.9rem;">${result.message}</p>
+                </div>`,
+                confirmButtonColor: '#0F1B4C'
+            }).then(() => {
+                window.location.reload();
+            });
+        } else {
+            Swal.fire({
+                icon: 'error',
+                title: 'Process Failed',
+                html: `<div style="text-align:left;">
+                    <p>${result.message}</p>
+                </div>`,
+                confirmButtonText: 'Try Again',
+                confirmButtonColor: '#0F1B4C',
+                showCancelButton: true,
+                cancelButtonText: 'Cancel',
+                cancelButtonColor: '#6B7280'
+            });
+        }
+
+    } catch (error) {
+        let errorMessage = 'An unexpected error occurred while processing payroll.';
+        
+        if (error.message.includes('NetworkError') || error.message.includes('fetch')) {
+            errorMessage = 'Unable to complete the request. Please check your internet connection.';
+        } else if (error.message.includes('500')) {
+            errorMessage = 'The server encountered an error during payroll processing. Please contact the system administrator.';
+        } else if (error.message) {
+            errorMessage = error.message;
+        }
+
+        Swal.fire({
+            icon: 'error',
+            title: 'Processing Error',
+            html: `<div style="text-align:left;">
+                <p>${errorMessage}</p>
+                <p style="margin-top:12px;font-size:0.85rem;color:#6b7280;">
+                    <strong>Troubleshooting:</strong><br>
+                    • Verify payroll batch is in draft status<br>
+                    • Check HRIS connection for attendance data<br>
+                    • Contact IT if the problem persists
+                </p>
+            </div>`,
+            confirmButtonText: 'Try Again',
+            confirmButtonColor: '#0F1B4C',
+            showCancelButton: true,
+            cancelButtonText: 'Cancel',
+            cancelButtonColor: '#6B7280'
+        });
+    }
+}
+
 function selectOpt(val) {
     document.getElementById('opt-consolidated').style.borderColor =
         val === 'consolidated' ? 'var(--navy)' : 'var(--border)';

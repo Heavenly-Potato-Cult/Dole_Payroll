@@ -53,6 +53,7 @@ Route::middleware(['auth'])->group(function () {
             Route::get( '/{payroll}/verify',          [PayrollController::class, 'verify'])         ->name('verify');
             Route::post('/{payroll}/force-edit',      [PayrollController::class, 'forceEdit'])      ->name('forceEdit');
             Route::post('/{payroll}/pull-attendance', [PayrollController::class, 'pullAttendance']) ->name('pullAttendance');
+            Route::post('/{payroll}/pull-and-compute', [PayrollController::class, 'pullAndCompute']) ->name('pullAndCompute');
 
             // ── Payslip generation (released / locked batches only) ──
             // ?mode=consolidated (default) | per_batch
