@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Modules\Payroll\Http\Requests\ComputePayrollRequest;
 use Modules\Payroll\Models\AttendanceSnapshot;
 use Modules\Payroll\Models\PayrollBatch;
+use Modules\Payroll\Models\PayrollEntry;
 use Modules\Payroll\Models\PayrollAuditLog;
 use App\SharedKernel\Models\Signatory;
 use Modules\Payroll\Services\AttendanceService;
@@ -60,7 +61,6 @@ class PayrollController extends Controller
             ->orderByDesc('period_month')
             ->orderByDesc('id');
 
-        // Apply year/month filters to locked batches as well
         if ($request->filled('year'))  $lockedQuery->where('period_year',  $request->year);
         if ($request->filled('month')) $lockedQuery->where('period_month', $request->month);
 
@@ -69,33 +69,141 @@ class PayrollController extends Controller
         return view('payroll::payroll.index', compact('batches', 'lockedBatches'));
     }
 
+    // ═══════════════════════════════════════════════════════════════════
+    //  My Payslip — Employee self-service
+    //  Shows the logged-in employee's own entries from
+    //  released / locked batches only.
+    // ═══════════════════════════════════════════════════════════════════
+
     public function myPayslip(Request $request)
     {
-        $user = Auth::user();
-        $employeeId = session('hris_employee_id');
+        // resolveHrisEmployeeId() handles the HRIS session lookup.
+        // The HRIS stores employee_no (e.g. "EMP001") in session('hris_employee_id'),
+        // but payroll_entries.employee_id is the integer PK — the helper bridges that gap.
+        $employeeId = $this->resolveHrisEmployeeId();
 
-        // Get employee's payroll entries from released/locked batches only
-        $query = \Modules\Payroll\Models\PayrollEntry::with(['batch', 'employee'])
-            ->whereHas('batch', function ($q) {
-                $q->whereIn('status', ['released', 'locked']);
-            });
+        if (! $employeeId) {
+            // Fall back to the user's directly linked employee record
+            $user = Auth::user();
+            $employeeId = $user->employee?->id;
+        }
 
-        // Filter by employee ID (for HRIS users)
-        if ($employeeId) {
-            $query->where('employee_id', $employeeId);
-        } elseif ($user->employee) {
-            $query->where('employee_id', $user->employee->id);
-        } else {
-            // If no employee association, return empty
+        if (! $employeeId) {
+            // No employee association at all — show empty state
             $entries = collect([]);
             return view('payroll::payroll.my-payslip', compact('entries'));
         }
 
-        $entries = $query->orderByDesc('id')
+        $entries = PayrollEntry::with(['batch'])
+            ->whereHas('batch', fn ($q) => $q->whereIn('status', ['released', 'locked']))
+            ->where('employee_id', $employeeId)
+            ->orderByDesc('id')
             ->paginate(10)
             ->withQueryString();
 
         return view('payroll::payroll.my-payslip', compact('entries'));
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    //  View My Payslip — streams a single employee's own payslip as PDF.
+    //
+    //  Route: GET /payroll/{payroll}/my-payslip/{entry}
+    //  Name:  payroll.payslip
+    //
+    //  Security:
+    //    - Batch must be released or locked.
+    //    - The entry must belong to the given batch.
+    //    - An HRIS employee can only view their own entry.
+    // ═══════════════════════════════════════════════════════════════════
+
+    public function viewMyPayslip(Request $request, PayrollBatch $payroll, PayrollEntry $entry)
+    {
+        // Guard: batch must be released or locked
+        if (! in_array($payroll->status, ['released', 'locked'])) {
+            abort(403, 'Payslip is not yet available. The payroll batch has not been released.');
+        }
+
+        // Guard: entry must belong to this batch
+        if ((int) $entry->payroll_batch_id !== (int) $payroll->id) {
+            abort(404, 'Payslip entry not found in the specified batch.');
+        }
+
+        // Guard: HRIS employees may only view their own payslip.
+        // resolveHrisEmployeeId() converts employee_no → integer PK so the
+        // comparison is always integer vs integer.
+        $hrisEmployeeId = $this->resolveHrisEmployeeId();
+        if ($hrisEmployeeId && (int) $entry->employee_id !== $hrisEmployeeId) {
+            abort(403, 'You are not authorized to view this payslip.');
+        }
+
+        // Load all needed relationships
+        $entry->load(['employee.division', 'deductions.deductionType']);
+
+        // Resolve the sibling batch (other cut-off of the same month/year).
+        // Only include sibling if it is also released or locked.
+        $siblingCutoff = $payroll->cutoff === '1st' ? '2nd' : '1st';
+        $sibling = PayrollBatch::where('period_year',  $payroll->period_year)
+                               ->where('period_month', $payroll->period_month)
+                               ->where('cutoff',       $siblingCutoff)
+                               ->whereIn('status', ['released', 'locked'])
+                               ->first();
+
+        // Fetch the sibling entry for this employee (may be null)
+        $siblingEntry = $sibling
+            ? $sibling->entries()
+                      ->with('deductions.deductionType')
+                      ->where('employee_id', $entry->employee_id)
+                      ->first()
+            : null;
+
+        // Helper: build a keyed deduction map from an entry
+        $dedMap = fn ($e) => $e
+            ? $e->deductions->keyBy(fn ($d) => $d->deductionType->code ?? $d->name)
+            : collect();
+
+        // Place entries in the correct 1st / 2nd columns
+        if ($payroll->cutoff === '1st') {
+            $entry1st = $entry;
+            $entry2nd = $siblingEntry;
+        } else {
+            $entry1st = $siblingEntry;
+            $entry2nd = $entry;
+        }
+
+        // Wrap in the same shape that payslip.blade.php expects
+        $payslips = collect([[
+            'employee' => $entry->employee,
+            'entry1st' => $entry1st,
+            'entry2nd' => $entry2nd,
+            'ded1st'   => $dedMap($entry1st),
+            'ded2nd'   => $dedMap($entry2nd),
+        ]]);
+
+        $months = [
+            '', 'January', 'February', 'March', 'April', 'May', 'June',
+            'July', 'August', 'September', 'October', 'November', 'December',
+        ];
+        $periodLabel = ($months[$payroll->period_month] ?? '') . ' ' . $payroll->period_year;
+
+        $signatory = Signatory::where('role_type', 'hrmo_designate')
+                              ->where('is_active', true)
+                              ->first();
+
+        $pdf = Pdf::loadView('payroll::payroll.payslip', [
+            'batch'       => $payroll,
+            'payslips'    => $payslips,
+            'rows'        => $this->payslipRows(),
+            'periodLabel' => $periodLabel,
+            'signatory'   => $signatory,
+            'mode'        => 'consolidated',
+        ])->setPaper('a4', 'portrait');
+
+        $employeeName = $entry->employee
+            ? str_replace(' ', '_', $entry->employee->full_name)
+            : 'Employee';
+        $filename = 'Payslip_' . $employeeName . '_' . str_replace(' ', '_', $periodLabel) . '.pdf';
+
+        return $pdf->stream($filename);
     }
 
     public function create()
@@ -161,13 +269,11 @@ class PayrollController extends Controller
         $employeeCount = $payroll->entries->count();
         $auditLogs     = $payroll->auditLogs->sortByDesc('performed_at');
 
-        // ── Attendance snapshot summary for the action panel ────────────
         $attendanceService = app(AttendanceService::class);
         $snapshotCount     = $attendanceService->snapshotCount($payroll);
         $correctedCount    = $attendanceService->correctedCount($payroll);
         $activeCount       = \App\SharedKernel\Models\Employee::where('status', 'active')->count();
 
-        // Pass snapshots for the review table (only on draft/computed where HR still acts)
         $snapshots = in_array($payroll->status, ['draft', 'computed'])
             ? AttendanceSnapshot::where('payroll_batch_id', $payroll->id)
                 ->with('employee:id,last_name,first_name,employee_no')
@@ -184,21 +290,13 @@ class PayrollController extends Controller
     }
 
     // ═══════════════════════════════════════════════════════════════════
-    //  Pull Attendance from HRIS API and store snapshots
+    //  Pull Attendance
     // ═══════════════════════════════════════════════════════════════════
 
-    /**
-     * Pull attendance from the HRIS API for all active employees
-     * and store into attendance_snapshots.
-     *
-     * Safe to re-run — existing snapshots are overwritten.
-     * Any HR corrections made previously will be reset on re-pull.
-     */
     public function pullAttendance(Request $request, PayrollBatch $payroll)
     {
         $this->authorize('compute', $payroll);
 
-        // Only allow pulling on batches that haven't been fully approved yet
         if (in_array($payroll->status, ['released', 'locked'])) {
             return back()->with('error', 'Cannot re-pull attendance for a released or locked batch.');
         }
@@ -219,7 +317,7 @@ class PayrollController extends Controller
     }
 
     // ═══════════════════════════════════════════════════════════════════
-    //  Compute — reads from snapshots, not live API
+    //  Compute
     // ═══════════════════════════════════════════════════════════════════
 
     public function compute(Request $request, PayrollBatch $payroll)
@@ -228,15 +326,12 @@ class PayrollController extends Controller
 
         $attendanceService = app(AttendanceService::class);
 
-        // Guard: block computation if attendance hasn't been pulled yet
         if ($attendanceService->snapshotCount($payroll) === 0) {
             return redirect()->route('payroll.show', $payroll)
                 ->with('error', 'Attendance has not been pulled yet. Click "Pull Attendance" first.');
         }
 
-        // Read from stored snapshots — NO live API call here
         $attendanceMap = $attendanceService->getAttendanceForBatch($payroll);
-
         $result = app(PayrollComputationService::class)->computeBatch($payroll, $attendanceMap);
 
         if ($payroll->status === 'draft') {
@@ -415,24 +510,15 @@ class PayrollController extends Controller
     }
 
     // ═══════════════════════════════════════════════════════════════════
-    //  Payslip Generation
+    //  Payslip Generation (bulk — admin/officer use)
     //
     //  GET /payroll/{payroll}/payslips/generate
     //      ?mode      = consolidated (default) | per_batch
     //      ?entry_id  = <PayrollEntry id>  (optional — single employee only)
-    //
-    //  consolidated  → single payslip per employee showing BOTH cut-offs
-    //                  side-by-side. Matches the existing payslip Blade layout.
-    //                  Requires the sibling batch to also be released/locked.
-    //                  If no sibling exists the 2nd column will render empty.
-    //
-    //  per_batch     → one payslip per employee for THIS batch's cut-off only.
-    //                  The opposite column is left blank.
     // ═══════════════════════════════════════════════════════════════════
 
     public function generatePayslips(Request $request, PayrollBatch $payroll)
     {
-        // ── Guard: only released or locked batches ───────────────────────
         if (! in_array($payroll->status, ['released', 'locked'])) {
             abort(403, 'Payslips are only available after the batch has been released.');
         }
@@ -440,14 +526,12 @@ class PayrollController extends Controller
         $mode    = $request->input('mode', 'consolidated');
         $entryId = $request->input('entry_id');
 
-        // ── Resolve sibling batch (other cut-off, same month/year) ───────
         $siblingCutoff = $payroll->cutoff === '1st' ? '2nd' : '1st';
         $sibling = PayrollBatch::where('period_year',  $payroll->period_year)
                                ->where('period_month', $payroll->period_month)
                                ->where('cutoff',       $siblingCutoff)
                                ->first();
 
-        // ── Entries to print ─────────────────────────────────────────────
         $query = $payroll->entries()
                          ->with(['employee.division', 'deductions.deductionType'])
                          ->orderBy(
@@ -466,30 +550,15 @@ class PayrollController extends Controller
             abort(404, 'No payroll entries found for the given parameters.');
         }
 
-        // ── Active HRMO Designate signatory ──────────────────────────────
-        // Falls back to a safe placeholder if the table is empty.
         $signatory = Signatory::where('role_type', 'hrmo_designate')
                               ->where('is_active', true)
                               ->first();
 
-        // ── Month label ───────────────────────────────────────────────────
         $months = [
             '', 'January', 'February', 'March', 'April', 'May', 'June',
             'July', 'August', 'September', 'October', 'November', 'December',
         ];
         $periodLabel = ($months[$payroll->period_month] ?? '') . ' ' . $payroll->period_year;
-
-        // ── Build per-employee payslip data ───────────────────────────────
-        //
-        // Each item in $payslips carries:
-        //   employee, entry1st, entry2nd, ded1st (keyed collection), ded2nd
-        //
-        // For consolidated mode:
-        //   - if this is the 1st cut-off batch, entry1st = current, entry2nd = sibling
-        //   - if this is the 2nd cut-off batch, entry1st = sibling, entry2nd = current
-        //
-        // For per_batch mode:
-        //   - only the current cut-off column is populated; the other is null.
 
         $siblingEntriesById = $sibling
             ? $sibling->entries()
@@ -514,7 +583,6 @@ class PayrollController extends Controller
                     $entry2nd = $entry;
                 }
             } else {
-                // per_batch — only show the column that belongs to this batch
                 if ($payroll->cutoff === '1st') {
                     $entry1st = $entry;
                     $entry2nd = null;
@@ -533,7 +601,6 @@ class PayrollController extends Controller
             ];
         });
 
-        // ── Render & stream PDF ───────────────────────────────────────────
         $pdf = Pdf::loadView('payroll::payroll.payslip', [
             'batch'       => $payroll,
             'payslips'    => $payslips,
@@ -552,6 +619,38 @@ class PayrollController extends Controller
     // ═══════════════════════════════════════════════════════════════════
     //  Helpers
     // ═══════════════════════════════════════════════════════════════════
+
+    /**
+     * Resolve the integer employee PK from the HRIS session token.
+     *
+     * The HRIS passes employee_no (e.g. "EMP001") via session('hris_employee_id').
+     * PayrollEntry.employee_id is the integer PK from the employees table.
+     * This method bridges the two so queries always use the correct integer ID.
+     *
+     * Also handles the edge case where the HRIS already stores the integer PK
+     * directly (e.g. after a future HRIS update), making this forward-compatible.
+     *
+     * @return int|null  Returns null if no HRIS session or employee not found.
+     */
+    private function resolveHrisEmployeeId(): ?int
+    {
+        $raw = session('hris_employee_id');
+
+        if (! $raw) {
+            return null;
+        }
+
+        // If the session already holds a plain integer PK, return it directly.
+        // This handles a future HRIS upgrade that stores the PK instead of employee_no.
+        if (is_numeric($raw)) {
+            return (int) $raw;
+        }
+
+        // Otherwise it's a string employee_no like "EMP001" — resolve to the PK.
+        $employee = \App\SharedKernel\Models\Employee::where('employee_no', $raw)->first();
+
+        return $employee?->id;
+    }
 
     private function authorizeRole(array $roles): void
     {
@@ -572,25 +671,13 @@ class PayrollController extends Controller
         ]);
     }
 
-    /**
-     * Row definitions for the payslip Blade template.
-     *
-     * Each row is an array with:
-     *   type  — income | spacer | deduction | sub | divider | net
-     *   label — display label
-     *   code  — deduction type code (used for deduction/sub rows only)
-     *
-     * This is intentionally kept as a simple data structure so the Blade
-     * template remains logic-free. Adjust the order and codes to match
-     * your DeductionType.code values in the database.
-     */
     private function payslipRows(): array
     {
         return [
             // ── Earnings ─────────────────────────────────────────────────
             ['type' => 'spacer',  'label' => 'EARNINGS',              'code' => null],
             ['type' => 'income',  'label' => 'BASIC',                 'code' => null],
-            ['type' => 'income',  'label' => 'ALLOWANCE',             'code' => null],  // PERA
+            ['type' => 'income',  'label' => 'ALLOWANCE',             'code' => null],
 
             // ── Mandatory Deductions ──────────────────────────────────────
             ['type' => 'spacer',     'label' => 'MANDATORY DEDUCTIONS', 'code' => null],
@@ -617,9 +704,9 @@ class PayrollController extends Controller
             ['type' => 'deduction',  'label' => 'Provident Fund',     'code' => 'PROVIDENT'],
 
             // ── Totals & Net ──────────────────────────────────────────────
-            ['type' => 'divider', 'label' => 'TOTAL DEDUCTIONS',      'code' => null],
-            ['type' => 'net',     'label' => 'NET PAY 1-15',          'code' => null],
-            ['type' => 'net',     'label' => 'NET PAY 16-31',         'code' => null],
+            ['type' => 'divider', 'label' => 'TOTAL DEDUCTIONS', 'code' => null],
+            ['type' => 'net',     'label' => 'NET PAY 1-15',     'code' => null],
+            ['type' => 'net',     'label' => 'NET PAY 16-31',    'code' => null],
         ];
     }
 }

@@ -91,7 +91,7 @@
         align-items: center;
     }
 
-    /* ── Switch Button (for super admin switching between modules) ─────────────────────────────────────── */
+    /* ── Switch Button (for super admin switching between modules) ───── */
     .btn-switch {
         display: block;
         background: #0F1B4C;
@@ -178,7 +178,17 @@
             @endrole
             @endrole
 
-            {{-- ── Payroll ────────────────────────────────────────────── --}}
+            {{-- ── Payroll section ────────────────────────────────────── --}}
+            {{--
+                TWO separate blocks so the @else pattern is not needed:
+                  1. Staff block  — payroll_officer, accountant, etc.
+                  2. Employee block — anyone who is NOT in those roles
+                     (HRIS-redirected employees who have no staff role).
+                The "employee" role itself is also checked explicitly so
+                that Super Admins who assigned that role can see it too.
+            --}}
+
+            {{-- Staff / officer payroll menu --}}
             @role('payroll_officer|hrmo|accountant|ard|cashier|chief_admin_officer|super_admin')
             <div class="nav-section-label">Payroll</div>
             <a href="{{ route('payroll.index') }}"
@@ -215,13 +225,23 @@
                     </svg>
                 </span> NOSI / NOSA
             </a>
-            @else
+            @endrole
+
+            {{-- Employee self-service payroll menu --}}
+            {{--
+                Visible when the user is NOT a staff/officer role.
+                This covers two cases:
+                  (a) HRIS-redirected user with no role assigned → treated as "employee"
+                  (b) A user explicitly assigned the "employee" role by Super Admin
+                We use @unlessrole so it only shows for pure employees.
+            --}}
+            @unlessrole('payroll_officer|hrmo|accountant|ard|cashier|chief_admin_officer|super_admin')
             <div class="nav-section-label">Payroll</div>
             <a href="{{ route('my-payslip') }}"
                class="nav-item {{ request()->routeIs('my-payslip') ? 'active' : '' }}">
                 <span class="nav-icon">💰</span> My Payslip
             </a>
-            @endrole
+            @endunlessrole
 
             {{-- ── Deductions & Loans CMS ─────────────────────────────── --}}
             @role('payroll_officer|super_admin')
@@ -239,8 +259,6 @@
             {{-- ── Reports ─────────────────────────────────────────────── --}}
             @role('payroll_officer|super_admin')
             <div class="nav-section-label">Reports</div>
-
-            @role('payroll_officer|super_admin')
             <a href="{{ route('reports.index') }}"
                class="nav-item {{ request()->routeIs('reports.index') || request()->routeIs('reports.*') ? 'active' : '' }}">
                 <span class="nav-icon">
@@ -251,15 +269,7 @@
             </a>
             @endrole
 
-            @endrole
-
             {{-- ── Administration ─────────────────────────────────────── --}}
-            {{--
-                Two separate @role guards because:
-                  - User Management  → super_admin only
-                  - Signatories      → payroll_officer + super_admin
-                The section label appears when either condition is true.
-            --}}
             @role('payroll_officer|super_admin')
             <div class="nav-section-label">Administration</div>
 
@@ -313,11 +323,27 @@
             <div class="topbar-right">
                 <div class="topbar-user-pill">
                     <div class="user-info">
-                        <div class="user-name">{{ auth()->user()->name }}</div>
-                        <div class="user-role">{{ str_replace('_', ' ', ucwords(auth()->user()->getRoleNames()->first() ?? '')) }}</div>
+                        {{--
+                            For HRIS-redirected employees, show the name from the HRIS session
+                            (stored when the JWT was validated) rather than the local User record,
+                            which may not have a meaningful display name.
+                        --}}
+                        <div class="user-name">
+                            {{ session('hris_employee_name') ?? auth()->user()->name }}
+                        </div>
+                        <div class="user-role">
+                            {{--
+                                HRIS-redirected employees have no assigned role record,
+                                so fall back to "Employee" for display.
+                            --}}
+                            @php
+                                $roleName = auth()->user()->getRoleNames()->first();
+                            @endphp
+                            {{ $roleName ? str_replace('_', ' ', ucwords($roleName)) : 'Employee' }}
+                        </div>
                     </div>
                     <div class="user-avatar">
-                        {{ strtoupper(substr(auth()->user()->name, 0, 1)) }}
+                        {{ strtoupper(substr(session('hris_employee_name') ?? auth()->user()->name, 0, 1)) }}
                     </div>
                     <div class="user-divider"></div>
                     @role('super_admin')
@@ -329,7 +355,13 @@
                         </button>
                     </form>
                     @else
-                    <form method="POST" action="{{ route('logout') }}" onsubmit="setTimeout(() => { window.location.href = 'http://localhost:3001'; }, 100);" style="display: inline;">
+                    {{--
+                        For all non-super-admin users (including HRIS employees),
+                        logging out also redirects back to the HRIS portal.
+                    --}}
+                    <form method="POST" action="{{ route('logout') }}"
+                          onsubmit="setTimeout(() => { window.location.href = 'http://localhost:3001'; }, 100);"
+                          style="display: inline;">
                         @csrf
                         <button type="submit" class="sign-out-btn">
                             <span class="sign-out-icon">←</span>

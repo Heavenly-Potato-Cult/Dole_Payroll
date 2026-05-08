@@ -41,7 +41,7 @@
                         @foreach ($entries as $entry)
                             <tr>
                                 <td>
-                                    {{ $entry->batch->period_year }} - 
+                                    {{ $entry->batch->period_year }} —
                                     {{ \Carbon\Carbon::createFromFormat('m', $entry->batch->period_month)->format('F') }}
                                 </td>
                                 <td>{{ ucfirst($entry->batch->cutoff) }}</td>
@@ -54,8 +54,16 @@
                                     </span>
                                 </td>
                                 <td>
-                                    <a href="{{ route('payroll.payslip', [$entry->batch, $entry]) }}" 
-                                       class="btn btn-sm btn-primary" target="_blank">
+                                    {{--
+                                        Route: payroll.payslip
+                                        → GET /payroll/{payroll}/my-payslip/{entry}
+                                        → PayrollController@viewMyPayslip
+                                        Only rendered for released/locked batches (enforced by the
+                                        controller query), so the link is always safe to show here.
+                                    --}}
+                                    <a href="{{ route('payroll.payslip', [$entry->batch, $entry]) }}"
+                                       class="btn btn-sm btn-primary"
+                                       target="_blank">
                                         📄 View Payslip
                                     </a>
                                 </td>

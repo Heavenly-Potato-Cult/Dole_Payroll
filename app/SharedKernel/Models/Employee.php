@@ -13,12 +13,20 @@ class Employee extends Model
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
+        // Identification
         'employee_no',
         'plantilla_item_no',
+
+        // Personal info
         'last_name',
         'first_name',
         'middle_name',
         'suffix',
+        'date_of_birth',
+        'gender',
+        'civil_status',
+
+        // Position & salary
         'position_title',
         'division_id',
         'salary_grade',
@@ -26,25 +34,42 @@ class Employee extends Model
         'sit_year',
         'basic_salary',
         'pera',
+
+        // Employment
+        'employment_status',        // DB column name (was 'employment_type' — typo fixed)
         'hire_date',
-        'status',
-        'employment_type',
+        'original_appointment_date',
+        'last_promotion_date',
+        'official_station',
+
+        // Government IDs
         'tin',
         'gsis_bp_no',
         'gsis_crn',
         'pagibig_no',
         'philhealth_no',
         'sss_no',
-        'official_station',
+
+        // Leave balances
+        'vacation_leave_balance',
+        'sick_leave_balance',
+
+        // Status
+        'status',
     ];
 
     protected $casts = [
-        'salary_grade' => 'integer',
-        'step'         => 'integer',
-        'sit_year'     => 'integer',
-        'basic_salary' => 'decimal:2',
-        'pera'         => 'decimal:2',
-        'hire_date'    => 'date',
+        'salary_grade'              => 'integer',
+        'step'                      => 'integer',
+        'sit_year'                  => 'integer',
+        'basic_salary'              => 'decimal:2',
+        'pera'                      => 'decimal:2',
+        'vacation_leave_balance'    => 'decimal:3',
+        'sick_leave_balance'        => 'decimal:3',
+        'hire_date'                 => 'date',
+        'date_of_birth'             => 'date',
+        'original_appointment_date' => 'date',
+        'last_promotion_date'       => 'date',
     ];
 
     // ── Status constants ─────────────────────────────────────────
@@ -148,7 +173,8 @@ class Employee extends Model
     // ── Attribute aliases for PayrollComputationService ──────────
 
     /**
-     * Alias: basic_monthly_salary → basic_salary column
+     * Alias: basic_monthly_salary → basic_salary column.
+     * PayrollComputationService calls $employee->basic_monthly_salary.
      */
     public function getBasicMonthlySalaryAttribute(): float
     {
@@ -156,7 +182,8 @@ class Employee extends Model
     }
 
     /**
-     * Alias: pera_amount → pera column
+     * Alias: pera_amount → pera column.
+     * PayrollComputationService calls $employee->pera_amount.
      */
     public function getPeraAmountAttribute(): float
     {
@@ -164,11 +191,13 @@ class Employee extends Model
     }
 
     /**
-     * RATA allowance — not all employees have this.
+     * RATA allowance — no 'rata' column exists on the employees table.
+     * Most employees have no RATA; returns 0.0 by default.
+     * Override in a future migration if RATA needs to be stored per-employee.
      */
     public function getRataAttribute(): float
     {
-        return (float) ($this->attributes['rata'] ?? 0);
+        return 0.0;
     }
 
     // ── Scopes ────────────────────────────────────────────────────
