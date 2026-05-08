@@ -41,10 +41,31 @@ class AuthController extends Controller
 
     /**
      * Payroll HRIS SSO callback.
+     * Officers go to dashboard, employees go to my-payslip.
      */
     public function hrisAuth(Request $request)
     {
-        return $this->handleHrisAuth($request, route('payroll.dashboard'));
+        $hrisUser = session('hris_user');
+
+        if (!$hrisUser) {
+            return redirect()->route('login')->with('error', 'HRIS authentication failed.');
+        }
+
+        $user = $this->resolveHrisUser($hrisUser);
+
+        // Determine redirect based on role
+        $isEmployee = $user->hasRole('employee');
+        $isOfficer = $user->hasAnyRole(\App\SharedKernel\Services\RoleService::getRoleGroup('payroll'));
+
+        if ($isEmployee && !$isOfficer) {
+            // Pure employee - redirect to my-payslip
+            $redirectTo = route('my-payslip');
+        } else {
+            // Officer/staff - redirect to dashboard
+            $redirectTo = route('payroll.dashboard');
+        }
+
+        return $this->handleHrisAuth($request, $redirectTo);
     }
 
     /**

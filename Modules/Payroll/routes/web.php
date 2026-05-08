@@ -13,7 +13,9 @@ use Modules\Payroll\Http\Controllers\PayrollController;
 Route::middleware(['auth'])->group(function () {
 
     // ── Dashboard ────────────────────────────────────────────────
-    Route::get('/dashboard', [DashboardController::class, 'index'])->name('payroll.dashboard');
+    Route::middleware(['role:' . implode('|', \App\SharedKernel\Services\RoleService::getRoleGroup('payroll'))])
+        ->get('/dashboard', [DashboardController::class, 'index'])
+        ->name('payroll.dashboard');
 
     // ── My Payslip (Employee self-service) ────────────────────────
     // Accessible to any authenticated user including HRIS-redirected
